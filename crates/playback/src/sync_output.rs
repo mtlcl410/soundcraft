@@ -107,6 +107,7 @@ enum Update {
     Encoder(Option<(String, i64)>, bool, Box<dyn SyncEncoder>),
     Wake,
     InputWake(Arc<AtomicBool>),
+    TransportWake(Arc<AtomicBool>),
 }
 impl Output {
     pub(crate) fn configure(&mut self, s: &Arc<Session>, audio: &Sender<Cmd>) {
@@ -155,15 +156,17 @@ impl Output {
         self.send(Update::Encoder(port, compensate, encoder));
     }
     pub(crate) fn waker(&self) -> Arc<dyn Fn() + Send + Sync> {
+        self.coalesced_waker(self.pending_wake.clone(), Update::InputWake)
+    }
+    fn coalesced_waker(&self, pending: Arc<AtomicBool>, update: fn(Arc<AtomicBool>) -> Update) -> Arc<dyn Fn() + Send + Sync> {
         let dest = self.wake_tx.clone();
-        let pending = self.pending_wake.clone();
         Arc::new(move || {
             if pending.load(Relaxed) {
                 return;
             }
             if let Some(tx) = dest.lock().unwrap_or_else(std::sync::PoisonError::into_inner).as_ref()
                 && !pending.swap(true, Relaxed)
-                && tx.send(Update::InputWake(pending.clone())).is_err()
+                && tx.send(update(pending.clone())).is_err()
             {
                 pending.store(false, Relaxed);
             }
@@ -172,12 +175,7 @@ impl Output {
     /// A confirmed external transport transition precedes the audio callback
     /// publishing its new pass. Use the same bounded lookahead as local Play/Locate.
     pub(crate) fn transport_waker(&self) -> Arc<dyn Fn() + Send + Sync> {
-        let dest = self.wake_tx.clone();
-        Arc::new(move || {
-            if let Some(tx) = dest.lock().unwrap_or_else(std::sync::PoisonError::into_inner).as_ref() {
-                let _ = tx.send(Update::Wake);
-            }
-        })
+        self.coalesced_waker(Arc::default(), Update::TransportWake)
     }
     pub(crate) fn wake(&self) {
         if let Some((tx, _)) = &self.worker {
@@ -399,7 +397,7 @@ fn drive<C: SyncPort>(
                     }
                 }
                 Update::Wake => {}
-                Update::InputWake(pending) => pending.store(false, Relaxed),
+                Update::InputWake(pending) | Update::TransportWake(pending) => pending.store(false, Relaxed),
             }
             ports.retain(|_, p| p.routes.iter().any(Option::is_some));
             stats.connected().retain(|n| ports.contains_key(n));
