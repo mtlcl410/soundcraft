@@ -255,7 +255,8 @@ pub fn add_midi_recording_from(
         events.iter().take(MAX_MIDI_TAKE_EVENTS).filter(|ev| ev.status == MidiTakeEvent::LOST && ev.at >= range.start && ev.at < range.end).count()
             + usize::from(events.len() > MAX_MIDI_TAKE_EVENTS);
     let takes: Vec<(TrackId, String, Sequence)> = {
-        let s = e.session();
+        let doc = e.playback_session();
+        let s = &*doc;
         s.tracks
             .iter()
             .filter_map(|t| {

@@ -29,6 +29,8 @@ pub fn loops(range: Range) -> bool {
 }
 
 mod chase_pitch;
+pub mod clock_follow;
+pub mod sync_input;
 pub mod devices;
 pub mod midi;
 pub mod mtc;
