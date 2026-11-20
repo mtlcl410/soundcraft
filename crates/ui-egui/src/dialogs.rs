@@ -540,6 +540,19 @@ fn external_offset_label(session: &soundcraft_model::Session) -> String {
 }
 
 /// Show the open dialog, if any.
+fn synchronization_settings(app: &mut SoundApp, ui: &mut egui::Ui, scroll_to_clock: &mut bool) {
+    egui::ScrollArea::vertical().max_height((ui.ctx().content_rect().height() - 160.).max(120.)).show(ui, |ui| {
+        app.mtc_input_settings(ui);
+        app.mtc_output_settings(ui);
+        ui.separator();
+        let section = ui.heading(crate::localization::text("External MIDI clock"));
+        if std::mem::take(scroll_to_clock) {
+            section.scroll_to_me(Some(egui::Align::TOP));
+        }
+        app.clock_follow_settings(ui);
+    });
+}
+
 pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
     audiosuite_window(app, ctx);
     crate::bounce::show(app, ctx);
@@ -612,11 +625,7 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
             }
             ui.spacing_mut().item_spacing = vec2(8.0, 8.0);
             match &mut d {
-                Dialog::NewTracks(tracks) => {
-                    if let Some(params) = tracks.show(ui, enter) {
-                        action = Some(("track.new".into(), params));
-                    }
-                }
+                Dialog::NewTracks(tracks) => action = tracks.show(ui, enter).map(|params| ("track.new".into(), params)),
                 Dialog::NewSession { name, sample_rate, demo } => {
                     ui.horizontal(|ui| {
                         ui.label(crate::localization::text("Name"));
@@ -786,22 +795,9 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
                         action = Some((cmd.into(), params));
                     }
                 }
-                Dialog::MidiBeatClock(clock) => {
-                    if let Some(params) = clock.show(ui, enter, app) {
-                        action = Some(("setup.midi_beat_clock".into(), params));
-                    }
-                }
+                Dialog::MidiBeatClock(clock) => action = clock.show(ui, enter, app).map(|params| ("setup.midi_beat_clock".into(), params)),
                 Dialog::Counter { field, value } => keep = field.edit(app, ui, value, first_frame, enter),
-                Dialog::Synchronization { scroll_to_clock } => {
-                    egui::ScrollArea::vertical().max_height((ui.ctx().content_rect().height() - 160.).max(120.)).show(ui, |ui| {
-                        app.mtc_input_settings(ui);
-                        app.mtc_output_settings(ui);
-                        ui.separator();
-                        let section = ui.heading(crate::localization::text("External MIDI clock"));
-                        if std::mem::take(scroll_to_clock) { section.scroll_to_me(Some(egui::Align::TOP)); }
-                        app.clock_follow_settings(ui);
-                    });
-                }
+                Dialog::Synchronization { scroll_to_clock } => synchronization_settings(app, ui, scroll_to_clock),
                 Dialog::ExternalOffset { value } => {
                     let caption=ui.label(crate::localization::text("External Timecode Offset"));
                     ui.text_edit_singleline(value).labelled_by(caption.id);
@@ -810,11 +806,7 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
                         else { action=Some(("setup.external_timecode_offset".into(),json!({"timecode":value}))); }
                     }
                 }
-                Dialog::Session(setup) => {
-                    if let Some(params) = setup.show(app, ui, enter) {
-                        action = Some(("setup.session".into(), params));
-                    }
-                }
+                Dialog::Session(setup) => action = setup.show(app, ui, enter).map(|params| ("setup.session".into(), params)),
                 Dialog::Loop { by, count, length, format, start, filled } => {
                     let s = app.engine.session();
                     ui.horizontal(|ui| {
