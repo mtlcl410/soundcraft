@@ -198,7 +198,9 @@ mod tests {
         let mut host = app();
         let feed = host.midi_inputs.as_ref().unwrap().feed().clone();
         let port = feed.ports().assign("Sender");
+        host.engine.session_mut().edit.selection = crate::Range::point(48_000);
         host.engine.transport.position = 48_000;
+        assert_eq!(host.position(), 48_000);
         feed.receive(port, &[0xf0, 0x7f, 127, 1, 1, 0x20, 59, 50, 0, 0xf7]);
         host.service_mtc_chase();
         host.handle_transport(0.0);
