@@ -96,6 +96,11 @@ struct WorkerSender {
     worker: std::thread::Thread,
 }
 impl WorkerSender {
+    fn send_coalesced(&self, pending: &Arc<AtomicBool>, update: impl FnOnce(Arc<AtomicBool>) -> Update) {
+        if !pending.swap(true, Relaxed) && self.send(update(pending.clone())).is_err() {
+            pending.store(false, Relaxed);
+        }
+    }
     fn send(&self, update: Update) -> Result<(), std::sync::mpsc::SendError<Update>> {
         self.tx.send(update)?;
         // A timed-out transition can park on a late presentation as well as on control.
@@ -125,6 +130,7 @@ enum Update {
     Encoder(Option<(String, i64)>, bool, Box<dyn SyncEncoder>),
     Wake(Option<(u64, bool)>),
     InputWake(Arc<AtomicBool>),
+    TransportWake(Arc<AtomicBool>, Option<(u64, bool)>),
 }
 impl Output {
     pub(crate) fn configure(&mut self, s: &Arc<Session>, audio: &Sender<Cmd>) -> u64 {
@@ -181,22 +187,45 @@ impl Output {
         self.compensated = compensate;
         (ports.is_empty() && self.worker.is_none()) || self.send(Update::Beats(ports, compensate))
     }
-    pub(crate) fn encoder(&mut self, port: Option<(String, i64)>, compensate: bool, encoder: Box<dyn SyncEncoder>) {
-        self.additional = port.clone().map(|(n, o)| (n, o, compensate));
-        self.send(Update::Encoder(port, compensate, encoder));
+    pub(crate) fn encoder(&mut self, port: Option<(String, i64)>, compensate: bool, encoder: Box<dyn SyncEncoder>) -> bool {
+        if port.is_none() && self.additional.is_none() && self.worker.is_none() {
+            return true;
+        }
+        let accepted = self.send(Update::Encoder(port.clone(), compensate, encoder));
+        if accepted {
+            self.additional = port.map(|(name, offset)| (name, offset, compensate));
+        }
+        accepted
     }
     pub(crate) fn waker(&self) -> Arc<dyn Fn() + Send + Sync> {
         let dest = self.wake_tx.clone();
         let pending = self.pending_wake.clone();
         Arc::new(move || {
+            if !pending.load(Relaxed)
+                && let Some(tx) = dest.lock().unwrap_or_else(std::sync::PoisonError::into_inner).as_ref()
+            {
+                tx.send_coalesced(&pending, Update::InputWake);
+            }
+        })
+    }
+    /// MidiFeed invokes this while it still holds the reader, before the callback
+    /// can consume the new roll, stop or locate and publish its transport state.
+    pub(crate) fn transport_waker(&self) -> crate::midi::TransportWaker {
+        let dest = self.wake_tx.clone();
+        let pending = Arc::<AtomicBool>::default();
+        let view = self.view.clone();
+        Arc::new(move |event| {
             if pending.load(Relaxed) {
                 return;
             }
-            if let Some(tx) = dest.lock().unwrap_or_else(std::sync::PoisonError::into_inner).as_ref()
-                && !pending.swap(true, Relaxed)
-                && tx.send(Update::InputWake(pending.clone())).is_err()
-            {
-                pending.store(false, Relaxed);
+            if let Some(tx) = dest.lock().unwrap_or_else(std::sync::PoisonError::into_inner).as_ref() {
+                let before = view.lock().unwrap_or_else(std::sync::PoisonError::into_inner).transport_state();
+                if !matches!(
+                    (event, before),
+                    (crate::mtc_input::ChaseEvent::Roll(..), Some((_, true))) | (crate::mtc_input::ChaseEvent::Stop, Some((_, false)))
+                ) {
+                    tx.send_coalesced(&pending, |flag| Update::TransportWake(flag, before));
+                }
             }
         })
     }
@@ -539,6 +568,10 @@ fn drive<C: SyncPort>(
                 }
                 Update::Wake(before) => transition = Some((before, now + Duration::from_secs(2))),
                 Update::InputWake(pending) => pending.store(false, Relaxed),
+                Update::TransportWake(pending, before) => {
+                    pending.store(false, Relaxed);
+                    transition = Some((before, now + Duration::from_secs(2)));
+                }
             }
             ports.retain(|_, p| p.stop_pending || p.routes.iter().any(Option::is_some));
             stats.connected().retain(|n| ports.contains_key(n));
@@ -632,3 +665,7 @@ mod tests;
 #[cfg(test)]
 #[path = "sync_timing_test.rs"]
 mod timing;
+
+#[cfg(test)]
+#[path = "mtc_sync_output_tests.rs"]
+mod mtc_on_shared_port;

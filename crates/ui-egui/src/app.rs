@@ -13,6 +13,8 @@ mod control;
 mod files;
 mod input;
 mod midi;
+mod mtc;
+mod mtc_output;
 mod playback;
 mod plugins;
 
@@ -31,6 +33,11 @@ impl SoundApp {
     /// Build an app around an engine and optional player, initialising UI, recording, autosave, control and
     /// synthetic-input state.
     pub fn new(engine: Engine, player: Option<Player>, services: Services) -> Self {
+        let mut ui = UiState::default();
+        if engine.has_conflicting_timecode_offsets() {
+            ui.status =
+                crate::localization::text("The session has conflicting timecode offsets. Chase uses the External Timecode Offset.").to_owned();
+        }
         SoundApp {
             recent_seen: engine.path.clone(),
             recent_changed: false,
@@ -42,6 +49,11 @@ impl SoundApp {
             punch: None,
             recorder_failed: false,
             midi_inputs: None,
+            mtc_online: false,
+            mtc_chasing: false,
+            mtc_status: "Offline",
+            mtc_warning: None,
+            applied_mtc_output: None,
             midi_scan_at: 0.0,
             midi_take: Vec::new(),
             midi_take_lost: 0,
@@ -49,7 +61,7 @@ impl SoundApp {
             play_loop: None,
             lost_shown: 0,
             take_plan: None,
-            ui: UiState::default(),
+            ui,
             audio_health_report: None,
             services,
             native_menu_bar: false,
@@ -210,7 +222,9 @@ impl SoundApp {
         self.watch_output();
         self.watch_input();
         // Stop the old playback before sending a replacement session to the audio thread.
+        self.service_mtc_chase();
         self.handle_transport(dt);
+        self.service_mtc_output();
         if self.engine.revision != self.last_rev {
             self.last_rev = self.engine.revision;
             if let Some(p) = &self.player {
@@ -222,6 +236,17 @@ impl SoundApp {
         self.write_automation();
         self.autosave();
         self.service_midi(self.uptime);
+        if self.mtc_online
+            && let Some(inputs) = &self.midi_inputs
+        {
+            inputs.feed().set_mtc_wakeup(|| {
+                let ctx = ctx.clone();
+                Box::new(move || ctx.request_repaint())
+            });
+            if self.mtc_chasing {
+                ctx.request_repaint_after(std::time::Duration::from_millis(300));
+            }
+        }
         if self.recorder.is_none() && !self.recorder_failed && audio::wants_audio_input(self.engine.session()) {
             self.ensure_input();
         }

@@ -28,10 +28,56 @@ pub mod new_tracks;
 pub mod ops_windows;
 pub(super) mod recent;
 pub mod recovery;
+mod session_setup;
 pub mod spot;
+
+#[derive(Debug, Clone, Copy)]
+pub enum CounterField {
+    Position,
+    SelectionStart,
+    SelectionEnd,
+}
+impl CounterField {
+    pub(crate) fn open(self, app: &mut SoundApp) {
+        let s = app.engine.session();
+        let at = match self {
+            Self::Position => app.position(),
+            Self::SelectionStart => s.edit.selection.start,
+            Self::SelectionEnd => s.edit.selection.end,
+        };
+        let value = s.format_position(at, s.edit.main_counter);
+        app.dialogs.set(Dialog::Counter { field: self, value });
+    }
+
+    fn label(self) -> &'static str {
+        match self {
+            Self::Position => "Main Counter",
+            Self::SelectionStart => "Start",
+            Self::SelectionEnd => "End",
+        }
+    }
+
+    fn edit(self, app: &mut SoundApp, ui: &mut egui::Ui, value: &mut String, first_frame: bool, enter: bool) -> bool {
+        let input = ui.text_edit_singleline(value);
+        if first_frame {
+            input.request_focus();
+        }
+        !buttons(ui, "OK", enter) || self.submit(app, value).is_err()
+    }
+
+    fn submit(self, app: &mut SoundApp, value: &str) -> Result<Value, String> {
+        let selection = app.engine.session().edit.selection;
+        match self {
+            Self::Position => app.run("transport.locate", json!({"at":value})),
+            Self::SelectionStart => app.run("edit.select", json!({"start":value,"end":selection.end})),
+            Self::SelectionEnd => app.run("edit.select", json!({"start":selection.start,"end":value})),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum Dialog {
+    Counter { field: CounterField, value: String },
     NewTracks(new_tracks::NewTracks),
     NewSession { name: String, sample_rate: u32, demo: bool },
     Bounce { path: String, format: EncodeFormat, bit_depth: String, normalize: bool, dither: bool },
@@ -51,7 +97,9 @@ pub enum Dialog {
     AutoRename { clips: Vec<ClipId>, names: StripNames },
     // `id: None` creates (Track › Group…); `id: Some` modifies that group (Groups list › Modify Group…).
     Group { id: Option<GroupId>, name: String, edit: bool, mix: bool, members: Vec<(u64, String, bool)> },
-    Session { frame_rate: String, bit_depth: String },
+    Synchronization,
+    ExternalOffset { value: String },
+    Session(session_setup::SessionSetup),
     MidiBeatClock(midi_beat_clock::MidiBeatClock),
     // Clip › Loop…: `length` is typed in `format`, measured from `start` (the first selected clip's).
     // `filled` is the text the field opened with and the exact length it stands for.
@@ -109,7 +157,10 @@ impl Dialogs {
             Dialog::AutoRename { .. } => "auto_rename",
             Dialog::Group { id: None, .. } => "group",
             Dialog::Group { id: Some(_), .. } => "modify_group",
-            Dialog::Session { .. } => "session",
+            Dialog::Synchronization => "synchronization",
+            Dialog::Counter { .. } => "counter",
+            Dialog::ExternalOffset { .. } => "external_offset",
+            Dialog::Session(_) => "session",
             Dialog::MidiBeatClock(_) => "midi_beat_clock",
             Dialog::Loop { .. } => "clip_looping",
             Dialog::ScoreSetup { .. } => "score_setup",
@@ -242,7 +293,9 @@ impl Dialogs {
                 let members = s.tracks.iter().map(|t| (t.id.0, t.name.clone(), s.edit.selected_tracks.contains(&t.id))).collect();
                 Dialog::Group { id: None, name: format!("Group {}", s.groups.len() + 1), edit: true, mix: true, members }
             }
-            "setup.session" => Dialog::Session { frame_rate: e.session().frame_rate.label().into(), bit_depth: "24".into() },
+            "setup.peripherals" => Dialog::Synchronization,
+            "setup.external_timecode_offset" => Dialog::ExternalOffset { value: external_offset_label(e.session()) },
+            "setup.session" => Dialog::Session(session_setup::SessionSetup::new(e)),
             "file.score_setup" => {
                 let s = soundcraft_engine::score::ScoreSetup::from_session(e.session());
                 Dialog::ScoreSetup { title: s.title, composer: s.composer, bars_per_system: s.bars_per_system, show_track_names: s.show_track_names }
@@ -465,6 +518,27 @@ fn strip_silence_form(
     (action, rename_from)
 }
 
+pub(crate) fn port_offset_field(ui: &mut egui::Ui, offset: &mut i64, rate: soundcraft_time::SampleRate, limited_lead_us: Option<u64>) -> bool {
+    let limit = soundcraft_playback::max_sync_offset_samples(rate);
+    let caption = ui.label(crate::localization::text("Offset (samples)"));
+    let changed = ui.add(egui::DragValue::new(offset).range(-limit..=limit).clamp_existing_to_range(false)).labelled_by(caption.id).changed();
+    ui.label(format!("{:.2} ms", *offset as f64 * 1000. / rate.as_f64()));
+    if offset.unsigned_abs() > limit as u64 {
+        ui.label(crate::localized_format!(
+            "Saved value exceeds ±250 ms at this rate; playback uses {effective} samples.",
+            effective = (*offset).clamp(-limit, limit)
+        ));
+    }
+    if let Some(lead) = limited_lead_us {
+        ui.label(crate::localized_format!("Limited by the audio output lead ({lead} ms)", lead = lead as f64 / 1000.));
+    }
+    changed
+}
+
+fn external_offset_label(session: &soundcraft_model::Session) -> String {
+    soundcraft_engine::cmd::signed_offset(session.edit.value("sync.external_offset", 0.) as i64, session.frame_rate, session.sample_rate)
+}
+
 /// Show the open dialog, if any.
 pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
     audiosuite_window(app, ctx);
@@ -494,6 +568,7 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
     let mut renamed: Option<StripNames> = None;
     let strip_names = app.dialogs.strip_names.clone();
     let title = match &d {
+        Dialog::Counter { field, .. } => field.label(),
         Dialog::NewTracks(_) => "New Tracks",
         Dialog::NewSession { .. } => "New Session",
         Dialog::Bounce { .. } => "Bounce Mix",
@@ -509,7 +584,9 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
         Dialog::StripSilenceRename { .. } | Dialog::AutoRename { .. } => "Rename Selected Clips",
         Dialog::Group { id: None, .. } => "Create Group",
         Dialog::Group { id: Some(_), .. } => "Modify Group",
-        Dialog::Session { .. } => "Session Setup",
+        Dialog::Synchronization => "Synchronization",
+        Dialog::ExternalOffset { .. } => "External Timecode Offset",
+        Dialog::Session(_) => "Session Setup",
         Dialog::MidiBeatClock(_) => "MIDI Beat Clock",
         Dialog::Loop { .. } => "Clip Looping",
         Dialog::ScoreSetup { .. } => "Score Setup",
@@ -535,11 +612,7 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
             }
             ui.spacing_mut().item_spacing = vec2(8.0, 8.0);
             match &mut d {
-                Dialog::NewTracks(tracks) => {
-                    if let Some(params) = tracks.show(ui, enter) {
-                        action = Some(("track.new".into(), params));
-                    }
-                }
+                Dialog::NewTracks(tracks) => action = tracks.show(ui, enter).map(|params| ("track.new".into(), params)),
                 Dialog::NewSession { name, sample_rate, demo } => {
                     ui.horizontal(|ui| {
                         ui.label(crate::localization::text("Name"));
@@ -643,8 +716,8 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
                 Dialog::Spot(d) => {
                     crate::spot::fields(ui, app.engine.session(), d);
                     if buttons(ui, "OK", enter) {
-                        keep = false;
-                        action = d.command(app.engine.session());
+                        if let Some(message)=d.timecode_error(app.engine.session()){ app.ui.status=message; }
+                        else { keep = false; action = d.command(app.engine.session()); }
                     }
                 }
                 Dialog::Fades { shape } => {
@@ -709,26 +782,21 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
                         action = Some((cmd.into(), params));
                     }
                 }
-                Dialog::MidiBeatClock(clock) => {
-                    if let Some(params) = clock.show(ui, enter, app) {
-                        action = Some(("setup.midi_beat_clock".into(), params));
+                Dialog::MidiBeatClock(clock) => action = clock.show(ui, enter, app).map(|params| ("setup.midi_beat_clock".into(), params)),
+                Dialog::Counter { field, value } => keep = field.edit(app, ui, value, first_frame, enter),
+                Dialog::Synchronization => {
+                    app.mtc_input_settings(ui);
+                    app.mtc_output_settings(ui);
+                }
+                Dialog::ExternalOffset { value } => {
+                    let caption=ui.label(crate::localization::text("External Timecode Offset"));
+                    ui.text_edit_singleline(value).labelled_by(caption.id);
+                    if buttons(ui,"OK",enter) {
+                        if *value == external_offset_label(app.engine.session()) { keep = false; }
+                        else { action=Some(("setup.external_timecode_offset".into(),json!({"timecode":value}))); }
                     }
                 }
-                Dialog::Session { frame_rate, bit_depth } => {
-                    craft_ui::ComboBox::from_label(crate::localization::text("Timecode Rate")).selected_text(crate::localization::text(frame_rate.as_str())).show_ui(ui, |ui| {
-                        for r in soundcraft_time::FrameRate::ALL {
-                            ui.selectable_value(frame_rate, r.label().to_string(), crate::localization::text(r.label()));
-                        }
-                    });
-                    craft_ui::ComboBox::from_label(crate::localization::text("Bit Depth")).selected_text(crate::localization::text(bit_depth.as_str())).show_ui(ui, |ui| {
-                        for b in ["16", "24", "32f"] {
-                            ui.selectable_value(bit_depth, b.to_string(), crate::localization::text(b));
-                        }
-                    });
-                    if buttons(ui, "OK", enter) {
-                        action = Some(("setup.session".into(), json!({"frame_rate": frame_rate, "bit_depth": bit_depth})));
-                    }
-                }
+                Dialog::Session(setup) => action = setup.show(app, ui, enter).map(|params| ("setup.session".into(), params)),
                 Dialog::Loop { by, count, length, format, start, filled } => {
                     let s = app.engine.session();
                     ui.horizontal(|ui| {
@@ -967,6 +1035,58 @@ fn loop_length(s: &Session, text: &str, format: soundcraft_time::TimeFormat, sta
 mod tests {
     use super::*;
     use crate::dialogs::new_tracks::set_new_track_kind;
+
+    #[test]
+    fn capturing_received_timecode_changes_only_the_pending_session_start() {
+        use egui::accesskit::Role;
+        use egui_kittest::{
+            Harness,
+            kittest::{NodeT, Queryable},
+        };
+        use soundcraft_playback::midi::MidiInputs;
+        for use_keyboard in [false, true] {
+            let mut app = SoundApp::new(Engine::default(), None, crate::Services::default());
+            app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["Clock".into()]));
+            app.run("setup.mtc", json!({"input":"Clock","online":true})).unwrap();
+            app.service_mtc_chase();
+            let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
+            if !use_keyboard {
+                app.run("track.new", json!({"name":"Track before capture"})).unwrap();
+            }
+            assert!(app.dialogs.open_for_command(&app.engine, "setup.session"));
+            let mut h = Harness::builder().with_size(egui::vec2(1400., 850.)).build_ui_state(
+                |ui, app: &mut SoundApp| {
+                    app.logic(ui.ctx());
+                    app.ui(ui);
+                },
+                app,
+            );
+            h.run_steps(3);
+            assert!(h.get_by_label("Use received position").accesskit_node().is_disabled());
+            let port = feed.ports().assign("Clock");
+            feed.receive(port, &[0xf0, 0x7f, 127, 1, 1, 0x60, 0, 5, 0, 0xf7]);
+            h.run_steps(2);
+            if use_keyboard {
+                h.get_by_role_and_label(Role::TextInput, "Session Start").click();
+                h.run_steps(2);
+                h.key_press(egui::Key::Equals);
+            } else {
+                h.get_by_label("Use received position").click();
+            }
+            h.run_steps(2);
+            let Some(Dialog::Session(setup)) = &h.state().dialogs.open else { panic!("Session Setup closed") };
+            assert_eq!(setup.start, "00:00:05:00");
+            assert_eq!(h.state().engine.session().timecode_start, 172_800_000);
+            h.get_by_label(if use_keyboard { "Cancel" } else { "OK" }).click();
+            h.run_steps(3);
+            if !use_keyboard {
+                assert_eq!(h.state().engine.session().timecode_start, 172_800_000);
+                h.get_by_label("Keep clips' distance from the session start").click();
+                h.run_steps(3);
+            }
+            assert_eq!(h.state().engine.session().timecode_start, if use_keyboard { 172_800_000 } else { 240000 });
+        }
+    }
 
     /// Opens and settles the dialog for a chosen desktop operating system.
     fn tracks_dialog(os: egui::os::OperatingSystem) -> (egui::Context, SoundApp) {

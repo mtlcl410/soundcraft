@@ -57,7 +57,10 @@ pub fn midi_sync_outputs() -> Result<Vec<String>, String> {
 }
 pub mod devices;
 pub mod midi;
+pub mod mtc;
+pub mod mtc_input;
 pub mod record;
+pub mod sync_input;
 
 pub use devices::AudioConfig;
 
@@ -163,6 +166,8 @@ enum Cmd {
         end: Option<Samples>,
         looped: Option<Range>,
     },
+    PlayMtc(Samples),
+    EndChase(Option<u64>),
     Stop,
     Locate(Samples),
     /// Tracks the latest session no longer has (worked out on the UI thread): their meters go.
@@ -534,7 +539,13 @@ impl Player {
     /// Add a second protocol to the same MIDI worker and port pool.
     #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
     pub fn set_sync_encoder(&self, port: Option<(String, i64)>, compensate: bool, encoder: Box<dyn sync_clock::SyncEncoder>) {
-        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).encoder(port, compensate, encoder);
+        self.try_set_sync_encoder(port, compensate, encoder);
+    }
+
+    /// Returns whether the worker accepted the encoder update.
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    pub fn try_set_sync_encoder(&self, port: Option<(String, i64)>, compensate: bool, encoder: Box<dyn sync_clock::SyncEncoder>) -> bool {
+        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).encoder(port, compensate, encoder)
     }
     /// Notify the sync worker of external transport activity from a MIDI input
     /// thread. The handle does not retain the player and coalesces pending wakes.
@@ -590,9 +601,22 @@ impl Player {
 
     /// Start playback at `from`, stopping at `end`, or looping `looped`.
     pub fn play(&self, from: Samples, end: Option<Samples>, looped: Option<Range>) {
+        self.begin_play(from, Cmd::Play { from, end, looped });
+    }
+    pub fn play_chasing_mtc(&self, from: Samples) {
+        self.begin_play(from, Cmd::PlayMtc(from));
+    }
+    pub fn end_mtc_chase(&self) {
+        let _ = self.tx.send(Cmd::EndChase(None));
+    }
+    /// End only the incoming roll whose stop the UI consumed.
+    pub fn end_observed_mtc_chase(&self, lock: u64) {
+        let _ = self.tx.send(Cmd::EndChase(Some(lock)));
+    }
+    fn begin_play(&self, from: Samples, cmd: Cmd) {
         self.shared.position.store(from, Ordering::Relaxed);
         self.shared.playing.store(true, Ordering::Release);
-        self.send_transport(Cmd::Play { from, end, looped });
+        self.send_transport(cmd);
     }
 
     /// Feed live input (from a `record::Recorder`) into the mix for input monitoring.
@@ -602,6 +626,8 @@ impl Player {
 
     /// Play MIDI devices through record-enabled and input-monitored MIDI and instrument tracks.
     pub fn set_midi(&self, feed: Arc<midi::MidiFeed>) {
+        #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
+        feed.set_sync_waker(self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).transport_waker());
         let _ = self.tx.send(Cmd::Midi(feed));
     }
 

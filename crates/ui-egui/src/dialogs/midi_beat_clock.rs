@@ -29,8 +29,6 @@ impl MidiBeatClock {
         }
         let names: BTreeSet<_> = available.iter().chain(self.settings.ports.keys()).cloned().collect();
         let rate = app.engine.session().sample_rate;
-        let sr = rate.as_f64();
-        let limit = soundcraft_playback::max_sync_offset_samples(rate);
         let timing = app.player.as_ref().map(soundcraft_playback::Player::midi_sync_status);
         egui::ScrollArea::vertical().max_height(240.).show(ui, |ui| {
             for name in names {
@@ -38,27 +36,12 @@ impl MidiBeatClock {
                 let changed = ui
                     .horizontal(|ui| {
                         let enabled = crate::widgets::checkbox(ui, &mut port.enabled, name.as_str()).changed();
-                        let label = ui.label(text("Offset (samples)"));
-                        let offset = ui
-                            .add(egui::DragValue::new(&mut port.offset_samples).range(-limit..=limit).clamp_existing_to_range(false))
-                            .labelled_by(label.id)
-                            .changed();
-                        ui.label(format!("{:.2} ms", port.offset_samples as f64 * 1000. / sr));
-                        if port.offset_samples.unsigned_abs() > limit as u64 {
-                            ui.label(crate::localized_format!(
-                                "Saved value exceeds ±250 ms at this rate; playback uses {effective} samples.",
-                                effective = port.offset_samples.clamp(-limit, limit)
-                            ));
-                        }
-                        if let Some(port_timing) = timing.as_ref().and_then(|status| status.ports.get(&name))
-                            && port_timing.advance_limited
-                            && port_timing.requested_offset_samples == port.offset_samples
-                        {
-                            ui.label(crate::localized_format!(
-                                "Limited by the audio output lead ({lead} ms)",
-                                lead = port_timing.device_lead_us as f64 / 1000.
-                            ));
-                        }
+                        let limited_lead = timing
+                            .as_ref()
+                            .and_then(|status| status.ports.get(&name))
+                            .filter(|p| p.advance_limited && p.requested_offset_samples == port.offset_samples)
+                            .map(|p| p.device_lead_us);
+                        let offset = super::port_offset_field(ui, &mut port.offset_samples, rate, limited_lead);
                         if !available.contains(&name) {
                             ui.label(text("The saved MIDI output is unavailable."));
                         }
