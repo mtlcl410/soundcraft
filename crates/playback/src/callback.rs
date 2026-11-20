@@ -74,12 +74,14 @@ pub(crate) struct AudioState {
     rx: Receiver<Cmd>,
     pub(crate) shared: Arc<Shared>,
     pub(crate) session: Arc<Session>,
+    session_generation: u64,
     pub(crate) mix: MixEngine,
     pos: Samples,
     playing: bool,
     chasing: bool,
     drift_since: Option<i64>,
     chase_group: Option<i64>,
+    chase_seek_generation: u64,
     end: Option<Samples>,
     looped: Option<Range>,
     /// Rendered frames waiting to be consumed (planar, main channels) and the fractional read index.
@@ -175,11 +177,13 @@ impl AudioState {
             shared,
             mix: new_engine(sr),
             session,
+            session_generation: 0,
             pos: 0,
             playing: false,
             chasing: false,
             drift_since: None,
             chase_group: None,
+            chase_seek_generation: 0,
             end: None,
             #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
             clock: None,
@@ -257,7 +261,8 @@ impl AudioState {
                         self.midi_ended = Some(self.midi_ended.map_or(pass, |p| p.max(pass)));
                     }
                 }
-                Cmd::Session(s, instances) => {
+                Cmd::Session(generation, s, instances) => {
+                    self.session_generation = generation;
                     changed = true;
                     if (s.sample_rate.as_f64() - self.session.sample_rate.as_f64()).abs() > 0.5 {
                         let mut old = std::mem::replace(&mut self.mix, new_engine(s.sample_rate.as_f64() as f32));
@@ -280,7 +285,8 @@ impl AudioState {
                 }
                 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
                 Cmd::Clock(clock) => self.clock = clock,
-                Cmd::FollowGrid(s, retired) => {
+                Cmd::FollowGrid(generation, s, retired) => {
+                    self.session_generation = generation;
                     // Exactly one writer; the host empties the slot before sending this ticket.
                     // A full/disconnected general-purpose reclamation queue cannot free this
                     // snapshot here. Releasing the ticket allows the host to take it back.
@@ -290,8 +296,8 @@ impl AudioState {
                 Cmd::Play { from, end, looped } => self.begin_play(from, end, looped, false),
                 Cmd::PlayMtc(from) => self.begin_play(from, None, None, true),
                 Cmd::Stop => self.halt(),
-                Cmd::EndChase => {
-                    if self.chasing {
+                Cmd::EndChase(observed) => {
+                    if self.chasing && observed.is_none_or(|lock| self.midi.as_ref().is_some_and(|m| m.is_mtc_lock(lock))) {
                         self.halt();
                     }
                 }
@@ -375,7 +381,7 @@ impl AudioState {
         let sr = self.session.sample_rate;
         let rate = self.session.frame_rate;
         let start = self.session.timecode_start;
-        let (p, stamp, now, anchor) = match tracking {
+        let (p, stamp, now, anchor, seek_generation) = match tracking {
             Tracking::Idle => {
                 if self.chasing {
                     self.halt();
@@ -403,7 +409,7 @@ impl AudioState {
                 self.shared.position.store(self.pos, Ordering::Relaxed);
                 return;
             }
-            Tracking::Rolling { position, stamp, now, anchor } => (position, stamp, now, anchor),
+            Tracking::Rolling { position, stamp, now, anchor, seek_generation } => (position, stamp, now, anchor, seek_generation),
         };
         if self.chase_group == Some(stamp) {
             return;
@@ -432,7 +438,7 @@ impl AudioState {
             let rendered = self.pos as f64 + self.read - self.pending_len as f64;
             if desired.abs_diff(rendered.round() as i64) > p.in_session_rate(rate).frame_samples(sr) as u64 {
                 let since = *self.drift_since.get_or_insert(stamp);
-                if stamp.saturating_sub(since) >= 1_000_000 {
+                if seek_generation != self.chase_seek_generation || stamp.saturating_sub(since) >= 1_000_000 {
                     feed.mtc_relocated();
                     self.begin_play(desired, None, None, true);
                 }
@@ -440,6 +446,7 @@ impl AudioState {
                 self.drift_since = None;
             }
         }
+        self.chase_seek_generation = seek_generation;
         self.chase_group = Some(stamp);
     }
 
@@ -836,7 +843,7 @@ impl AudioState {
         // at the rate that is there now, at the same speed.
         let step = self.step(speed);
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-        if let Some(clock) = &mut self.clock {
+        let presentation = self.clock.as_mut().map(|clock| {
             let sample = self.pos as f64 - self.pending_len as f64 + self.read;
             let limit = sample + callback_frames as f64 * step;
             let origin = *clock.origin.get_or_insert(sample.floor() as i64);
@@ -847,21 +854,22 @@ impl AudioState {
                 }
                 None => (std::time::Instant::now(), std::time::Duration::ZERO),
             };
-            if let Ok(mut timeline) = clock.view.try_lock() {
-                timeline.push(super::sync_clock::Presentation {
-                    pass: clock.pass,
-                    origin,
-                    playing: self.playing,
-                    sample,
-                    limit,
-                    samples_per_second: speed * self.session.sample_rate.as_f64(),
-                    looped: self.looped,
-                    end: self.end,
-                    heard_at,
-                    lead,
-                });
+            super::sync_clock::Presentation {
+                generation: self.session_generation,
+                sample_rate: self.session.sample_rate,
+                system_delay_samples: 0,
+                pass: clock.pass,
+                origin,
+                playing: self.playing,
+                sample,
+                limit,
+                samples_per_second: speed * self.session.sample_rate.as_f64(),
+                looped: self.looped,
+                end: self.end,
+                heard_at,
+                lead,
             }
-        }
+        });
         // A keyboard plays through record-enabled and input-monitored MIDI and instrument tracks.
         let midi_live = self.midi.as_ref().is_some_and(|f| f.connected() > 0)
             && self.session.tracks.iter().any(|t| matches!(t.kind, TrackKind::Instrument | TrackKind::Midi) && midi_thru(t));
@@ -874,6 +882,8 @@ impl AudioState {
             if let Ok(mut m) = self.shared.meters.try_lock() {
                 m.silence();
             }
+            #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+            self.publish_presentation(presentation);
             return;
         }
         let quantum = ((callback_frames as f64 * step).ceil() as usize).clamp(1, BLOCK);
@@ -904,6 +914,16 @@ impl AudioState {
             };
             write_frame(frame, channels, nch, sounding, &self.fold, sample);
             self.read += step;
+        }
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        self.publish_presentation(presentation);
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    fn publish_presentation(&self, presentation: Option<super::sync_clock::Presentation>) {
+        if let (Some(clock), Some(mut b)) = (&self.clock, presentation) {
+            b.system_delay_samples = if self.session.edit.delay_compensation { self.mix.latency } else { 0 };
+            clock.publish(b);
         }
     }
 }
@@ -1094,6 +1114,13 @@ fn out_sample(v: f32) -> f32 {
     if v.is_finite() { v.clamp(-1.0, 1.0) } else { 0.0 }
 }
 
+// Leave room for the newest follow revision while the worker has its full
+// audible-map history and the device holds a separate playing snapshot.
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+pub(super) const FOLLOW_POOL_SLOTS: usize = crate::sync_clock::MAX_REVISIONS + 2;
+#[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+pub(super) const FOLLOW_POOL_SLOTS: usize = 2;
+
 /// UI-thread bookkeeping of the third-party instances the audio thread holds.
 pub(crate) struct Side {
     /// What was last created for each slot: (plugin id, channels, created ok).
@@ -1109,8 +1136,8 @@ pub(crate) struct Side {
     pub(crate) refused: HashSet<(TrackId, usize)>,
     pub(crate) grid_base: Option<Arc<Session>>,
     // Device and output worker may retain snapshots independently. Reuse only exclusively
-    // owned entries. When both are occupied, the host coalesces edits until one returns.
-    follow_pool: [Option<Arc<Session>>; 2],
+    // owned entries. When all are occupied, the host coalesces edits until one returns.
+    follow_pool: [Option<Arc<Session>>; FOLLOW_POOL_SLOTS],
     pub(crate) grid_return: super::GridReturn,
     garbage: Receiver<Vec<Box<dyn Plugin>>>,
     old_sessions: Option<Receiver<Arc<Session>>>,

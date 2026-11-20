@@ -156,9 +156,9 @@ enum Cmd {
     #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
     Clock(Option<sync_clock::Publisher>),
     /// A new snapshot plus the third-party instances it needs (created on the UI thread).
-    Session(Arc<Session>, Vec<PreparedInstance>),
+    Session(u64, Arc<Session>, Vec<PreparedInstance>),
     /// Host-built copy of the last published snapshot with only its live tempo changed.
-    FollowGrid(Arc<Session>, GridReturn),
+    FollowGrid(u64, Arc<Session>, GridReturn),
     /// Where the callback sends the snapshots it replaces (freeing one takes thousands of frees).
     OldSessions(SyncSender<Arc<Session>>),
     Input(Arc<record::InputRing>),
@@ -172,7 +172,7 @@ enum Cmd {
         looped: Option<Range>,
     },
     PlayMtc(Samples),
-    EndChase,
+    EndChase(Option<u64>),
     Stop,
     Locate(Samples),
     /// Tracks the latest session no longer has (worked out on the UI thread): their meters go.
@@ -437,13 +437,15 @@ impl Player {
     /// prepared) instances of any third-party plugin it newly needs. Call on the UI thread.
     pub fn update_session(&self, s: Arc<Session>) {
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, true);
+        let generation = self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, true);
+        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+        let generation = 0;
         let (instances, gone) = {
             let mut side = self.side();
             side.set_follow_base(s.clone());
             (side.prepare(&s), side.gone_tracks(&s))
         };
-        let _ = self.tx.send(Cmd::Session(s, instances));
+        let _ = self.tx.send(Cmd::Session(generation, s, instances));
         if !gone.is_empty() {
             let _ = self.tx.send(Cmd::Forget(gone));
         }
@@ -462,8 +464,10 @@ impl Player {
         }
         let Some(s) = side.follow_snapshot(tempo) else { return false };
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, false);
-        let _ = self.tx.send(Cmd::FollowGrid(s, side.grid_return.clone()));
+        let generation = self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, false);
+        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+        let generation = 0;
+        let _ = self.tx.send(Cmd::FollowGrid(generation, s, side.grid_return.clone()));
         true
     }
 
@@ -556,6 +560,8 @@ impl Player {
     }
     /// Notify the sync worker of external transport activity from a MIDI input
     /// thread. The handle does not retain the player and coalesces pending wakes.
+    /// Reserved for single-read notifications from a future input backend. No current backend
+    /// uses this hook. Transport commands use a bounded wait for the corresponding audio block.
     pub fn sync_waker(&self) -> Arc<dyn Fn() + Send + Sync> {
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
         {
@@ -605,7 +611,11 @@ impl Player {
         self.begin_play(from, Cmd::PlayMtc(from));
     }
     pub fn end_mtc_chase(&self) {
-        let _ = self.tx.send(Cmd::EndChase);
+        let _ = self.tx.send(Cmd::EndChase(None));
+    }
+    /// End only the incoming roll whose stop the UI consumed.
+    pub fn end_observed_mtc_chase(&self, lock: u64) {
+        let _ = self.tx.send(Cmd::EndChase(Some(lock)));
     }
     fn begin_play(&self, from: Samples, cmd: Cmd) {
         self.shared.position.store(from, Ordering::Relaxed);

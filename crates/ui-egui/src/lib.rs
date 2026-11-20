@@ -163,7 +163,8 @@ pub struct UiState {
     pub midi_inputs_off: Vec<String>,
     pub clock_follow_input: Option<String>,
     pub clock_follow_stop_on_loss: bool,
-    pub clock_follow_input_offsets: std::collections::BTreeMap<String, i64>,
+    #[serde(rename = "clock_follow_input_offsets", skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    legacy_clock_follow_input_offsets: std::collections::BTreeMap<String, i64>,
     pub gen_mtc: bool,
     pub mtc_input_port: Option<String>,
     pub mtc_output_port: Option<String>,
@@ -239,7 +240,7 @@ impl Default for UiState {
             midi_inputs_off: Vec::new(),
             clock_follow_input: None,
             clock_follow_stop_on_loss: false,
-            clock_follow_input_offsets: Default::default(),
+            legacy_clock_follow_input_offsets: Default::default(),
             gen_mtc: false,
             mtc_input_port: None,
             mtc_output_port: None,
@@ -313,6 +314,7 @@ pub struct SoundApp {
     pub(crate) mtc_online: bool,
     mtc_chasing: bool,
     mtc_status: &'static str,
+    mtc_warning: Option<String>,
     applied_mtc_output: Option<(Option<(String, i64)>, bool)>,
     /// When the MIDI ports were last looked for (app uptime, seconds).
     midi_scan_at: f64,
@@ -441,6 +443,7 @@ pub struct SoundApp {
     last_rev: u64,
     sync_migration_pending: bool,
     applied_midi_sync: Option<midi_sync::MidiSync>,
+    last_midi_sync_error: Option<String>,
     fonts_ready: bool,
     fonts_installed: bool,
     /// Whether the system fonts are loaded next to the bundled ones; set before the first frame.

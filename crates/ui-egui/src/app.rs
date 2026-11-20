@@ -34,6 +34,11 @@ impl SoundApp {
     /// Build an app around an engine and optional player, initialising UI, recording, autosave, control and
     /// synthetic-input state.
     pub fn new(engine: Engine, player: Option<Player>, services: Services) -> Self {
+        let mut ui = UiState::default();
+        if engine.has_conflicting_timecode_offsets() {
+            ui.status =
+                crate::localization::text("The session has conflicting timecode offsets. Chase uses the External Timecode Offset.").to_owned();
+        }
         SoundApp {
             recent_seen: engine.path.clone(),
             recent_changed: false,
@@ -49,6 +54,7 @@ impl SoundApp {
             mtc_online: false,
             mtc_chasing: false,
             mtc_status: "Offline",
+            mtc_warning: None,
             applied_mtc_output: None,
             midi_scan_at: 0.0,
             midi_take: Vec::new(),
@@ -57,7 +63,7 @@ impl SoundApp {
             play_loop: None,
             lost_shown: 0,
             take_plan: None,
-            ui: UiState::default(),
+            ui,
             audio_health_report: None,
             services,
             native_menu_bar: false,
@@ -115,6 +121,7 @@ impl SoundApp {
             pending_open: None,
             last_rev: 0,
             applied_midi_sync: None,
+            last_midi_sync_error: None,
             sync_migration_pending: true,
             fonts_ready: false,
             fonts_installed: false,
@@ -375,7 +382,6 @@ impl SoundApp {
         }
         panels::floating(self, &ctx);
         windows::show(self, &ctx);
-        self.clock_follow_window(&ctx);
         preferences::show(self, &ctx);
         video_window::show(self, &ctx);
         ops_windows::show(self, &ctx);

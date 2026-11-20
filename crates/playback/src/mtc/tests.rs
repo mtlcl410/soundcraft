@@ -24,6 +24,9 @@ fn callback(s: Session, device_rate: f64) -> (AudioState, Sender<Cmd>, View) {
 }
 fn block(at: Instant, position: i64, frames: i64, playing: bool, pass: u64) -> Presentation {
     Presentation {
+        generation: 0,
+        sample_rate: soundcraft_time::SampleRate::HZ_48000,
+        system_delay_samples: 0,
         pass,
         origin: position,
         playing,
@@ -151,7 +154,7 @@ fn locked_device_tracks_and_stops_during_a_ui_stall() {
             last_sound = onset;
         }
         if started.is_some() {
-            let presented = view.lock().unwrap().read(clock, true, 0.).0.unwrap().sample_heard_at(clock).floor() as i64;
+            let presented = view.lock().unwrap().read(clock, true, 0).0.unwrap().sample_heard_at(clock).floor() as i64;
             if us == 800_000 {
                 assert_eq!(feed.mtc_diagnostics().hard_relocates, 0, "sub-second drift must not seek");
             }
@@ -201,7 +204,7 @@ fn external_lock_starts_and_runs_at_unity_without_repaints() {
     state.fill(&mut [0.; 480], 2);
     assert!(state.shared.playing.load(Ordering::Relaxed), "device callback starts on lock");
 
-    assert!((view.lock().unwrap().read(now + Duration::from_millis(30), true, 0.).0.unwrap().sample - 7440.).abs() < 1., "piece 15 at 125 ms");
+    assert!((view.lock().unwrap().read(now + Duration::from_millis(30), true, 0).0.unwrap().sample - 7440.).abs() < 1., "piece 15 at 125 ms");
     assert_eq!(state.shared.speed.load(Ordering::Relaxed), 1000);
 }
 
@@ -278,7 +281,7 @@ fn going_offline_before_ui_observes_roll_stops_chase_and_permits_record() {
     let actions = tx.clone();
     state.before_commands = Some(Box::new(move || {
         feed.set_mtc_source(None);
-        assert!(actions.send(Cmd::EndChase).is_ok());
+        assert!(actions.send(Cmd::EndChase(None)).is_ok());
     }));
     state.fill(&mut [0.; 480], 2);
     assert!(!state.shared.playing.load(Ordering::Acquire), "offline must halt an unobserved chase");
@@ -287,7 +290,81 @@ fn going_offline_before_ui_observes_roll_stops_chase_and_permits_record() {
     state.fill(&mut [0.; 480], 2);
     assert!(state.is_recording());
     tx.send(Cmd::Play { from: 4800, end: None, looped: None }).unwrap();
-    tx.send(Cmd::EndChase).unwrap();
+    tx.send(Cmd::EndChase(None)).unwrap();
     state.fill(&mut [0.; 480], 2);
     assert!(state.shared.playing.load(Ordering::Acquire), "offline must preserve local playback");
+}
+
+#[test]
+fn ui_stop_from_an_earlier_lock_cannot_restart_the_new_roll() {
+    let (mut state, tx, _) = callback(session(FrameRate::Fps25), 48000.);
+    let feed = Arc::new(crate::midi::MidiFeed::default());
+    feed.set_mtc_source(Some(0));
+    tx.send(Cmd::Midi(feed.clone())).unwrap();
+    let roll = |base: i64| {
+        for i in 0..16 {
+            feed.set_clock(base + i * 10000);
+            feed.receive(0, &quarters(i / 8 * 2, FrameRate::Fps25)[(i % 8) as usize]);
+        }
+    };
+    roll(0);
+    state.fill(&mut [0.; 480], 2);
+    feed.receive(0, &[0xfc]);
+    let (event, old_lock) = feed.take_mtc_with_lock().unwrap();
+    assert_eq!(event, crate::mtc_input::ChaseEvent::Stop);
+    state.fill(&mut [0.; 480], 2);
+    roll(300000);
+    state.fill(&mut [0.; 480], 2);
+    assert!(state.shared.playing.load(Ordering::Acquire));
+    let before = state.shared.position.load(Ordering::Acquire);
+    let actions = tx.clone();
+    state.before_commands = Some(Box::new(move || actions.send(Cmd::EndChase(Some(old_lock))).unwrap()));
+    state.fill(&mut [0.; 480], 2);
+    assert_eq!(state.shared.position.load(Ordering::Acquire), before + 240);
+}
+
+#[test]
+fn jam_sync_audio_free_runs_for_ten_seconds_and_seeks_only_on_the_second_new_group() {
+    let (mut audio, tx, _) = callback(session(FrameRate::Fps25), 48000.);
+    let feed = Arc::new(crate::midi::MidiFeed::default());
+    feed.set_mtc_options(FrameRate::Fps25, 8, true, 0);
+    feed.set_mtc_source(Some(0));
+    tx.send(Cmd::Midi(feed.clone())).unwrap();
+    audio.fill(&mut [0.; 480], 2);
+    assert!(!audio.shared.playing.load(Ordering::Acquire));
+    let mut first = 0;
+    let mut before_jump = 0;
+    for block in 0..=2094 {
+        let piece = block / 2;
+        feed.set_clock(block * 5000);
+        if block % 2 == 0 && !(16..1016).contains(&piece) {
+            let frame = piece / 8 * 2 + if piece >= 1032 { 25 } else { 0 };
+            feed.receive(0, &quarters(frame, FrameRate::Fps25)[(piece % 8) as usize]);
+        }
+        audio.fill(&mut [0.; 480], 2);
+        let cursor = audio.shared.position.load(Ordering::Acquire);
+        match block {
+            30 => {
+                assert!(audio.shared.playing.load(Ordering::Acquire));
+                first = cursor;
+            }
+            2030 => {
+                assert_eq!(cursor - first, 480_000);
+                assert_eq!(feed.mtc_diagnostics().freewheel_state, "jam sync running on internal clock");
+            }
+            2062 => {
+                assert_eq!(feed.mtc_diagnostics().hard_relocates, 0);
+                assert_eq!(feed.mtc_diagnostics().freewheel_state, "locked");
+            }
+            2078 => {
+                assert_eq!(feed.mtc_diagnostics().hard_relocates, 0);
+                before_jump = cursor;
+            }
+            2094 => {
+                assert_eq!(feed.mtc_diagnostics().hard_relocates, 1);
+                assert!(cursor - before_jump >= 48000);
+            }
+            _ => {}
+        }
+    }
 }

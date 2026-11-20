@@ -28,6 +28,7 @@ pub mod new_tracks;
 pub mod ops_windows;
 pub(super) mod recent;
 pub mod recovery;
+mod session_setup;
 pub mod spot;
 
 #[derive(Debug, Clone, Copy)]
@@ -96,8 +97,9 @@ pub enum Dialog {
     AutoRename { clips: Vec<ClipId>, names: StripNames },
     // `id: None` creates (Track › Group…); `id: Some` modifies that group (Groups list › Modify Group…).
     Group { id: Option<GroupId>, name: String, edit: bool, mix: bool, members: Vec<(u64, String, bool)> },
-    Synchronization,
-    Session { frame_rate: String, bit_depth: String, start: String, external: i64, freewheel: u8, jam_sync: bool },
+    Synchronization { scroll_to_clock: bool },
+    ExternalOffset { value: String },
+    Session(session_setup::SessionSetup),
     MidiBeatClock(midi_beat_clock::MidiBeatClock),
     // Clip › Loop…: `length` is typed in `format`, measured from `start` (the first selected clip's).
     // `filled` is the text the field opened with and the exact length it stands for.
@@ -155,9 +157,10 @@ impl Dialogs {
             Dialog::AutoRename { .. } => "auto_rename",
             Dialog::Group { id: None, .. } => "group",
             Dialog::Group { id: Some(_), .. } => "modify_group",
-            Dialog::Synchronization => "synchronization",
+            Dialog::Synchronization { .. } => "synchronization",
             Dialog::Counter { .. } => "counter",
-            Dialog::Session { .. } => "session",
+            Dialog::ExternalOffset { .. } => "external_offset",
+            Dialog::Session(_) => "session",
             Dialog::MidiBeatClock(_) => "midi_beat_clock",
             Dialog::Loop { .. } => "clip_looping",
             Dialog::ScoreSetup { .. } => "score_setup",
@@ -290,20 +293,9 @@ impl Dialogs {
                 let members = s.tracks.iter().map(|t| (t.id.0, t.name.clone(), s.edit.selected_tracks.contains(&t.id))).collect();
                 Dialog::Group { id: None, name: format!("Group {}", s.groups.len() + 1), edit: true, mix: true, members }
             }
-            "setup.peripherals" => Dialog::Synchronization,
-            "setup.session" => Dialog::Session {
-                frame_rate: e.session().frame_rate.label().into(),
-                bit_depth: match e.session().bit_depth {
-                    soundcraft_model::BitDepthSetting::Int16 => "16",
-                    soundcraft_model::BitDepthSetting::Float32 => "32f",
-                    _ => "24",
-                }
-                .into(),
-                start: e.session().format_position(0, soundcraft_time::TimeFormat::Timecode),
-                freewheel: e.mtc_freewheel_frames(),
-                jam_sync: e.mtc_jam_sync(),
-                external: e.session().edit.value("midi.mtc.external_offset_frames", 0.) as i64,
-            },
+            "setup.peripherals" => Dialog::Synchronization { scroll_to_clock: false },
+            "setup.external_timecode_offset" => Dialog::ExternalOffset { value: external_offset_label(e.session()) },
+            "setup.session" => Dialog::Session(session_setup::SessionSetup::new(e)),
             "file.score_setup" => {
                 let s = soundcraft_engine::score::ScoreSetup::from_session(e.session());
                 Dialog::ScoreSetup { title: s.title, composer: s.composer, bars_per_system: s.bars_per_system, show_track_names: s.show_track_names }
@@ -526,12 +518,25 @@ fn strip_silence_form(
     (action, rename_from)
 }
 
-pub(crate) fn port_offset_field(ui: &mut egui::Ui, offset: &mut i64, rate: soundcraft_time::SampleRate) -> bool {
+pub(crate) fn port_offset_field(ui: &mut egui::Ui, offset: &mut i64, rate: soundcraft_time::SampleRate, limited_lead_us: Option<u64>) -> bool {
     let limit = soundcraft_playback::max_sync_offset_samples(rate);
     let caption = ui.label(crate::localization::text("Offset (samples)"));
-    let changed = ui.add(egui::DragValue::new(offset).range(-limit..=limit)).labelled_by(caption.id).changed();
+    let changed = ui.add(egui::DragValue::new(offset).range(-limit..=limit).clamp_existing_to_range(false)).labelled_by(caption.id).changed();
     ui.label(format!("{:.2} ms", *offset as f64 * 1000. / rate.as_f64()));
+    if offset.unsigned_abs() > limit as u64 {
+        ui.label(crate::localized_format!(
+            "Saved value exceeds ±250 ms at this rate; playback uses {effective} samples.",
+            effective = (*offset).clamp(-limit, limit)
+        ));
+    }
+    if let Some(lead) = limited_lead_us {
+        ui.label(crate::localized_format!("Limited by the audio output lead ({lead} ms)", lead = lead as f64 / 1000.));
+    }
     changed
+}
+
+fn external_offset_label(session: &soundcraft_model::Session) -> String {
+    soundcraft_engine::cmd::signed_offset(session.edit.value("sync.external_offset", 0.) as i64, session.frame_rate, session.sample_rate)
 }
 
 /// Show the open dialog, if any.
@@ -579,8 +584,9 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
         Dialog::StripSilenceRename { .. } | Dialog::AutoRename { .. } => "Rename Selected Clips",
         Dialog::Group { id: None, .. } => "Create Group",
         Dialog::Group { id: Some(_), .. } => "Modify Group",
-        Dialog::Synchronization => "Synchronization",
-        Dialog::Session { .. } => "Session Setup",
+        Dialog::Synchronization { .. } => "Synchronization",
+        Dialog::ExternalOffset { .. } => "External Timecode Offset",
+        Dialog::Session(_) => "Session Setup",
         Dialog::MidiBeatClock(_) => "MIDI Beat Clock",
         Dialog::Loop { .. } => "Clip Looping",
         Dialog::ScoreSetup { .. } => "Score Setup",
@@ -714,8 +720,8 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
                 Dialog::Spot(d) => {
                     crate::spot::fields(ui, app.engine.session(), d);
                     if buttons(ui, "OK", enter) {
-                        keep = false;
-                        action = d.command(app.engine.session());
+                        if let Some(message)=d.timecode_error(app.engine.session()){ app.ui.status=message; }
+                        else { keep = false; action = d.command(app.engine.session()); }
                     }
                 }
                 Dialog::Fades { shape } => {
@@ -786,36 +792,27 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
                     }
                 }
                 Dialog::Counter { field, value } => keep = field.edit(app, ui, value, first_frame, enter),
-                Dialog::Synchronization => {
-                    app.mtc_input_settings(ui);
-                    app.mtc_output_settings(ui);
+                Dialog::Synchronization { scroll_to_clock } => {
+                    egui::ScrollArea::vertical().max_height((ui.ctx().content_rect().height() - 160.).max(120.)).show(ui, |ui| {
+                        app.mtc_input_settings(ui);
+                        app.mtc_output_settings(ui);
+                        ui.separator();
+                        let section = ui.heading(crate::localization::text("External MIDI clock"));
+                        if std::mem::take(scroll_to_clock) { section.scroll_to_me(Some(egui::Align::TOP)); }
+                        app.clock_follow_settings(ui);
+                    });
                 }
-                Dialog::Session { frame_rate, bit_depth,start,external,freewheel,jam_sync } => {
-                    ui.horizontal(|ui|{
-                        let caption=ui.label(crate::localization::text("Freewheel (frames)"));
-                        ui.add(egui::DragValue::new(freewheel).range(4..=40)).labelled_by(caption.id);
-                    });
-                    crate::widgets::checkbox(ui,jam_sync,crate::localization::text("Jam Sync"));
-                    ui.horizontal(|ui|{
-                        let caption=ui.label(crate::localization::text("Session Start"));
-                        ui.text_edit_singleline(start).labelled_by(caption.id);
-                    });
-                    ui.horizontal(|ui|{
-                        let caption=ui.label(crate::localization::text("External timecode offset (frames)"));
-                        ui.add(egui::DragValue::new(external).range(-5_184_000..=5_184_000)).labelled_by(caption.id);
-                    });
-                    craft_ui::ComboBox::from_label(crate::localization::text("Timecode Rate")).selected_text(crate::localization::text(frame_rate.as_str())).show_ui(ui, |ui| {
-                        for r in soundcraft_time::FrameRate::ALL {
-                            ui.selectable_value(frame_rate, r.label().to_string(), crate::localization::text(r.label()));
-                        }
-                    });
-                    craft_ui::ComboBox::from_label(crate::localization::text("Bit Depth")).selected_text(crate::localization::text(bit_depth.as_str())).show_ui(ui, |ui| {
-                        for b in ["16", "24", "32f"] {
-                            ui.selectable_value(bit_depth, b.to_string(), crate::localization::text(b));
-                        }
-                    });
-                    if buttons(ui, "OK", enter) {
-                        action = Some(("setup.session".into(), json!({"frame_rate": frame_rate, "bit_depth": bit_depth,"start_timecode":start,"external_offset_frames":external,"freewheel_frames":freewheel,"jam_sync":jam_sync})));
+                Dialog::ExternalOffset { value } => {
+                    let caption=ui.label(crate::localization::text("External Timecode Offset"));
+                    ui.text_edit_singleline(value).labelled_by(caption.id);
+                    if buttons(ui,"OK",enter) {
+                        if *value == external_offset_label(app.engine.session()) { keep = false; }
+                        else { action=Some(("setup.external_timecode_offset".into(),json!({"timecode":value}))); }
+                    }
+                }
+                Dialog::Session(setup) => {
+                    if let Some(params) = setup.show(app, ui, enter) {
+                        action = Some(("setup.session".into(), params));
                     }
                 }
                 Dialog::Loop { by, count, length, format, start, filled } => {
@@ -1057,6 +1054,58 @@ mod tests {
     use super::*;
     use crate::dialogs::new_tracks::set_new_track_kind;
 
+    #[test]
+    fn capturing_received_timecode_changes_only_the_pending_session_start() {
+        use egui::accesskit::Role;
+        use egui_kittest::{
+            Harness,
+            kittest::{NodeT, Queryable},
+        };
+        use soundcraft_playback::midi::MidiInputs;
+        for use_keyboard in [false, true] {
+            let mut app = SoundApp::new(Engine::default(), None, crate::Services::default());
+            app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["Clock".into()]));
+            app.run("setup.mtc", json!({"input":"Clock","online":true})).unwrap();
+            app.service_mtc_chase();
+            let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
+            if !use_keyboard {
+                app.run("track.new", json!({"name":"Track before capture"})).unwrap();
+            }
+            assert!(app.dialogs.open_for_command(&app.engine, "setup.session"));
+            let mut h = Harness::builder().with_size(egui::vec2(1400., 850.)).build_ui_state(
+                |ui, app: &mut SoundApp| {
+                    app.logic(ui.ctx());
+                    app.ui(ui);
+                },
+                app,
+            );
+            h.run_steps(3);
+            assert!(h.get_by_label("Use received position").accesskit_node().is_disabled());
+            let port = feed.ports().assign("Clock");
+            feed.receive(port, &[0xf0, 0x7f, 127, 1, 1, 0x60, 0, 5, 0, 0xf7]);
+            h.run_steps(2);
+            if use_keyboard {
+                h.get_by_role_and_label(Role::TextInput, "Session Start").click();
+                h.run_steps(2);
+                h.key_press(egui::Key::Equals);
+            } else {
+                h.get_by_label("Use received position").click();
+            }
+            h.run_steps(2);
+            let Some(Dialog::Session(setup)) = &h.state().dialogs.open else { panic!("Session Setup closed") };
+            assert_eq!(setup.start, "00:00:05:00");
+            assert_eq!(h.state().engine.session().timecode_start, 172_800_000);
+            h.get_by_label(if use_keyboard { "Cancel" } else { "OK" }).click();
+            h.run_steps(3);
+            if !use_keyboard {
+                assert_eq!(h.state().engine.session().timecode_start, 172_800_000);
+                h.get_by_label("Keep clips' distance from the session start").click();
+                h.run_steps(3);
+            }
+            assert_eq!(h.state().engine.session().timecode_start, if use_keyboard { 172_800_000 } else { 240000 });
+        }
+    }
+
     /// Opens and settles the dialog for a chosen desktop operating system.
     fn tracks_dialog(os: egui::os::OperatingSystem) -> (egui::Context, SoundApp) {
         let ctx = egui::Context::default();
@@ -1084,6 +1133,101 @@ mod tests {
     /// Constructs one non-repeating key-press event for dialog tests.
     fn key(key: egui::Key, modifiers: egui::Modifiers) -> egui::Event {
         egui::Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers }
+    }
+
+    fn visible_labels(mut output: egui::FullOutput, screen: egui::Rect) -> std::collections::BTreeMap<String, egui::Pos2> {
+        output.textures_delta.clear();
+        output
+            .shapes
+            .into_iter()
+            .filter_map(|shape| {
+                if let egui::Shape::Text(t) = shape.shape {
+                    let center = t.galley.rect.translate(t.pos.to_vec2()).center();
+                    if screen.contains(center) && shape.clip_rect.contains(center) {
+                        return Some((t.galley.text().to_owned(), center));
+                    }
+                }
+                None
+            })
+            .collect()
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    #[test]
+    fn many_clock_destinations_scroll_without_hiding_ok() {
+        let mut app = SoundApp::new(Engine::default(), None, crate::Services::default());
+        let names: Vec<_> = (0..64).map(|n| format!("Port {n:02}")).collect();
+        let mut form = midi_beat_clock::MidiBeatClock { settings: Default::default(), outputs: Ok(names) };
+        let ctx = egui::Context::default();
+        crate::fonts::install(&ctx, true);
+        let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, vec2(1366., 768.));
+        let mut draw = |events| {
+            let output = ctx.run_ui(egui::RawInput { screen_rect: Some(screen), events, ..Default::default() }, |ui| {
+                form.show(ui, false, &mut app);
+            });
+            visible_labels(output, screen)
+        };
+        draw(vec![]);
+        let rows = draw(vec![]);
+        assert!(rows.contains_key("OK"), "OK must stay within the viewport");
+        let pointer = rows["Port 00"];
+        assert!(!rows.contains_key("Port 63"));
+        for _ in 0..60 {
+            let rows = draw(vec![
+                egui::Event::PointerMoved(pointer),
+                egui::Event::MouseWheel {
+                    unit: egui::MouseWheelUnit::Point,
+                    delta: vec2(0., -100.),
+                    phase: egui::TouchPhase::Move,
+                    source: egui::MouseWheelSource::Wheel,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ]);
+            assert!(rows.contains_key("OK"));
+            if rows.contains_key("Port 63") {
+                return;
+            }
+        }
+        panic!("last MIDI destination was unreachable");
+    }
+
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    #[test]
+    fn saved_calibration_survives_the_dialog_at_a_lower_session_rate() {
+        let mut app = SoundApp::new(Engine::default(), None, crate::Services::default());
+        app.ui
+            .midi_sync
+            .ports
+            .insert("DIN".into(), crate::midi_sync::MidiSyncPort { enabled: true, out_offset_samples: 24_000, ..Default::default() });
+        let ctx = egui::Context::default();
+        crate::fonts::install(&ctx, true);
+        crate::menus::invoke_menu(&mut app, "setup.midi_beat_clock", "Setup > MIDI > MIDI Beat Clock...");
+        dialog_frame(&ctx, &mut app, vec![]);
+        dialog_frame(&ctx, &mut app, vec![key(egui::Key::Enter, egui::Modifiers::NONE)]);
+        assert!(app.dialogs.open.is_none());
+        assert_eq!(app.ui.midi_sync.ports["DIN"].out_offset_samples, 24_000);
+
+        // An explicit edit still goes through the control's current rate-dependent range.
+        let mut form = midi_beat_clock::MidiBeatClock { settings: app.ui.midi_sync.clone(), outputs: Ok(vec!["DIN".into()]) };
+        let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, vec2(1366., 768.));
+        let mut draw = |events| {
+            let output = ctx.run_ui(egui::RawInput { screen_rect: Some(screen), events, ..Default::default() }, |ui| {
+                form.show(ui, false, &mut app);
+            });
+            visible_labels(output, screen)
+        };
+        draw(vec![]);
+        let position = draw(vec![])["24000"];
+        for pressed in [true, false] {
+            draw(vec![
+                egui::Event::PointerMoved(position),
+                egui::Event::PointerButton { pos: position, button: egui::PointerButton::Primary, pressed, modifiers: egui::Modifiers::NONE },
+            ]);
+        }
+        draw(vec![]);
+        draw(vec![egui::Event::Text("20000".into())]);
+        draw(vec![key(egui::Key::Enter, egui::Modifiers::NONE)]);
+        assert_eq!(form.settings.ports["DIN"].out_offset_samples, 12_000);
     }
 
     #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
@@ -1131,21 +1275,21 @@ mod tests {
         let Some(Dialog::MidiBeatClock(form)) = &mut app.dialogs.open else { panic!("missing clock dialog") };
         form.outputs = Ok(vec!["Clock A".into(), port.clone()]);
         form.settings.enabled = true;
-        form.settings.ports.insert(port.clone(), crate::midi_sync::MidiSyncPort { enabled: true, offset_samples: -240 });
+        form.settings.ports.insert(port.clone(), crate::midi_sync::MidiSyncPort { enabled: true, out_offset_samples: -240, ..Default::default() });
         dialog_frame(&ctx, &mut app, vec![]);
         enter(&mut app);
         assert!(app.dialogs.open.is_none());
         assert_eq!(app.engine.revision, revision);
-        assert_eq!(app.ui.midi_sync.ports[&port].offset_samples, -240);
+        assert_eq!(app.ui.midi_sync.ports[&port].out_offset_samples, -240);
         dialog_frame(&ctx, &mut app, vec![]);
         open(&mut app);
         let Some(Dialog::MidiBeatClock(form)) = &mut app.dialogs.open else { panic!("missing clock dialog") };
         form.outputs = Ok(vec!["Clock A".into()]);
-        form.settings.ports.get_mut(&port).unwrap().offset_samples = 64;
+        form.settings.ports.get_mut(&port).unwrap().out_offset_samples = 64;
         dialog_frame(&ctx, &mut app, vec![]);
         dialog_frame(&ctx, &mut app, vec![key(egui::Key::Escape, egui::Modifiers::NONE)]);
         assert!(app.dialogs.open.is_none());
-        assert_eq!(app.ui.midi_sync.ports[&port].offset_samples, -240);
+        assert_eq!(app.ui.midi_sync.ports[&port].out_offset_samples, -240);
     }
 
     /// Returns every editable value from the active New Tracks row.
