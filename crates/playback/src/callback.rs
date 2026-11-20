@@ -290,7 +290,11 @@ impl AudioState {
                 Cmd::Play { from, end, looped } => self.begin_play(from, end, looped, false),
                 Cmd::PlayMtc(from) => self.begin_play(from, None, None, true),
                 Cmd::Stop => self.halt(),
-                Cmd::EndChase => self.end_chase(),
+                Cmd::EndChase => {
+                    if self.chasing {
+                        self.halt();
+                    }
+                }
                 Cmd::Locate(at) => {
                     self.pos = at;
                     #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
@@ -379,10 +383,16 @@ impl AudioState {
                 return;
             }
             Tracking::Located(p) => {
+                let at = p.session_sample(rate, sr, start, offset);
+                if at < 0 {
+                    if self.chasing {
+                        self.halt();
+                    }
+                    return;
+                }
                 if self.playing {
                     self.halt();
                 }
-                let at = p.session_sample(rate, sr, start, offset).max(0);
                 #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
                 if at != self.pos
                     && let Some(clock) = &mut self.clock
@@ -398,8 +408,8 @@ impl AudioState {
         if self.chase_group == Some(stamp) {
             return;
         }
-        let live = p.session_sample(rate, sr, start, offset).saturating_add(sr.samples(now.saturating_sub(stamp) as f64 / 1e6));
-        if live < 0 {
+        let position = p.session_sample(rate, sr, start, offset);
+        if position < 0 {
             if self.chasing {
                 self.halt();
             }
@@ -409,11 +419,12 @@ impl AudioState {
         let delay = self.device_timing.map_or(0., |t| t.heard_instant(self.device_rate, 0).saturating_duration_since(t.callback).as_secs_f64());
         #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
         let delay = 0.;
+        let live = position.saturating_add(sr.samples(now.saturating_sub(stamp) as f64 / 1e6));
         let desired = live.saturating_add(sr.samples(delay));
         if !self.chasing || !self.playing {
             // A corroborated stopped locate protects its first attack for one start.
             // Unanchored locks start at the source time the new audio will be heard.
-            let from = anchor.map_or(desired, |p| p.session_sample(rate, sr, start, offset).max(0));
+            let from = anchor.map(|p| p.session_sample(rate, sr, start, offset)).filter(|at| *at >= 0).unwrap_or(desired);
             self.begin_play(from, None, None, true);
             self.shared.speed.store(1000, Ordering::Relaxed);
             self.shared.playing.store(true, Ordering::Release);
@@ -1097,6 +1108,9 @@ pub(crate) struct Side {
     /// is opened.
     pub(crate) refused: HashSet<(TrackId, usize)>,
     pub(crate) grid_base: Option<Arc<Session>>,
+    // Device and output worker may retain snapshots independently. Reuse only exclusively
+    // owned entries. When both are occupied, the host coalesces edits until one returns.
+    follow_pool: [Option<Arc<Session>>; 2],
     pub(crate) grid_return: super::GridReturn,
     garbage: Receiver<Vec<Box<dyn Plugin>>>,
     old_sessions: Option<Receiver<Arc<Session>>>,
@@ -1108,6 +1122,7 @@ impl Side {
     pub(crate) fn new(rate: f32, garbage: Receiver<Vec<Box<dyn Plugin>>>) -> Side {
         Side {
             grid_base: None,
+            follow_pool: Default::default(),
             grid_return: Default::default(),
             shadow: HashMap::new(),
             rate,
@@ -1118,6 +1133,23 @@ impl Side {
             old_sessions: None,
             tracks: HashSet::new(),
         }
+    }
+
+    pub(crate) fn set_follow_base(&mut self, doc: Arc<Session>) {
+        self.grid_base = Some(doc);
+        self.follow_pool = Default::default();
+    }
+
+    pub(crate) fn follow_snapshot(&mut self, tempo: &soundcraft_time::TempoMap) -> Option<Arc<Session>> {
+        let base = self.grid_base.as_ref()?;
+        for slot in &mut self.follow_pool {
+            let snapshot = slot.get_or_insert_with(|| Arc::new((**base).clone()));
+            if let Some(doc) = Arc::get_mut(snapshot) {
+                doc.tempo.clone_from(tempo);
+                return Some(snapshot.clone());
+            }
+        }
+        None
     }
 
     /// Note `s`'s tracks; the ones the previous session had and `s` doesn't.

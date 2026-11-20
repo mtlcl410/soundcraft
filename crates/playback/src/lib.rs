@@ -440,7 +440,7 @@ impl Player {
         self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, true);
         let (instances, gone) = {
             let mut side = self.side();
-            side.grid_base = Some(s.clone());
+            side.set_follow_base(s.clone());
             (side.prepare(&s), side.gone_tracks(&s))
         };
         let _ = self.tx.send(Cmd::Session(s, instances));
@@ -457,8 +457,10 @@ impl Player {
             return false;
         }
         side.collect_garbage();
-        let Some(mut s) = side.grid_base.clone() else { return true };
-        Arc::make_mut(&mut s).tempo.clone_from(tempo);
+        if side.grid_base.is_none() {
+            return true;
+        }
+        let Some(s) = side.follow_snapshot(tempo) else { return false };
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
         self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, false);
         let _ = self.tx.send(Cmd::FollowGrid(s, side.grid_return.clone()));
@@ -621,7 +623,7 @@ impl Player {
     /// Play MIDI devices through record-enabled and input-monitored MIDI and instrument tracks.
     pub fn set_midi(&self, feed: Arc<midi::MidiFeed>) {
         #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
-        feed.set_sync_waker(self.sync_waker());
+        feed.set_sync_waker(self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).transport_waker());
         let _ = self.tx.send(Cmd::Midi(feed));
     }
 

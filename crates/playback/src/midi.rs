@@ -371,9 +371,9 @@ impl MidiFeed {
         }
         let mut input = self.clock_follow.lock().unwrap_or_else(PoisonError::into_inner);
         if input.source == Some(port) && open.is_none_or(|g| g.load(Ordering::Acquire)) {
-            input.receive(bytes, at);
+            let action = input.receive(bytes, at);
             drop(input);
-            if bytes.iter().any(|b| matches!(b, 0xf2 | 0xf8 | 0xfa..=0xfc)) {
+            if action {
                 self.wake_mtc_host();
             }
         }
@@ -382,11 +382,12 @@ impl MidiFeed {
     fn receive_from(&self, open: Option<&AtomicBool>, port: u8, bytes: &[u8], at_us: i64) {
         self.read_clock(open, port, bytes, at_us);
         if matches!(bytes.first(), Some(0xf0 | 0xf1 | 0xfc)) {
+            let arrival = self.now();
             let mut reader = self.mtc.lock().unwrap_or_else(PoisonError::into_inner);
             if reader.source == Some(port) && open.is_none_or(|gate| gate.load(Ordering::Acquire)) {
-                reader.read(bytes, at_us);
+                let changed = reader.receive(bytes, at_us, arrival);
                 drop(reader);
-                if !matches!(bytes,[0xf1,n] if n>>4!=7) {
+                if changed {
                     self.wake_mtc_host();
                 }
             }
