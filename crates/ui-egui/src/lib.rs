@@ -161,6 +161,14 @@ pub struct UiState {
     pub ui_scale: f32,
     /// MIDI input ports switched off in Setup, by name (all others are used).
     pub midi_inputs_off: Vec<String>,
+    pub clock_follow_input: Option<String>,
+    pub clock_follow_stop_on_loss: bool,
+    pub clock_follow_input_offsets: std::collections::BTreeMap<String, i64>,
+    pub gen_mtc: bool,
+    pub mtc_freewheel_frames: u8,
+    pub mtc_jam_sync: bool,
+    pub mtc_input_port: Option<String>,
+    pub mtc_output_port: Option<String>,
 }
 
 impl Default for UiState {
@@ -231,6 +239,14 @@ impl Default for UiState {
             window_maximized: false,
             ui_scale: 1.0,
             midi_inputs_off: Vec::new(),
+            clock_follow_input: None,
+            clock_follow_stop_on_loss: false,
+            clock_follow_input_offsets: Default::default(),
+            gen_mtc: false,
+            mtc_freewheel_frames: 8,
+            mtc_jam_sync: false,
+            mtc_input_port: None,
+            mtc_output_port: None,
         }
     }
 }
@@ -297,6 +313,11 @@ pub struct SoundApp {
     recorder_failed: bool,
     /// MIDI device input, opened on the first frame of an app that has an audio engine.
     pub midi_inputs: Option<soundcraft_playback::midi::MidiInputs>,
+    clock_follow: app::clock_follow::Host,
+    pub(crate) mtc_online: bool,
+    mtc_chasing: bool,
+    mtc_status: &'static str,
+    applied_mtc_output: Option<(Option<(String, i64)>, bool)>,
     /// When the MIDI ports were last looked for (app uptime, seconds).
     midi_scan_at: f64,
     /// MIDI played during the current record pass.

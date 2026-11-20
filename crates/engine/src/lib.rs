@@ -188,6 +188,8 @@ pub struct Engine {
     pub clipboard: Clipboard,
     pub transport_requests: Vec<TransportRequest>,
     pub transport: TransportStatus,
+    /// Transient beat grid provided by an external MIDI clock; excluded from save, undo and export.
+    pub playback_tempo: Option<soundcraft_time::TempoMap>,
     /// Command journal (id, params) for macro recording / agents. Ring buffer: capped at
     /// [`MAX_JOURNAL_ENTRIES`] entries of up to [`MAX_JOURNAL_ENTRY_BYTES`] params each.
     pub journal: std::collections::VecDeque<(String, Value)>,
@@ -213,9 +215,17 @@ pub struct Engine {
     imports: Vec<io::DecodedImport>,
 }
 
+/// Create a fresh project at 01:00:00:00. Loaded session documents retain their own start.
+pub(crate) fn new_session(name: impl Into<String>, sr: soundcraft_time::SampleRate) -> Session {
+    let mut session = Session::new(name, sr);
+    let hour = soundcraft_time::Timecode { negative: false, hours: 1, minutes: 0, seconds: 0, frames: 0 };
+    session.timecode_start = hour.to_samples(session.frame_rate, sr);
+    session
+}
+
 impl Default for Engine {
     fn default() -> Self {
-        Engine::new(Session::default())
+        Engine::new(new_session("Untitled", soundcraft_time::SampleRate::HZ_48000))
     }
 }
 
@@ -232,6 +242,7 @@ impl Engine {
             clipboard: Clipboard::default(),
             transport_requests: Vec::new(),
             transport: TransportStatus::default(),
+            playback_tempo: None,
             journal: std::collections::VecDeque::new(),
             path: None,
             revision: 1,
@@ -272,6 +283,25 @@ impl Engine {
         &self.doc
     }
 
+    pub fn transport_tempo(&self) -> &soundcraft_time::TempoMap {
+        self.playback_tempo.as_ref().unwrap_or(&self.doc.tempo)
+    }
+
+    /// Display the live beat grid while keeping editing and saved tempo events in score time.
+    pub fn format_transport_position(&self, at: Samples, fmt: soundcraft_time::TimeFormat) -> String {
+        let s = self.session();
+        soundcraft_time::format_position(at, fmt, s.sample_rate, self.transport_tempo(), s.frame_rate, s.timecode_start, s.feet_frames_start())
+    }
+
+    /// The normal document is shared. Only external-clock playback needs a private tempo map.
+    pub fn playback_session(&self) -> Arc<Session> {
+        let mut doc = self.session_arc();
+        if let Some(tempo) = &self.playback_tempo {
+            Arc::make_mut(&mut doc).tempo.clone_from(tempo);
+        }
+        doc
+    }
+
     pub fn session_arc(&self) -> Arc<Session> {
         Arc::clone(&self.doc)
     }
@@ -298,6 +328,7 @@ impl Engine {
 
     /// Replace the whole document (open / new); clears history.
     pub fn replace_session(&mut self, s: Session) {
+        self.playback_tempo = None;
         self.transport = TransportStatus { position: s.edit.selection.start.max(0), ..TransportStatus::default() };
         self.transport_requests.clear();
         self.transport_requests.push(TransportRequest::ResetSession);

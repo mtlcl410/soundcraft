@@ -8,11 +8,14 @@ use super::{
 };
 
 mod audio;
+pub(crate) mod clock_follow;
 mod commands;
 mod control;
 mod files;
 mod input;
 mod midi;
+mod mtc;
+mod mtc_output;
 mod playback;
 mod plugins;
 
@@ -42,6 +45,11 @@ impl SoundApp {
             punch: None,
             recorder_failed: false,
             midi_inputs: None,
+            clock_follow: Default::default(),
+            mtc_online: false,
+            mtc_chasing: false,
+            mtc_status: "Offline",
+            applied_mtc_output: None,
             midi_scan_at: 0.0,
             midi_take: Vec::new(),
             midi_take_lost: 0,
@@ -209,11 +217,14 @@ impl SoundApp {
         self.watch_output();
         self.watch_input();
         // Stop the old playback before sending a replacement session to the audio thread.
+        self.service_clock_follow();
+        self.service_mtc_chase();
         self.handle_transport(dt);
+        self.service_mtc_output();
         if self.engine.revision != self.last_rev {
             self.last_rev = self.engine.revision;
             if let Some(p) = &self.player {
-                p.update_session(self.engine.session_arc());
+                p.update_session(self.engine.playback_session());
             }
         }
         self.open_inserted();
@@ -221,6 +232,20 @@ impl SoundApp {
         self.write_automation();
         self.autosave();
         self.service_midi(self.uptime);
+        if (self.mtc_online || self.clock_follow.enabled)
+            && let Some(inputs) = &self.midi_inputs
+        {
+            inputs.feed().set_mtc_wakeup(|| {
+                let ctx = ctx.clone();
+                Box::new(move || ctx.request_repaint())
+            });
+            if self.clock_follow.enabled && self.clock_follow.snapshot.state == soundcraft_playback::clock_follow::State::Locked {
+                ctx.request_repaint_after(std::time::Duration::from_millis(50));
+            }
+            if self.mtc_chasing {
+                ctx.request_repaint_after(std::time::Duration::from_millis(300));
+            }
+        }
         if self.recorder.is_none() && !self.recorder_failed && audio::wants_audio_input(self.engine.session()) {
             self.ensure_input();
         }
@@ -350,6 +375,7 @@ impl SoundApp {
         }
         panels::floating(self, &ctx);
         windows::show(self, &ctx);
+        self.clock_follow_window(&ctx);
         preferences::show(self, &ctx);
         video_window::show(self, &ctx);
         ops_windows::show(self, &ctx);

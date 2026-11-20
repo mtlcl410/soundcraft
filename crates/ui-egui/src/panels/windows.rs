@@ -701,6 +701,9 @@ pub fn playback_engine(app: &mut SoundApp, ctx: &egui::Context) {
         }
         ui.separator();
         midi_inputs(app, ui);
+        if ui.button(crate::localization::text("Synchronization")).clicked() {
+            app.dialogs.open_for_command(&app.engine, "setup.peripherals");
+        }
     });
     if refresh {
         audio_systems(ctx, true);

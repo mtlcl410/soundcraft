@@ -30,6 +30,7 @@ pub fn loops(range: Range) -> bool {
 
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 mod beat_clock;
+pub mod clock_follow;
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 pub mod sync_clock;
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
@@ -57,7 +58,10 @@ pub fn midi_sync_outputs() -> Result<Vec<String>, String> {
 }
 pub mod devices;
 pub mod midi;
+pub mod mtc;
+pub mod mtc_input;
 pub mod record;
+pub mod sync_input;
 
 pub use devices::AudioConfig;
 
@@ -151,6 +155,8 @@ enum Cmd {
     Clock(Option<sync_clock::Publisher>),
     /// A new snapshot plus the third-party instances it needs (created on the UI thread).
     Session(Arc<Session>, Vec<PreparedInstance>),
+    /// Host-built copy of the last published snapshot with only its live tempo changed.
+    FollowGrid(Arc<Session>, Arc<AtomicBool>),
     /// Where the callback sends the snapshots it replaces (freeing one takes thousands of frees).
     OldSessions(SyncSender<Arc<Session>>),
     Input(Arc<record::InputRing>),
@@ -163,6 +169,8 @@ enum Cmd {
         end: Option<Samples>,
         looped: Option<Range>,
     },
+    PlayMtc(Samples),
+    EndChase,
     Stop,
     Locate(Samples),
     /// Tracks the latest session no longer has (worked out on the UI thread): their meters go.
@@ -426,15 +434,35 @@ impl Player {
     /// prepared) instances of any third-party plugin it newly needs. Call on the UI thread.
     pub fn update_session(&self, s: Arc<Session>) {
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx);
+        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, true);
         let (instances, gone) = {
             let mut side = self.side();
+            side.grid_base = Some(s.clone());
             (side.prepare(&s), side.gone_tracks(&s))
         };
         let _ = self.tx.send(Cmd::Session(s, instances));
         if !gone.is_empty() {
             let _ = self.tx.send(Cmd::Forget(gone));
         }
+    }
+
+    /// Publish a tempo-only revision without rebuilding the mixer. Leave at most one grid
+    /// update in the device queue; a busy host retries with the newest map.
+    pub fn update_follow_grid(&self, tempo: &soundcraft_time::TempoMap) -> bool {
+        let mut side = self.side();
+        if side.grid_busy.load(Ordering::Acquire) {
+            return false;
+        }
+        side.collect_garbage();
+        let Some(mut s) = side.grid_base.clone() else { return true };
+        Arc::make_mut(&mut s).tempo.clone_from(tempo);
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, false);
+        side.grid_busy.store(true, Ordering::Release);
+        if self.tx.send(Cmd::FollowGrid(s, side.grid_busy.clone())).is_err() {
+            side.grid_busy.store(false, Ordering::Release);
+        }
+        true
     }
 
     /// Reads the state of every live third-party plugin, for saving the session.
@@ -569,9 +597,18 @@ impl Player {
 
     /// Start playback at `from`, stopping at `end`, or looping `looped`.
     pub fn play(&self, from: Samples, end: Option<Samples>, looped: Option<Range>) {
+        self.begin_play(from, Cmd::Play { from, end, looped });
+    }
+    pub fn play_chasing_mtc(&self, from: Samples) {
+        self.begin_play(from, Cmd::PlayMtc(from));
+    }
+    pub fn end_mtc_chase(&self) {
+        let _ = self.tx.send(Cmd::EndChase);
+    }
+    fn begin_play(&self, from: Samples, cmd: Cmd) {
         self.shared.position.store(from, Ordering::Relaxed);
         self.shared.playing.store(true, Ordering::Release);
-        let _ = self.tx.send(Cmd::Play { from, end, looped });
+        let _ = self.tx.send(cmd);
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
         self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).wake();
     }
@@ -583,6 +620,8 @@ impl Player {
 
     /// Play MIDI devices through record-enabled and input-monitored MIDI and instrument tracks.
     pub fn set_midi(&self, feed: Arc<midi::MidiFeed>) {
+        #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
+        feed.set_sync_waker(self.sync_waker());
         let _ = self.tx.send(Cmd::Midi(feed));
     }
 

@@ -77,6 +77,9 @@ pub(crate) struct AudioState {
     pub(crate) mix: MixEngine,
     pos: Samples,
     playing: bool,
+    chasing: bool,
+    drift_since: Option<i64>,
+    chase_group: Option<i64>,
     end: Option<Samples>,
     looped: Option<Range>,
     /// Rendered frames waiting to be consumed (planar, main channels) and the fractional read index.
@@ -174,6 +177,9 @@ impl AudioState {
             session,
             pos: 0,
             playing: false,
+            chasing: false,
+            drift_since: None,
+            chase_group: None,
             end: None,
             #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
             clock: None,
@@ -233,6 +239,9 @@ impl AudioState {
                     self.forget_meters();
                 }
                 Cmd::Recording(r, pass) => {
+                    if r && (self.chasing || self.midi.as_ref().is_some_and(|f| f.mtc_online())) {
+                        continue;
+                    }
                     self.recording = r;
                     self.midi_wraps = 0;
                     self.midi_stopped = None;
@@ -271,39 +280,30 @@ impl AudioState {
                 }
                 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
                 Cmd::Clock(clock) => self.clock = clock,
-                Cmd::OldSessions(tx) => self.old_sessions = Some(tx),
-                Cmd::Play { from, end, looped } => {
-                    self.pos = from;
-                    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-                    if let Some(clock) = &mut self.clock {
-                        clock.locate(from);
+                Cmd::FollowGrid(s, busy) => {
+                    let old = std::mem::replace(&mut self.session, s);
+                    if let Some(tx) = &self.old_sessions {
+                        let _ = tx.try_send(old);
                     }
-                    self.end = end;
-                    self.looped = looped.filter(|r| super::loops(*r));
-                    self.midi_wraps = 0;
-                    self.midi_stopped = None;
-                    self.playing = true;
-                    self.pending_len = 0;
-                    self.read = 0.0;
-                    self.mix.reset();
+                    busy.store(false, Ordering::Release);
                 }
-                Cmd::Stop => {
-                    self.midi_stopped = (self.playing && self.recording).then(|| self.midi.as_ref().map_or(i64::MAX, |f| f.clock()));
-                    self.playing = false;
-                    self.end = None;
-                    self.looped = None;
-                    self.mix.reset();
-                }
+                Cmd::OldSessions(tx) => self.old_sessions = Some(tx),
+                Cmd::Play { from, end, looped } => self.begin_play(from, end, looped, false),
+                Cmd::PlayMtc(from) => self.begin_play(from, None, None, true),
+                Cmd::Stop => self.halt(),
+                Cmd::EndChase => self.end_chase(),
                 Cmd::Locate(at) => {
-                    self.midi_stopped = None;
                     self.pos = at;
-                    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+                    #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
                     if let Some(clock) = &mut self.clock {
                         clock.locate(at);
                     }
-                    self.pending_len = 0;
-                    self.read = 0.0;
-                    self.mix.reset();
+                    if self.playing {
+                        self.midi_stopped = None;
+                        self.pending_len = 0;
+                        self.read = 0.;
+                        self.mix.reset();
+                    }
                 }
             }
         }
@@ -314,6 +314,123 @@ impl AudioState {
         }
         self.send_garbage();
         self.shared.playing.store(self.playing, Ordering::Relaxed);
+    }
+
+    fn begin_play(&mut self, from: Samples, end: Option<Samples>, looped: Option<Range>, chasing: bool) {
+        self.chasing = chasing;
+        self.chase_group = None;
+        self.drift_since = None;
+        #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
+        if let Some(clock) = &mut self.clock {
+            clock.locate(from);
+        }
+        self.pos = from;
+        self.end = end;
+        self.looped = looped.filter(|r| super::loops(*r));
+        self.midi_wraps = 0;
+        self.midi_stopped = None;
+        self.playing = true;
+        self.pending_len = 0;
+        self.read = 0.0;
+        self.mix.reset();
+    }
+
+    fn end_chase(&mut self) {
+        if self.chasing {
+            self.chasing = false;
+            self.chase_group = None;
+            self.drift_since = None;
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn is_recording(&self) -> bool {
+        self.recording
+    }
+
+    fn halt(&mut self) {
+        self.end_chase();
+        self.midi_stopped = (self.playing && self.recording).then(|| self.midi.as_ref().map_or(i64::MAX, |f| f.clock()));
+        self.playing = false;
+        self.end = None;
+        self.looped = None;
+        self.pending_len = 0;
+        self.read = 0.;
+        self.shared.playing.store(false, Ordering::Release);
+        self.mix.reset();
+    }
+
+    // Chase is a locate followed by playback at the device's own sample clock.
+    // A single late group (or a missing byte) cannot alter pitch or jump the transport.
+    fn follow_mtc(&mut self) {
+        use super::mtc_input::Tracking;
+        let Some(feed) = self.midi.as_ref() else { return };
+        if !feed.mtc_online() || self.recording {
+            return;
+        }
+        let Some((tracking, offset)) = feed.tracking_mtc() else { return };
+        let sr = self.session.sample_rate;
+        let rate = self.session.frame_rate;
+        let start = self.session.timecode_start;
+        let (p, stamp, now, anchor) = match tracking {
+            Tracking::Idle => {
+                if self.chasing {
+                    self.halt();
+                }
+                return;
+            }
+            Tracking::Located(p) => {
+                if self.playing {
+                    self.halt();
+                }
+                let at = p.session_sample(rate, sr, start, offset).max(0);
+                #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
+                if at != self.pos
+                    && let Some(clock) = &mut self.clock
+                {
+                    clock.locate(at);
+                }
+                self.pos = at;
+                self.shared.position.store(self.pos, Ordering::Relaxed);
+                return;
+            }
+            Tracking::Rolling { position, stamp, now, anchor } => (position, stamp, now, anchor),
+        };
+        if self.chase_group == Some(stamp) {
+            return;
+        }
+        let live = p.session_sample(rate, sr, start, offset).saturating_add(sr.samples(now.saturating_sub(stamp) as f64 / 1e6));
+        if live < 0 {
+            if self.chasing {
+                self.halt();
+            }
+            return;
+        }
+        #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
+        let delay = self.device_timing.map_or(0., |t| t.heard_instant(self.device_rate, 0).saturating_duration_since(t.callback).as_secs_f64());
+        #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+        let delay = 0.;
+        let desired = live.saturating_add(sr.samples(delay));
+        if !self.chasing || !self.playing {
+            // A corroborated stopped locate protects its first attack for one start.
+            // Unanchored locks start at the source time the new audio will be heard.
+            let from = anchor.map_or(desired, |p| p.session_sample(rate, sr, start, offset).max(0));
+            self.begin_play(from, None, None, true);
+            self.shared.speed.store(1000, Ordering::Relaxed);
+            self.shared.playing.store(true, Ordering::Release);
+        } else {
+            let rendered = self.pos as f64 + self.read - self.pending_len as f64;
+            if desired.abs_diff(rendered.round() as i64) > p.in_session_rate(rate).frame_samples(sr) as u64 {
+                let since = *self.drift_since.get_or_insert(stamp);
+                if stamp.saturating_sub(since) >= 1_000_000 {
+                    feed.mtc_relocated();
+                    self.begin_play(desired, None, None, true);
+                }
+            } else {
+                self.drift_since = None;
+            }
+        }
+        self.chase_group = Some(stamp);
     }
 
     fn send_garbage(&mut self) {
@@ -655,7 +772,7 @@ impl AudioState {
         let speed = self.speed();
         let step = self.step(speed);
         let callback = ((callback_frames as f64 * step).ceil() as i64).max(0);
-        let age_speed = std::mem::replace(&mut self.midi_speed, speed);
+        let age_speed = self.midi_speed;
         // A pass runs while playing and recording, and on through a transport stop until the
         // command that ends it. One the UI has begun during playback counts from when it began,
         // though the command that starts it is only read below.
@@ -680,7 +797,9 @@ impl AudioState {
         if let Some(hook) = &mut self.before_commands {
             hook();
         }
+        let was_chasing = self.chasing;
         self.drain();
+        self.follow_mtc();
         if let Some(ended) = self.midi_ended.take() {
             // A command ended the pass. What arrived after the queue was read above and before
             // that command belongs to the pass too: take it in as well, with the pass as it was,
@@ -701,6 +820,8 @@ impl AudioState {
             drop(quiet);
         }
         self.midi_started = false;
+        let speed = if self.chasing || was_chasing { self.speed() } else { speed };
+        self.midi_speed = speed;
         // A command may have installed a session at another sample rate: the audio is rendered
         // at the rate that is there now, at the same speed.
         let step = self.step(speed);
@@ -976,6 +1097,8 @@ pub(crate) struct Side {
     /// Instances that refused their stored state: saves keep that state until the plugin's editor
     /// is opened.
     pub(crate) refused: HashSet<(TrackId, usize)>,
+    pub(crate) grid_base: Option<Arc<Session>>,
+    pub(crate) grid_busy: Arc<AtomicBool>,
     garbage: Receiver<Vec<Box<dyn Plugin>>>,
     old_sessions: Option<Receiver<Arc<Session>>>,
     /// The tracks of the session last sent, to tell the audio thread which ones went.
@@ -985,6 +1108,8 @@ pub(crate) struct Side {
 impl Side {
     pub(crate) fn new(rate: f32, garbage: Receiver<Vec<Box<dyn Plugin>>>) -> Side {
         Side {
+            grid_base: None,
+            grid_busy: Default::default(),
             shadow: HashMap::new(),
             rate,
             editors: HashMap::new(),
