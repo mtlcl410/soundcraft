@@ -432,7 +432,13 @@ mod tests {
 
     #[test]
     fn in_flight_audio_and_contended_publication_do_not_undo_play_or_locate() {
-        let shared = Arc::new(super::super::Shared { position: 0.into(), playing: false.into(), speed: 1000.into(), meters: Mutex::default() });
+        let shared = Arc::new(super::super::Shared {
+            position: 0.into(),
+            playing: false.into(),
+            speed: 1000.into(),
+            output_position: Mutex::default(),
+            meters: Mutex::default(),
+        });
         let session = Arc::new(Session::default());
         let (tx, rx) = channel();
         let mut audio = super::super::callback::AudioState::new(rx, Arc::clone(&shared), session.clone(), 48_000., channel().0);
@@ -462,6 +468,18 @@ mod tests {
         audio.fill(&mut out, 2);
         assert_eq!(poll(), [vec![STOP], song_position(5).to_vec(), vec![CONTINUE]]);
         assert!(poll().is_empty());
+        tx.send(Cmd::Stop).unwrap();
+        audio.fill(&mut out, 2);
+        assert_eq!(poll(), [vec![STOP]]);
+        tx.send(Cmd::Locate(27_000)).unwrap();
+        audio.fill(&mut out, 2);
+        assert!(poll().is_empty(), "stopped MTC locate emits no beat messages");
+        shared.speed.store(1025, std::sync::atomic::Ordering::Relaxed);
+        tx.send(Cmd::PlayMtc(27_000)).unwrap();
+        audio.fill(&mut out, 2);
+        assert_eq!(poll(), [song_position(5).to_vec(), vec![CONTINUE]]);
+        let rate = session.sample_rate.as_f64();
+        assert!((view.lock().unwrap().unwrap().samples_per_second - rate * 1.025).abs() < 0.01);
     }
 
     #[test]
