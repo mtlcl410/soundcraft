@@ -126,6 +126,24 @@ ASIO 輸入及輸出各擷取 372,091 個區塊，均為 64 取樣，序號無�
 
 每個緩衝只比較一對片段，重播沿用同一順序。64 取樣的另一個 14 取樣事件未納入盲聽。這次聽感只適用於受測片段與聆聽條件，根因仍待釐清。
 
+## #1674 起播首音的修正歸屬
+
+在三個 Windows checkout 執行同一份[回歸測試](acceptance/issue-1674/probe.rs)。48 kHz、120 BPM，軌上放兩個可辨認的音：8.000 秒的銅鈸標記（MIDI note 49）和 8.500 秒的後續音（note 67）。本機播放使用 `transport.locate`、`transport.play`。外部起播從虛擬 DIN 輸入送 SPP、Continue（FB）、第一個 Clock（F8），啟用 Coast 並將輸入校正設為 −1,440 個取樣，使渲染從時間軸上比指定起點晚至少 30 ms 的位置開始。測試走實際 transport、播放器回呼與混音器，直接計數送進內建合成器的 Note On；使用靜音輸出，不量測聲學延遲。
+
+| 版本與入口 | 7.500 秒起播（SPP 60） | 8.000 秒起播（SPP 64） | 8.125 秒起播（SPP 65） |
+|---|---:|---:|---:|
+| main `85623f2`，本機 Play | 1 | 1 | 0 |
+| #1669 修正前 `2aa39ff`，本機 Play | 1 | 1 | 0 |
+| #1669 修正前 `2aa39ff`，外部 Continue | 1 | **0（漏音）** | 0 |
+| #1669 現版 `717f969`，本機 Play | 1 | 1 | 0 |
+| #1669 現版 `717f969`，外部 Continue | 1 | **1** | 0 |
+
+數字是 8.000 秒首音的觸發次數。表中 15 次播放都觸發了 8.500 秒的後續音，且各一次。main 同樣收到三組封包，但沒有開啟 Clock 跟隨的命令，播放器維持停止、Note On 為零；這三組列為不適用。整份測試在 main 和現版通過，修正前只有 SPP 64 的外部 Continue 斷言失敗。另在未加觀測程式的 PR 現版重跑既有的混音器測試 `compensated_clock_start_keeps_boundary_notes_once_without_replaying_earlier_attacks`，結果通過。
+
+舊版 Clock 跟隨只把補償後的位置交給播放器。當第一個音剛好在 SPP 的位置，混音器會認為它已經過去。本機 Play 直接從選定位置開始。修正後，播放器同時拿到音樂起點和補償後的渲染位置，讓起點音在第一個可用的區塊觸發一次。判定為 #1669 新增路徑的缺陷，[修正與永久回歸測試](https://github.com/storytold/soundcraft/pull/1669/commits/baab55eef9b05e51c452437afb08c81c7fb22716)保留在原 PR。先前 Model 12 與 S‑MU2000 的實機驗收記錄在[硬體報告](https://github.com/mtlcl410/soundcraft/blob/717f96953313c385ee2acf24a1b0aedeb7672585/docs/model-12-clock-follow-hardware.md)。
+
+重跑方式：在各指定 commit 的乾淨 checkout，使用專案的 Rust／Windows 建置環境執行 `python docs/acceptance/issue-1674/replay.py <checkout>`（腳本路徑從本機報告所在工作樹解析）。[重跑腳本](acceptance/issue-1674/replay.py)在該 checkout 暫時加上相同的靜音裝置選擇與事件記錄，完成後還原。實際測試命令為 `cargo test --locked -p soundcraft-ui-egui --lib issue_1674_compare_supported_starts -- --nocapture`。
+
 ## 實測後待辦
 
 以下五項等上述實機測試完成、結果與限制寫入本報告後才開始。
@@ -138,5 +156,5 @@ ASIO 輸入及輸出各擷取 372,091 個區塊，均為 64 取樣，序號無�
   - [公開硬體驗收報告](https://github.com/mtlcl410/soundcraft/blob/0d549b50030f486971b35082ae2876515129be18/docs/model-12-clock-follow-hardware.md) 已收錄監聽預填、直接 ASIO、緩衝對照、波形偵測和八張比較圖。已用未登入的連線從 GitHub 讀回報告與全部圖檔，核對圖檔內容。
 - [x] **256 取樣的已知限制。** 在 Known limits 如實寫明先前 12 次中有 1 次波形偏差、原因未明，並開 issue 附上量測條件、偵測方式與證據追查。與本次 64 取樣的 40 取樣插入分別記錄。
   - 重算 12 組原始 WAV，只有重開串流後的第一個 8.000 秒起播（`repeat2-256/exact-a`）超標，右聲道殘差跳幅 455.46，其餘 11 次為 2.06–2.54（16-bit PCM 計數，門檻 16）。12 次均未觸發低電平判定。已在 [#1669 的 Known limits](https://github.com/storytold/soundcraft/pull/1669) 與 [追查 issue #1686（含對照圖）](https://github.com/storytold/soundcraft/issues/1686) 雙向連結；64 取樣第 13.498 秒的 +40 取樣另列為不同事件。
-- [ ] **#1674 的修正歸屬。** 在 main 與 Clock 跟隨分支以相同重現步驟比對；若 main 原已存在，將修正拆成獨立 PR。若只在 Clock 跟隨出現，再依證據處理 #1669。
+- [x] **#1674 的修正歸屬。** 同一測試只在舊版外部 Continue 從 8.000 秒起播時漏音。修正保留在 #1669。完整矩陣與重跑方式見上方「#1674 起播首音的修正歸屬」。
 - [ ] **Ready 前複審。** 最終修改推到 #1669 之後、轉為 Ready for review 之前，手動觸發一次 CodeRabbit review，核對審查對應的 commit 並處理結果。
