@@ -157,7 +157,7 @@ ASIO 輸入及輸出各擷取 372,091 個區塊，均為 64 取樣，序號無�
 - [x] **256 取樣的已知限制。** 在 Known limits 如實寫明先前 12 次中有 1 次波形偏差、原因未明，並開 issue 附上量測條件、偵測方式與證據追查。與本次 64 取樣的 40 取樣插入分別記錄。
   - 重算 12 組原始 WAV，只有重開串流後的第一個 8.000 秒起播（`repeat2-256/exact-a`）超標，右聲道殘差跳幅 455.46，其餘 11 次為 2.06–2.54（16-bit PCM 計數，門檻 16）。12 次均未觸發低電平判定。已在 [#1669 的 Known limits](https://github.com/storytold/soundcraft/pull/1669) 與 [追查 issue #1686（含對照圖）](https://github.com/storytold/soundcraft/issues/1686) 雙向連結；64 取樣第 13.498 秒的 +40 取樣另列為不同事件。
 - [x] **#1674 的修正歸屬。** 同一測試只在舊版外部 Continue 從 8.000 秒起播時漏音。修正保留在 #1669。完整矩陣與重跑方式見上方「#1674 起播首音的修正歸屬」。
-- [ ] **Ready 前複審。** #1669 維持草稿。[首次手動觸發](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7062160670)涵蓋三支相依 PR 的累積差異。[CodeRabbit 完整審查](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005064083)提出 18 則行內意見、1 則行外同步設定問題、16 則次要意見與 1 則翻譯建議。
+- [x] **Ready 前複審。** #1669 維持草稿。[首次手動觸發](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7062160670)涵蓋三支相依 PR 的累積差異。[CodeRabbit 完整審查](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005064083)提出 18 則行內意見、1 則行外同步設定問題、16 則次要意見與 1 則翻譯建議。
   - [第一輪修正](https://github.com/storytold/soundcraft/pull/1669/commits/bfecc6e65f8f58cde1596b9fe6c31a3c89845868)及[請求複審與翻譯測試結果](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7062566656)。保留原有 pt-BR 翻譯。移出翻譯時，Clock 對話框、字串目錄完整性、選單三個既有測試均失敗；還原後三項都通過。
 
 ### Windows 軟體驗證
@@ -245,4 +245,10 @@ MIDI callback 取得已準備的定位後，另一執行緒先完成編輯，再
 
 第一個裝置區塊可聽前、尚未連接 MIDI 輸出時，先接受 11 次更新，再接上輸出。舊版在期限內沒有輸出。修正後在第一個期限收到 FA、F8。此測試分別涵蓋單一未來區塊，以及每次更新都有新區塊的情形；確實超過容量的情況以既有 backlog 指標記錄。[追蹤結果](https://github.com/storytold/soundcraft/pull/1669#discussion_r4652588357)
 
-[最新修正 e43742e](https://github.com/storytold/soundcraft/pull/1669/commits/e43742e1d822312dbe371d4593bc74215ef5f6e3)。最終 Windows 四 crate 驗證 1,653 項通過、1 項已知 AAF 失敗、5 項預設略過。嚴格 Clippy 與另行執行的八小時 Clock 模擬均通過。第六輪完整審查檢查的是 `3262658`，沒有另送第七次。GitHub 最近一次查詢有 38 個討論串，1 個尚未標記 resolved。 須維護者核准的工作流程為 [CI](https://github.com/storytold/soundcraft/actions/runs/44916674425) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44916674521) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44916674492)。
+[此前修正 e43742e](https://github.com/storytold/soundcraft/pull/1669/commits/e43742e1d822312dbe371d4593bc74215ef5f6e3)。該版 Windows 四 crate 驗證 1,653 項通過、1 項已知 AAF 失敗、5 項預設略過。嚴格 Clippy 與另行執行的八小時 Clock 模擬均通過。第六輪完整審查檢查的是 `3262658`，沒有另送第七次。推送 e43742e 後，當時 38 串中剩 1 串；該串的後續結果如下。 須維護者核准的工作流程為 [CI](https://github.com/storytold/soundcraft/actions/runs/44916674425) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44916674521) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44916674492)。
+
+### 超過八次更新時的逐區塊驗證
+
+在目的地連線前先排入首個區塊和 11 次 tempo 更新。舊版 e43742e 播到第 7 個區塊時仍取到 generation 6，正確值為 7。回歸測試逐毫秒推進 12 個區塊，比對每個區塊的 session、實際產生的 MIDI Clock、第一個 Start／Clock 截止時間，並確認累積掉棄次數為 0，播放經過後 11 個舊 session 引用均可釋放。排程中途替換一般 session、稍後才接入輸出的情境也通過。另一項測試填滿 10 格快照，驗證延遲輸出仍保留所需的 tempo；該輸出中斷且既有區塊過期後，主機重試可使用回收的快照。音訊回呼仍使用既有固定大小的緩衝區。這批結果來自模擬 MIDI 目的地與正式排程程式。
+
+本次[修正 69eadb8](https://github.com/storytold/soundcraft/pull/1669/commits/69eadb83a15561d213b3fb25bb24fcf7cf3d9ca6)，Windows 四 crate 共 1,654 通過，1 項原有 AAF 測試失敗，5 項預設略過。嚴格 Clippy 及八小時 Clock 模擬通過。第六輪審查的版本為 3262658，後續以測試結果回覆在原討論串。本次查詢共 38 串，其中 0 串未解決。待核准的 GitHub 工作流程為 [CI](https://github.com/storytold/soundcraft/actions/runs/44917580109) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44917580115) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44917580117)。
