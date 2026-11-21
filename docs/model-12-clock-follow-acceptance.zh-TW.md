@@ -252,3 +252,9 @@ MIDI callback 取得已準備的定位後，另一執行緒先完成編輯，再
 在目的地連線前先排入首個區塊和 11 次 tempo 更新。舊版 e43742e 播到第 7 個區塊時仍取到 generation 6，正確值為 7。回歸測試逐毫秒推進 12 個區塊，比對每個區塊的 session、實際產生的 MIDI Clock、第一個 Start／Clock 截止時間，並確認累積掉棄次數為 0，播放經過後 11 個舊 session 引用均可釋放。排程中途替換一般 session、稍後才接入輸出的情境也通過。另一項測試填滿 10 格快照，驗證延遲輸出仍保留所需的 tempo；該輸出中斷且既有區塊過期後，主機重試可使用回收的快照。音訊回呼仍使用既有固定大小的緩衝區。這批結果來自模擬 MIDI 目的地與正式排程程式。
 
 本次[修正 69eadb8](https://github.com/storytold/soundcraft/pull/1669/commits/69eadb83a15561d213b3fb25bb24fcf7cf3d9ca6)，Windows 四 crate 共 1,654 通過，1 項原有 AAF 測試失敗，5 項預設略過。嚴格 Clippy 及八小時 Clock 模擬通過。第六輪審查的版本為 3262658，後續以測試結果回覆在原討論串。本次查詢共 38 串，其中 0 串未解決。待核准的 GitHub 工作流程為 [CI](https://github.com/storytold/soundcraft/actions/runs/44917580109) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44917580115) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44917580117)。
+
+### #1662／#1663 共用輸出時間戳與 STORAGE 恢復
+
+#1669 同步共用層後，外部 Clock 在收到 Continue、正在等待第一個 Clock、或尚未取得可信的輸出呈現時間時，都能保護待處理的起播；後續 Stop 或重新定位會取消舊的待播事件。合入 #1663 的 62ea084 後，Windows 加上 #1536 在 74f7305 的四 crate 共有 1,675 項通過、5 項預設略過、1 項既有 AAF locator 測試失敗。嚴格 Clippy 與另行執行的八小時模擬通過。後續狀態列修正只改 UI，#1669 的播放層、引擎及混音器 Git tree 均相同。[四 crate 測試](../../../tmp/1669-storage-merge-all.log) · [Clippy](../../../tmp/1669-storage-merge-clippy.log) · [八小時模擬](../../../tmp/1669-storage-merge-eight.log)
+
+此次實機驗收在 #1663 的 MTC 跟播進行。Model 12 完成三次 STORAGE 進出，SoundCraft 自動恢復原音訊端點，三次鋼琴 A4 相對 DIN 延遲 +3.321、+3.183、+3.181 ms，跨次極差 0.140 ms。當次基準 +3.810 ms；舊環境 +11.619 ms 的絕對值比較帶未達標。同環境舊版新開輸出對照 +2.786、+3.759 ms。#1669 的 Clock 保護以軟體驗證。[MTC 實機分段報告](../../g11-hardware/h-mtc-sd-phase-20261121/REPORT.zh-TW.md)
