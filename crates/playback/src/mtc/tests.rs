@@ -36,7 +36,7 @@ fn block(at: Instant, position: i64, frames: i64, playing: bool, pass: u64) -> P
         limit: (position + frames) as f64,
         looped: None,
         end: None,
-        lead: Duration::from_millis(30),
+        lead: Some(Duration::from_millis(30)),
     }
 }
 
@@ -189,23 +189,54 @@ fn recording_request_is_ignored_while_waiting_for_external_timecode() {
 }
 
 #[test]
-fn external_lock_starts_and_runs_at_unity_without_repaints() {
-    let (mut state, cmd, view) = callback(session(FrameRate::Fps30), 48_000.);
+fn mtc_chase_waits_for_observed_lead_before_testing_presentation_drift() {
+    let rate = FrameRate::Fps25;
+    let (mut audio, tx, _) = callback(session(rate), 48_000.);
     let feed = Arc::new(crate::midi::MidiFeed::default());
     feed.set_mtc_source(Some(0));
-    cmd.send(Cmd::Midi(feed.clone())).unwrap();
+    tx.send(Cmd::Midi(feed.clone())).unwrap();
     let now = Instant::now();
-    for piece in 0..16 {
-        let us = piece * 1_000_000 / 120;
-        feed.set_clock(us);
-        feed.receive(0, &quarters(2 * (piece / 8), FrameRate::Fps30)[(piece % 8) as usize]);
+    // Model a backend with no usable timestamps, followed by an actual zero-lead report.
+    // Each QF group advances 80 ms while our deliberately short callback renders only 5 ms.
+    for group in 0..42 {
+        for piece in 0..8 {
+            let us = (group * 8 + piece) * 10_000;
+            feed.set_clock(us);
+            feed.receive(0, &quarters(group * 2, rate)[piece as usize]);
+        }
+        let measured = (group >= 22).then_some(Duration::ZERO);
+        audio.device_timing = Some(DeviceTiming::new(now, measured, 0));
+        audio.fill(&mut [0.; 480], 2);
+        if group == 21 {
+            assert!(audio.shared.playing.load(Ordering::Acquire), "input transport follows the MTC lock");
+            assert_eq!(feed.mtc_diagnostics().hard_relocates, 0, "unknown audible phase cannot prove sustained drift");
+        }
     }
-    state.device_timing = Some(DeviceTiming::new(now, Some(Duration::from_millis(30)), 0));
-    state.fill(&mut [0.; 480], 2);
-    assert!(state.shared.playing.load(Ordering::Relaxed), "device callback starts on lock");
+    assert_eq!(feed.mtc_diagnostics().hard_relocates, 1, "measured zero is a valid phase reference");
+}
 
-    assert!((view.lock().unwrap().read(now + Duration::from_millis(30), true, 0).0.unwrap().sample - 7440.).abs() < 1., "piece 15 at 125 ms");
-    assert_eq!(state.shared.speed.load(Ordering::Relaxed), 1000);
+#[test]
+fn external_lock_starts_and_runs_at_unity_without_repaints() {
+    for reject_next in [false, true] {
+        let (mut state, cmd, view) = callback(session(FrameRate::Fps30), 48_000.);
+        let feed = Arc::new(crate::midi::MidiFeed::default());
+        feed.set_mtc_source(Some(0));
+        cmd.send(Cmd::Midi(feed.clone())).unwrap();
+        let now = Instant::now();
+        for piece in 0..16 {
+            let us = piece * 1_000_000 / 120;
+            feed.set_clock(us);
+            feed.receive(0, &quarters(2 * (piece / 8), FrameRate::Fps30)[(piece % 8) as usize]);
+        }
+        let mut stream = crate::sync_clock::StreamLead::default();
+        let first = stream.observe(now, Some(Duration::from_millis(30)));
+        state.device_timing = Some(if reject_next { stream.observe(now, None) } else { first });
+        state.fill(&mut [0.; 480], 2);
+        assert!(state.shared.playing.load(Ordering::Relaxed), "device callback starts on lock");
+
+        assert!((view.lock().unwrap().read(now + Duration::from_millis(30), true, 0).0.unwrap().sample - 7440.).abs() < 1., "piece 15 at 125 ms");
+        assert_eq!(state.shared.speed.load(Ordering::Relaxed), 1000);
+    }
 }
 
 #[test]
@@ -365,6 +396,25 @@ fn jam_sync_audio_free_runs_for_ten_seconds_and_seeks_only_on_the_second_new_gro
                 assert!(cursor - before_jump >= 48000);
             }
             _ => {}
+        }
+    }
+}
+
+#[test]
+fn first_integer_sample_of_an_even_fractional_frame_emits_its_quarter_group() {
+    let mut s = session(FrameRate::Fps29_97);
+    s.timecode_start = s.frame_rate.samples_at_frame(2, s.sample_rate);
+    let now = Instant::now();
+    for at in [0, 1] {
+        let mut enc = Encoder::default();
+        let mut wire = vec![];
+        let wake = enc.update(block(now, at, 48000, true, 1), now, &s, &mut |_, m| wire.push(m.to_vec()));
+        assert_eq!(wire[0], locate(2, s.frame_rate));
+        if at == 0 {
+            assert_eq!(wire[1], quarters(2, s.frame_rate)[0]);
+        } else {
+            assert_eq!(wire.len(), 1);
+            assert!(wake.unwrap() > now + Duration::from_millis(60));
         }
     }
 }

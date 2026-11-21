@@ -1,4 +1,4 @@
-//! MIDI Beat Clock encoding. The shared worker owns output ports and presentation deadlines.
+//! MIDI Beat Clock encoding. The shared scheduler sets presentation deadlines.
 use crate::Session;
 use crate::sync_clock::{BACKWARD_TOLERANCE_PULSES, CATCH_UP_SPACING, Presentation, RELAUNCH_PULSES, SyncEncoder};
 use craft_midi_sync::sync::{CLOCK, CLOCKS_PER_QUARTER, CONTINUE, MAX_POSITION, START, STOP, song_position};
@@ -36,7 +36,14 @@ impl Cursor {
         let timely_origin =
             changed && block.playing && tempo.samples_to_ticks_f(at, rate) - tempo.samples_to_ticks_f(origin, rate) < TICKS_PER_CLOCK as f64;
         if timely_origin {
-            self.advance(true, origin, true, tempo, rate, &mut send);
+            let mut emitted_clock = false;
+            self.advance(true, origin, true, tempo, rate, |m| {
+                emitted_clock |= m == [CLOCK];
+                send(m);
+            });
+            if emitted_clock {
+                return;
+            }
         }
         self.advance(block.playing, at, (remap || changed) && !timely_origin, tempo, rate, send);
     }
@@ -258,7 +265,7 @@ mod tests {
         let mut cursor = Cursor::default();
         let mut poll = || {
             let now = Instant::now();
-            let b = view.lock().unwrap().read(now, true, 0).0.unwrap();
+            let b = view.lock().unwrap().read(now, false, 0).0.unwrap();
             let mut bytes = Vec::new();
             cursor.follow(b, b.sample.floor() as i64, 0, false, &session, |m| bytes.push(m.to_vec()));
             bytes
@@ -290,7 +297,7 @@ mod tests {
             pass: 3,
             origin: 0,
             playing: true,
-            lead: Duration::ZERO,
+            lead: Some(Duration::ZERO),
             sample: 29_900.,
             limit: 30_380.,
             samples_per_second: 48_000.,
@@ -334,7 +341,7 @@ mod tests {
             generation: 0,
             sample_rate: soundcraft_time::SampleRate::default(),
             system_delay_samples: 0,
-            lead: Duration::ZERO,
+            lead: Some(Duration::ZERO),
             pass: 0,
             origin: 0,
             playing: true,

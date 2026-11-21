@@ -27,7 +27,7 @@ pub(super) fn block(start: Instant, sample: f64, frames: f64, lead: Duration) ->
         samples_per_second: 48_000.,
         looped: None,
         end: None,
-        lead,
+        lead: Some(lead),
     }
 }
 fn active_port(offset: i64, compensate: bool) -> Port<FakePort> {
@@ -37,8 +37,118 @@ fn active_port(offset: i64, compensate: bool) -> Port<FakePort> {
         routes: [Some(Route { map: None, offset, compensate, encoder: Box::<Cursor>::default() }), None],
         failure: None,
         future: Vec::new(),
-        stop_pending: false,
+        cleanup: Default::default(),
+        waiting_for_timing: false,
     }
+}
+
+#[test]
+fn output_stream_lead_survives_bad_callbacks_and_updates_on_recovery() {
+    let mut stream = crate::sync_clock::StreamLead::default();
+    let base = Instant::now();
+    for (report, expected) in [(Some(15), 15), (None, 15), (Some(1_001), 15), (Some(9), 9), (Some(0), 0), (None, 0)] {
+        let t = stream.observe(base, report.map(Duration::from_millis));
+        assert_eq!(t.heard_instant(48_000., 48), base + Duration::from_millis(expected + 1));
+    }
+}
+
+#[test]
+fn output_stream_lead_is_unknown_for_a_new_output_until_the_first_valid_report() {
+    let mut out = Output::default();
+    out.compensated = true;
+    out.beat.push(("DIN".into(), 0));
+    let mut publisher = Publisher::new(out.view.clone(), out.metrics.clone());
+    let mut old = crate::sync_clock::StreamLead::default();
+    let base = Instant::now();
+    assert_eq!(out.status().lead_source, crate::OutputLeadSource::Unobserved);
+    assert_eq!(out.timing_issue(), None);
+    publisher.observe(old.observe(base, Some(Duration::from_millis(15))), 0.01);
+    publisher.observe(old.observe(base, Some(Duration::from_secs(2))), 0.01);
+    assert_eq!(out.timing_issue(), Some(crate::OutputTimingIssue::Retained { lead_us: 15_000 }));
+    assert_eq!(out.status().ports["DIN"].beat_clock_total_us, Some(15_000));
+    let mut reopened = crate::sync_clock::StreamLead::default();
+    publisher.observe(reopened.observe(base, None), 0.01);
+    let status = serde_json::to_value(out.status()).unwrap();
+    assert_eq!(status["reported_lead_us"], serde_json::Value::Null);
+    assert_eq!(status["ports"]["DIN"]["beat_clock_total_us"], serde_json::Value::Null);
+    assert_eq!(status["ports"]["DIN"]["lead_source"], "unknown");
+    assert_eq!(status["ports"]["DIN"]["beat_clock_enabled"], true);
+    assert_eq!(status["ports"]["DIN"]["mtc_enabled"], false);
+    assert_eq!(out.timing_issue(), Some(crate::OutputTimingIssue::Unknown));
+    let zero = reopened.observe(base, Some(Duration::ZERO));
+    publisher.observe(zero, 0.01);
+    assert_eq!(out.timing_issue(), None);
+    assert_eq!(out.status().ports["DIN"].beat_clock_total_us, Some(0));
+    assert_eq!(out.status().lead_source, crate::OutputLeadSource::Reported);
+    publisher.observe(reopened.observe(base, None), 0.01);
+    assert_eq!(out.timing_issue(), Some(crate::OutputTimingIssue::Retained { lead_us: 0 }));
+    assert_eq!(out.reported_timing_count(), 2);
+    assert_eq!(out.status().ports["DIN"].lead_source, crate::OutputLeadSource::Retained);
+}
+
+#[test]
+fn output_stream_lead_wakes_a_parked_worker_after_the_first_valid_report() {
+    struct Wire(Sender<Vec<u8>>);
+    impl SyncPort for Wire {
+        fn send_at(&mut self, at: Instant, bytes: &[u8]) -> Result<Instant, String> {
+            self.0.send(bytes.to_vec()).unwrap();
+            Ok(at)
+        }
+    }
+    let view = View::default();
+    view.lock().unwrap().push(Presentation { lead: None, ..block(Instant::now(), 0., 48_000., Duration::ZERO) });
+    let worker_view = view.clone();
+    let (tx, rx) = channel();
+    let (wire, packets) = channel();
+    let (opened, ready) = channel();
+    let worker = std::thread::spawn(move || {
+        drive(worker_view, Arc::new(Session::default()), rx, Default::default(), Arc::default(), |_| {
+            opened.send(()).unwrap();
+            Ok((Wire(wire.clone()), None))
+        })
+    });
+    tx.send(Update::Beats(vec![("DIN".into(), 0)], true)).unwrap();
+    ready.recv_timeout(Duration::from_secs(3)).unwrap();
+    // Longer than the normal control-change wake window; recovery must not
+    // need another transport command or an idle polling loop.
+    assert!(matches!(packets.recv_timeout(Duration::from_millis(400)), Err(std::sync::mpsc::RecvTimeoutError::Timeout)));
+    view.lock().unwrap().push(block(Instant::now(), 0., 48_000., Duration::from_millis(15)));
+    assert_eq!(packets.recv_timeout(Duration::from_secs(2)).unwrap(), [START]);
+    assert_eq!(packets.recv_timeout(Duration::from_secs(2)).unwrap(), [CLOCK]);
+    drop(tx);
+    worker.thread().unpark();
+    worker.join().unwrap();
+}
+
+#[test]
+fn output_stream_lead_gates_only_compensated_midi_until_a_timestamp_is_available() {
+    let base = Instant::now();
+    let view = View::default();
+    let session = Session::default();
+    let stats = Stats::default();
+    let mut compensated = active_port(0, true);
+    let mut direct = active_port(0, false);
+    let mut stream = crate::sync_clock::StreamLead::default();
+    let publish = |timing: DeviceTiming, sample: f64| {
+        view.lock().unwrap().push(Presentation {
+            lead: timing.lead(),
+            heard_at: timing.heard_instant(48_000., 0),
+            ..block(timing.callback, sample, 48_000., Duration::ZERO)
+        });
+    };
+    publish(stream.observe(base, None), 0.);
+    compensated.poll("comp", base, &session, &view, &stats, &mut vec![]);
+    direct.poll("direct", base, &session, &view, &stats, &mut vec![]);
+    assert!(compensated.link.as_ref().unwrap().messages.is_empty());
+    assert_eq!(direct.link.as_ref().unwrap().messages, [(base, vec![START]), (base, vec![CLOCK])]);
+    let next = base + Duration::from_millis(10);
+    let lead = Duration::from_millis(15);
+    publish(stream.observe(next, Some(lead)), 0.);
+    let due = next + lead;
+    assert_eq!(compensated.poll("comp", next, &session, &view, &stats, &mut vec![]), Some(due));
+    assert!(compensated.link.as_ref().unwrap().messages.is_empty());
+    compensated.poll("comp", due, &session, &view, &stats, &mut vec![]);
+    assert_eq!(compensated.link.as_ref().unwrap().messages, [(due, vec![START]), (due, vec![CLOCK])]);
 }
 
 #[test]
@@ -120,7 +230,7 @@ fn reported_lead_is_bounded_and_shared_chunk_offsets_are_monotonic() {
     let now = Instant::now();
     let lead = Duration::from_millis(30);
     assert!(DeviceTiming::new(now, None, 0).clamped);
-    assert_eq!(DeviceTiming::new(now, Some(Duration::from_secs(2)), 0).lead, Duration::ZERO);
+    assert_eq!(DeviceTiming::new(now, Some(Duration::from_secs(2)), 0).lead(), None);
     let a = DeviceTiming::new(now, Some(lead), 0);
     let b = DeviceTiming::new(now, Some(lead), 8192);
     assert_eq!(a.heard_instant(48_000., 8192), b.heard_instant(48_000., 0));
@@ -227,7 +337,7 @@ fn diagnostics_use_fixed_lateness_buckets_and_ignore_callback_subchunks() {
     assert_eq!((status.sent, status.lateness_p50_us, status.lateness_p95_us, status.lateness_max_us), (5, 1000, 25000, 25000));
     assert_eq!(
         (status.reported_lead_us, status.callback_gap_max_us, status.callback_gaps_over_two_buffers, status.lead_clamps),
-        (10_000, 30_000, 1, 1)
+        (Some(10_000), 30_000, 1, 1)
     );
     let port = status.ports.get("DIN").unwrap();
     assert_eq!((port.beat_clock_total_us, port.mtc_total_us), (Some(5000), Some(0)));
@@ -371,6 +481,7 @@ fn input_wakes_reread_an_idle_timeline_without_periodic_polling() {
                 Ok((FakePort::default(), None))
             });
         });
+        let tx = WorkerSender { tx, worker: worker.thread().clone() };
         if has_port {
             tx.send(Update::Beats(vec![("DIN".into(), 0)], true)).unwrap();
             ready.recv_timeout(Duration::from_secs(5)).unwrap();
@@ -387,6 +498,7 @@ fn input_wakes_reread_an_idle_timeline_without_periodic_polling() {
             std::thread::sleep(Duration::from_millis(20));
         }
         drop(tx);
+        worker.thread().unpark();
         worker.join().unwrap();
         let iterations = stats.iterations.load(Relaxed) - before;
         assert!((50..=60).contains(&iterations), "{iterations} iterations for 50 input wakes, configured port: {has_port}");
@@ -582,7 +694,7 @@ fn repeating_beat_settings_starts_a_worker_that_failed_to_start() {
     let ports = vec![("DIN".into(), 0)];
     output.beats(ports.clone(), true);
     assert!(output.worker.is_none());
-    output.configure(&Arc::new(Session::default()), &channel().0, true);
+    output.configure(&Arc::new(Session::default()), &channel().0, None);
     output.beats(ports, true);
     assert!(output.worker.is_some());
 }
@@ -612,15 +724,15 @@ fn negative_offset_is_limited_to_the_output_lead_and_reported() {
         let mut out = Output::default();
         out.beat.push(("DIN".into(), offset));
         out.compensated = compensate;
-        out.metrics.lead_us.store(20_000, Relaxed);
+        Publisher::new(out.view.clone(), out.metrics.clone()).observe(DeviceTiming::new(base, Some(lead), 0), 0.01);
         out.metrics.system_delay_samples.store(system_delay_samples as u64, Relaxed);
         let status = out.status();
         let info = &status.ports["DIN"];
         assert!(info.advance_limited);
         assert_eq!(info.requested_offset_samples, offset);
-        assert_eq!(info.device_lead_us, 20_000);
+        assert_eq!(info.device_lead_us, Some(20_000));
         assert_eq!(info.system_delay_samples, system_delay_samples as u64);
-        assert_eq!(info.effective_total_us, expected_us as i64);
+        assert_eq!(info.effective_total_us, Some(expected_us as i64));
         assert!(seen.len() >= 24);
         for (i, &actual) in seen.iter().enumerate() {
             let ideal = expected_us + (i as f64 * 1e6 / 48.).round() as u64;
@@ -781,7 +893,7 @@ fn a_follow_grid_revision_changes_pulse_spacing_at_its_audible_block_without_rel
     let mut output = Output::default();
     output.stats.connected().insert("DIN".into());
     let (tx, _rx) = channel();
-    let old = output.configure(&initial, &tx, true);
+    let old = output.configure(&initial, &tx, None);
     let mut new = old;
     let mut port = active_port(0, true);
     let mut clocks = Vec::new();
@@ -789,7 +901,7 @@ fn a_follow_grid_revision_changes_pulse_spacing_at_its_audible_block_without_rel
     for ms in 0..=720 {
         let now = base + Duration::from_millis(ms);
         if ms == 500 {
-            new = output.configure(&changed, &tx, false);
+            new = output.configure(&changed, &tx, Some(&initial));
         }
         if ms % 10 == 0 {
             let generation = if ms >= 510 { new } else { old };
@@ -847,21 +959,21 @@ fn tempo_change_relocates_when_the_new_map_becomes_audible() {
 }
 
 #[test]
-fn unavailable_session_generations_fall_forward_and_report_backlog_drops() {
+fn unavailable_session_generations_cannot_encode_with_a_future_map() {
     use crate::sync_clock::MAX_REVISIONS;
     let (cmd, _rx) = channel();
     let mut out = Output::default();
     out.stats.connected().insert("DIN".into());
     let s = Arc::new(Session::default());
     for generation in 1..=MAX_REVISIONS + 1 {
-        assert_eq!(out.configure(&s, &cmd, true), generation as u64);
+        assert_eq!(out.configure(&s, &cmd, None), generation as u64);
     }
     let latest = out.generation;
     let mut timeline = out.view.lock().unwrap();
-    assert_eq!(timeline.map(1).unwrap().generation, latest);
+    assert!(timeline.map(1).is_none());
     assert_eq!(timeline.map(2).unwrap().generation, 2);
     timeline.retire_before(latest);
-    assert_eq!(timeline.map(2).unwrap().generation, latest);
+    assert!(timeline.map(2).is_none());
     drop(timeline);
     assert_eq!(out.status().session_backlog_drops, 1);
 }
@@ -908,4 +1020,341 @@ fn connected_worker_accepts_control_and_shuts_down_while_a_future_message_is_pen
     let shutdown = elapsed.elapsed();
     eprintln!("control={control:?} shutdown={shutdown:?}");
     assert!(shutdown < bound, "Output::drop took {shutdown:?}");
+}
+
+#[test]
+fn native_send_stalled_on_one_port_does_not_hold_other_ports_or_shutdown() {
+    struct Native {
+        gate: Option<Receiver<()>>,
+        entered: Sender<()>,
+        wire: Sender<Vec<u8>>,
+    }
+    impl SyncPort for Native {
+        fn send_at(&mut self, _: Instant, msg: &[u8]) -> Result<Instant, String> {
+            if let Some(gate) = self.gate.take() {
+                self.entered.send(()).unwrap();
+                gate.recv().unwrap();
+            }
+            let _ = self.wire.send(msg.to_vec());
+            Ok(Instant::now())
+        }
+    }
+    let view = View::default();
+    view.lock().unwrap().push(block(Instant::now(), 0., 48_000., Duration::ZERO));
+    let (unblock, gate) = channel();
+    let (entered, blocked) = channel();
+    let (healthy, received) = channel();
+    let (busy, held) = channel();
+    let (tx, rx) = channel();
+    let (closed, drained) = channel();
+    let worker = std::thread::spawn(move || {
+        let mut gate = Some(gate);
+        let stats = Arc::<Stats>::default();
+        drive(view, Arc::new(Session::default()), rx, Default::default(), stats.clone(), move |name| {
+            let port = Native {
+                gate: if name == "busy" { gate.take() } else { None },
+                entered: entered.clone(),
+                wire: if name == "busy" { busy.clone() } else { healthy.clone() },
+            };
+            Ok((PortIo::new(port, stats.clone())?, None))
+        });
+        closed.send(()).unwrap();
+    });
+    tx.send(Update::Beats(vec![("busy".into(), 0)], false)).unwrap();
+    blocked.recv_timeout(Duration::from_secs(2)).unwrap();
+    tx.send(Update::Beats(vec![("busy".into(), 0), ("healthy".into(), 0)], false)).unwrap();
+    // Let the healthy port advance many deadlines while the first native call
+    // is gated. The busy port must not accumulate a burst of obsolete clocks.
+    for _ in 0..8 {
+        while received.recv_timeout(Duration::from_secs(2)).unwrap() != [CLOCK] {}
+    }
+    drop(tx);
+    drained.recv_timeout(Duration::from_secs(2)).unwrap();
+    assert!(received.try_iter().any(|msg| msg == [STOP]), "the healthy final Stop was handed off before shutdown returned");
+    assert!(held.try_recv().is_err());
+    unblock.send(()).unwrap();
+    let wire: Vec<_> = held.iter().collect();
+    assert_eq!(wire, [vec![START], vec![CLOCK], vec![STOP]], "shutdown cleanup must drain after the blocked batch");
+    worker.join().unwrap();
+}
+
+#[test]
+fn active_route_keeps_exact_evicted_map_new_route_waits_and_disconnect_releases_maps() {
+    let now = Instant::now();
+    let view = View::default();
+    let first = Arc::new(Session::default());
+    let mut next = (*first).clone();
+    next.tempo.set_tempo(0, 60.).unwrap();
+    let next = Arc::new(next);
+    view.lock().unwrap().register(SessionRevision { generation: 1, doc: first.clone(), remap: true }, false);
+    view.lock().unwrap().push(Presentation { generation: 1, ..block(now, 0., 48_000., Duration::ZERO) });
+    let stats = Stats::default();
+    let mut old = active_port(0, false);
+    old.poll("old", now, &first, &view, &stats, &mut vec![]);
+    view.lock().unwrap().register(SessionRevision { generation: 2, doc: next.clone(), remap: true }, false);
+    let mut fresh = active_port(0, false);
+    let later = now + Duration::from_millis(21);
+    old.poll("old", later, &next, &view, &stats, &mut vec![]);
+    fresh.poll("new", later, &next, &view, &stats, &mut vec![]);
+    assert_eq!(old.link.as_ref().unwrap().messages.iter().filter(|(_, m)| m == &[CLOCK]).count(), 2);
+    assert!(fresh.link.as_ref().unwrap().messages.is_empty());
+    assert!(Arc::ptr_eq(&old.routes[0].as_ref().unwrap().map.as_ref().unwrap().doc, &first));
+    old.disconnect("old", "gone".into(), later, &stats);
+    assert_eq!(Arc::strong_count(&first), 1);
+    view.lock().unwrap().push(Presentation { generation: 2, ..block(later, 1008., 48_000., Duration::ZERO) });
+    fresh.poll("new", later, &next, &view, &stats, &mut vec![]);
+    assert!(!fresh.link.as_ref().unwrap().messages.is_empty());
+}
+
+#[test]
+fn late_connection_after_rejected_grid_still_emits_the_accepted_clock() {
+    let mut out = Output::default();
+    let (cmd, _rx) = channel();
+    let accepted = Arc::new(Session::default());
+    let generation = out.configure(&accepted, &cmd, None);
+    let now = Instant::now();
+    out.view.lock().unwrap().push(Presentation { generation, ..block(now, 0., 48_000., Duration::ZERO) });
+    for _ in 0..=crate::sync_clock::MAX_REVISIONS {
+        let mut rejected = (*accepted).clone();
+        rejected.tempo.set_tempo(0, 60.).unwrap();
+        out.configure(&Arc::new(rejected), &cmd, Some(&accepted));
+    }
+    let mut port = active_port(0, false);
+    port.poll("connected later", now, &accepted, &out.view, &out.stats, &mut vec![]);
+    assert!(port.link.unwrap().messages.iter().any(|(_, msg)| msg == &[CLOCK]));
+    // A disconnected rig can also run for many accepted changes without reporting overflow.
+    let mut old = accepted;
+    for _ in 0..=crate::sync_clock::MAX_REVISIONS {
+        let next = Arc::new((*old).clone());
+        let generation = out.configure(&next, &cmd, Some(&old));
+        out.view.lock().unwrap().push(Presentation { generation, ..block(now, 0., 48_000., Duration::ZERO) });
+        old = next;
+    }
+    assert_eq!(out.status().session_backlog_drops, 0);
+}
+
+#[test]
+fn first_future_block_keeps_its_map_when_more_grids_are_accepted() {
+    for (publish_each, replace_idle_session) in [(false, false), (true, false), (true, true)] {
+        let mut out = Output::default();
+        let (cmd, _rx) = channel();
+        let first = Arc::new(Session::default());
+        let generation = out.configure(&first, &cmd, None);
+        let future = Instant::now() + Duration::from_secs(5);
+        let mut rendered = vec![(generation, Arc::downgrade(&first))];
+        out.view.lock().unwrap().push(Presentation { generation, ..block(future, 0., 4_800., Duration::ZERO) });
+        let mut accepted = first.clone();
+        for step in 1..=crate::sync_clock::MAX_REVISIONS + 3 {
+            let mut next = (*accepted).clone();
+            let boundary = next.tempo.samples_to_ticks(4_800 * step as i64, next.sample_rate);
+            next.tempo.set_tempo(boundary, 60. + step as f64).unwrap();
+            let next = Arc::new(next);
+            let generation = out.configure(&next, &cmd, Some(&accepted));
+            if publish_each {
+                let at = future + Duration::from_millis(100 * step as u64);
+                out.view.lock().unwrap().push(Presentation { generation, ..block(at, 4_800. * step as f64, 4_800., Duration::ZERO) });
+                rendered.push((generation, Arc::downgrade(&next)));
+            }
+            accepted = next;
+        }
+        let mut port = active_port(0, false);
+        if replace_idle_session {
+            out.configure(&Arc::new(Session::default()), &cmd, None);
+        }
+        port.poll("late connection", future - Duration::from_millis(1), &accepted, &out.view, &out.stats, &mut vec![]);
+        assert!(port.link.as_ref().unwrap().messages.is_empty());
+        port.poll("late connection", future, &accepted, &out.view, &out.stats, &mut vec![]);
+        assert_eq!(port.link.as_ref().unwrap().messages, [(future, vec![START]), (future, vec![CLOCK])]);
+        assert!(Arc::ptr_eq(&port.routes[0].as_ref().unwrap().map.as_ref().unwrap().doc, &first));
+        drop(first);
+        for (step, (generation, expected)) in rendered.iter().enumerate() {
+            let at = future + Duration::from_millis(100 * step as u64);
+            let before = port.link.as_ref().unwrap().messages.len();
+            for ms in 0..100 {
+                port.poll("late connection", at + Duration::from_millis(ms), &accepted, &out.view, &out.stats, &mut vec![]);
+            }
+            let map = port.routes[0].as_ref().unwrap().map.as_ref().unwrap();
+            assert_eq!(map.generation, *generation, "wrong map in audible block {step}");
+            assert!(Arc::ptr_eq(&map.doc, &expected.upgrade().unwrap()));
+            assert!(port.link.as_ref().unwrap().messages[before..].iter().any(|(_, m)| m == &[CLOCK]), "missing Clock in block {step}");
+            // The worker retires maps after all connected destinations have advanced.
+            out.view.lock().unwrap().retire_before(*generation);
+        }
+        assert_eq!(out.status().session_backlog_drops, 0);
+        assert!(rendered[..rendered.len() - 1].iter().all(|(_, map)| map.upgrade().is_none()));
+    }
+}
+
+#[test]
+fn slow_destination_keeps_all_rendered_grids_until_the_snapshot_pool_can_resume() {
+    let mut out = Output::default();
+    let (cmd, _rx) = channel();
+    let mut side = crate::callback::Side::new(48_000., channel().1);
+    let mut accepted = Arc::new(Session::default());
+    side.set_follow_base(accepted.clone());
+    let first = out.configure(&accepted, &cmd, None);
+    let start = Instant::now() - Duration::from_secs(2);
+    out.view.lock().unwrap().push(Presentation { generation: first, ..block(start, 0., 1024., Duration::ZERO) });
+    // The route's offset can keep it behind wall time, even though every raw
+    // presentation timestamp below is in the past. Its map must stay available.
+    out.stats.connected().insert("delayed".into());
+    for step in 1..=crate::callback::FOLLOW_POOL_SLOTS {
+        let doc = side.follow_snapshot(&accepted.tempo).unwrap();
+        let generation = out.configure(&doc, &cmd, Some(&accepted));
+        let at = start + Duration::from_millis(22 * step as u64);
+        out.view.lock().unwrap().push(Presentation { generation, ..block(at, 1024. * step as f64, 1024., Duration::ZERO) });
+        accepted = doc;
+    }
+    assert!(side.follow_snapshot(&accepted.tempo).is_none());
+    out.reclaim_grid_snapshots(&accepted);
+    assert!(side.follow_snapshot(&accepted.tempo).is_none());
+    assert!(out.view.lock().unwrap().map(first).is_some());
+    out.stats.connected().remove("delayed");
+    out.reclaim_grid_snapshots(&accepted);
+    assert!(side.follow_snapshot(&accepted.tempo).is_some());
+    assert!(out.view.lock().unwrap().map(first).is_none());
+}
+
+#[test]
+fn final_stop_survives_failed_clock_and_retries_a_rejected_stop() {
+    struct Flaky(Sender<u8>, bool);
+    impl SyncPort for Flaky {
+        fn send_at(&mut self, at: Instant, msg: &[u8]) -> Result<Instant, String> {
+            if msg == [CLOCK] || (msg == [STOP] && std::mem::take(&mut self.1)) {
+                return Err("transient send failure".into());
+            }
+            self.0.send(msg[0]).unwrap();
+            Ok(at)
+        }
+    }
+    let stats = Arc::<Stats>::default();
+    let (wire, rx) = channel();
+    let mut link = PortIo::new(Flaky(wire, true), stats.clone()).unwrap();
+    let now = Instant::now();
+    link.submit(now, &[START], false, &stats).unwrap();
+    link.submit(now, &[CLOCK], false, &stats).unwrap();
+    link.flush();
+    assert_eq!(rx.recv_timeout(Duration::from_secs(2)).unwrap(), START);
+    let port = Port {
+        link: Some(link),
+        retry: now,
+        routes: [None, None],
+        future: vec![],
+        cleanup: VecDeque::from([vec![STOP]]),
+        waiting_for_timing: false,
+        failure: None,
+    };
+    stop_and_flush_ports(&mut BTreeMap::from([("DIN".into(), port)]), &stats);
+    assert_eq!(rx.try_iter().collect::<Vec<_>>(), [STOP]);
+}
+
+#[test]
+fn stop_rejected_during_normal_playback_precedes_the_next_start() {
+    struct Sink {
+        fail_stop: bool,
+        messages: Vec<Vec<u8>>,
+    }
+    impl SyncPort for Sink {
+        fn send_at(&mut self, at: Instant, msg: &[u8]) -> Result<Instant, String> {
+            if self.fail_stop && msg == [STOP] {
+                return Err("stop rejected".into());
+            }
+            self.messages.push(msg.to_vec());
+            Ok(at)
+        }
+    }
+    let now = Instant::now();
+    let view = View::default();
+    let mut routes = BTreeMap::new();
+    let s = Session::default();
+    let stats = Stats::default();
+    set_route(&mut routes, 0, "DIN".into(), Route { offset: 0, compensate: false, encoder: Box::<Cursor>::default(), map: None });
+    let p = routes.get_mut("DIN").unwrap();
+    p.link = Some(Sink { fail_stop: true, messages: vec![] });
+    let b = block(now, 0., 480., Duration::ZERO);
+    view.lock().unwrap().push(b);
+    p.poll("DIN", now, &s, &view, &stats, &mut vec![]);
+    view.lock().unwrap().push(Presentation { playing: false, pass: 2, ..b });
+    p.poll("DIN", now, &s, &view, &stats, &mut vec![]);
+    assert!(p.link.is_none());
+    p.link = Some(Sink { fail_stop: false, messages: vec![] });
+    p.routes[0].as_mut().unwrap().encoder.reset();
+    view.lock().unwrap().push(Presentation { pass: 3, ..b });
+    p.poll("DIN", now, &s, &view, &stats, &mut vec![]);
+    p.poll("DIN", now, &s, &view, &stats, &mut vec![]);
+    assert_eq!(p.link.as_ref().unwrap().messages, [vec![STOP], vec![START], vec![CLOCK]]);
+}
+
+#[test]
+fn short_mtc_block_without_a_quarter_frame_keeps_the_worker_awake() {
+    let now = Instant::now();
+    let view = View::default();
+    let s = Session::default();
+    let mut port = active_port(0, false);
+    port.routes[0] = None;
+    port.routes[1] = Some(Route { offset: 0, compensate: false, map: None, encoder: Box::<crate::mtc::Encoder>::default() });
+    view.lock().unwrap().push(block(now, 0., 64., Duration::ZERO));
+    let wake = port.poll("DIN", now, &s, &view, &Stats::default(), &mut vec![]).unwrap();
+    assert!(wake > now && wake <= now + Duration::from_millis(2));
+    view.lock().unwrap().push(Presentation { playing: false, ..block(now, 64., 64., Duration::ZERO) });
+    assert!(port.poll("DIN", wake, &s, &view, &Stats::default(), &mut vec![]).is_none());
+}
+
+#[test]
+fn fractional_pulse_at_first_wake_is_spaced_after_the_transport_clock() {
+    let now = Instant::now();
+    let mut s = Session::default();
+    s.tempo.set_tempo(0, 60. * 48000. / (24. * 1000.4)).unwrap();
+    let b = block(now, 1000., 4800., Duration::ZERO);
+    let mut cursor = Cursor::default();
+    let mut wire = vec![];
+    let wake = cursor.update(b, now, &s, &mut |at, m| wire.push((at, m.to_vec()))).unwrap();
+    assert_eq!(wire, [(now, vec![START]), (now, vec![CLOCK])]);
+    assert!(wake >= now + crate::sync_clock::CATCH_UP_SPACING);
+    cursor.update(b, wake, &s, &mut |_, m| wire.push((wake, m.to_vec())));
+    assert_eq!(wire.last().unwrap(), &(wake, vec![CLOCK]));
+    assert_eq!(wire.len(), 3);
+}
+
+#[test]
+fn requested_beats_retry_when_another_encoder_started_the_worker() {
+    let mut output = Output::default();
+    let ports = vec![("clock".into(), 0)];
+    assert!(!output.beats(ports.clone(), false));
+    let (tx, rx) = channel();
+    let (quit, wait) = channel::<()>();
+    let thread = std::thread::spawn(move || {
+        let _ = wait.recv();
+    });
+    output.worker = Some((WorkerSender { tx, worker: thread.thread().clone() }, thread));
+    assert!(output.encoder(Some(("mtc".into(), 0)), true, Box::<crate::mtc::Encoder>::default()));
+    assert!(matches!(rx.try_recv(), Ok(Update::Encoder(..))));
+    assert!(output.beats(ports.clone(), false));
+    assert!(matches!(rx.try_recv(), Ok(Update::Beats(names,false)) if names == ports));
+    drop(quit);
+}
+
+#[test]
+fn asynchronous_cleanup_retries_the_original_unsent_messages_in_order() {
+    struct Reject;
+    impl SyncPort for Reject {
+        fn send_at(&mut self, at: Instant, msg: &[u8]) -> Result<Instant, String> {
+            if msg == [STOP] { Ok(at) } else { Err("unplugged".into()) }
+        }
+    }
+    let mut output = PortIo::new(Reject, Default::default()).unwrap();
+    let stats = Stats::default();
+    let now = Instant::now();
+    let sx = [0xf0, 0x7d, 1, 0xf7];
+    for (msg, retry) in [(&[STOP][..], true), (&sx, true), (&[CLOCK], false), (&[STOP], true)] {
+        output.submit(now, msg, retry, &stats).unwrap();
+    }
+    output.flush();
+    let mut cleanup = VecDeque::from([vec![0xf0, 0x7d, 2, 0xf7]]);
+    let deadline = now + Duration::from_secs(2);
+    while output.ready(&mut cleanup).is_ok() {
+        assert!(Instant::now() < deadline);
+        std::thread::yield_now();
+    }
+    assert_eq!(cleanup, [sx.to_vec(), vec![STOP], vec![0xf0, 0x7d, 2, 0xf7]]);
 }

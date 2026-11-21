@@ -49,6 +49,29 @@ impl SoundApp {
         self.note_play_started(from, looped);
     }
 
+    fn play_from_position(&mut self, at: Samples, midi_origin: Option<Samples>) {
+        if !self.is_playing() {
+            self.start_play_with_origin(at, None, None, midi_origin);
+            return;
+        }
+        // Playing on from this position drops the end and loop of the earlier selection.
+        if let Some(p) = &self.player {
+            if let Some(origin) = midi_origin {
+                p.play_from_clock(origin, at);
+            } else if self.mtc_chasing {
+                p.play_chasing_mtc(at);
+            } else {
+                p.play(at, None, None);
+            }
+        }
+        if let Some(sim) = &mut self.sim {
+            *sim = (at, None, None);
+        }
+        self.play_loop = None;
+        self.last_write_at = i64::MIN;
+        self.engine.transport.position = at;
+    }
+
     fn note_play_started(&mut self, from: Samples, looped: Option<Range>) {
         // The loop as the audio engine takes it: a range too short to loop is played once.
         self.play_loop = looped.filter(|l| soundcraft_playback::loops(*l));
@@ -69,6 +92,10 @@ impl SoundApp {
             p.set_speed(1.0);
             p.stop();
         }
+        self.note_play_stopped();
+    }
+
+    fn note_play_stopped(&mut self) {
         if self.engine.transport.recording {
             self.finish_recording();
         }
@@ -106,6 +133,10 @@ impl SoundApp {
     }
 
     fn start_recording(&mut self) {
+        if self.mtc_online {
+            self.ui.status = crate::localization::text("Take MTC chase offline before recording").into();
+            return;
+        }
         let armed = self.engine.session().tracks.iter().any(|t| t.mixer.record_arm);
         if !armed {
             let why = if self.engine.session().tracks.is_empty() {
@@ -452,30 +483,14 @@ impl SoundApp {
                     }
                 }
                 TransportRequest::ClockPlaybackStarted(from) => self.note_play_started(from, None),
-                TransportRequest::PlayFromClock { origin, render_from } if !self.is_playing() => {
-                    self.start_play_with_origin(render_from, None, None, Some(origin));
-                }
-                // A clock re-lock during coast resumes the rolling transport without a second attack.
-                TransportRequest::PlayFrom(at) | TransportRequest::PlayFromClock { render_from: at, .. } => {
-                    if self.is_playing() {
-                        // Playing on from `at` drops the end and loop of the earlier selection.
-                        if let Some(p) = &self.player {
-                            if self.mtc_chasing {
-                                p.play_chasing_mtc(at);
-                            } else {
-                                p.play(at, None, None);
-                            }
-                        }
-                        if let Some(sim) = &mut self.sim {
-                            *sim = (at, None, None);
-                        }
-                        self.play_loop = None;
-                        self.last_write_at = i64::MIN;
-                        self.engine.transport.position = at;
-                    } else {
-                        self.start_play(at, None, None);
+                TransportRequest::PlayFromClock { origin, render_from } => {
+                    // Continue re-locks a coasting take on its live beat grid. Seeking would move
+                    // incoming MIDI timestamps relative to the audio already being written.
+                    if !self.engine.transport.recording {
+                        self.play_from_position(render_from, Some(origin));
                     }
                 }
+                TransportRequest::PlayFrom(at) => self.play_from_position(at, None),
                 TransportRequest::Stop | TransportRequest::Pause => self.stop_play(),
                 TransportRequest::TogglePlay => {
                     if self.is_playing() {
@@ -523,9 +538,6 @@ impl SoundApp {
         if let Some(p) = &self.player {
             let playing = p.is_playing();
             let ended = self.engine.transport.playing && !playing;
-            if ended {
-                p.set_speed(1.0);
-            }
             if self.engine.transport.playing {
                 self.engine.transport.position = p.position();
             }
@@ -549,7 +561,12 @@ impl SoundApp {
             let main = snap.main.peak;
             feed_meter(&mut self.main_meter, main, 0.0, dt);
             if ended {
-                self.stop_play();
+                if self.mtc_online {
+                    // The next input lock can already be rolling by the time a queued Stop reaches the device.
+                    self.note_play_stopped();
+                } else {
+                    self.stop_play();
+                }
             }
         } else if let Some((pos, end, looped)) = &mut self.sim {
             let sr = self.engine.session().sample_rate.as_f64();

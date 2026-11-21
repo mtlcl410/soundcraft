@@ -10,13 +10,13 @@ use soundcraft_model::TrackKind;
 #[derive(Default)]
 pub(crate) struct Fault {
     /// A block panicked: output stays silent from then on.
-    failed: AtomicBool,
+    pub(crate) failed: AtomicBool,
     /// The device went away or the stream was invalidated: only a reconnect can restore audio.
     pub(crate) gone: AtomicBool,
     /// Blocks so far, to tell a device that stopped asking for audio.
     pub(crate) beats: std::sync::atomic::AtomicU64,
     /// The UI has been told.
-    reported: AtomicBool,
+    reported: std::sync::atomic::AtomicU8,
 }
 
 impl Fault {
@@ -29,9 +29,12 @@ impl Fault {
         } else if stalled {
             OutputTrouble::Stalled
         } else {
+            self.reported.store(0, Ordering::Relaxed);
             return None;
         };
-        (!self.reported.swap(true, Ordering::Relaxed)).then_some(trouble)
+        // A transient stall can recover or be superseded by stream invalidation.
+        let kind = trouble as u8 + 1;
+        (self.reported.swap(kind, Ordering::Relaxed) != kind).then_some(trouble)
     }
 }
 
@@ -290,12 +293,16 @@ impl AudioState {
                 }
                 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
                 Cmd::Clock(clock) => self.clock = clock,
-                Cmd::FollowGrid(generation, s, retired) => {
+                Cmd::FollowGrid(generation, boundary, s, retired) => {
+                    if self.playing && self.pos > boundary {
+                        let _ = retired.set((s, Some(self.session.clone())));
+                        continue;
+                    }
                     self.session_generation = generation;
                     // Exactly one writer; the host empties the slot before sending this ticket.
                     // A full/disconnected general-purpose reclamation queue cannot free this
                     // snapshot here. Releasing the ticket allows the host to take it back.
-                    let _ = retired.set(std::mem::replace(&mut self.session, s));
+                    let _ = retired.set((std::mem::replace(&mut self.session, s), None));
                 }
                 Cmd::OldSessions(tx) => self.old_sessions = Some(tx),
                 Cmd::Play { from, end, looped } => self.begin_play(from, end, looped, false),
@@ -431,29 +438,36 @@ impl AudioState {
             return;
         }
         #[cfg(any(target_os = "windows", target_os = "macos", target_os = "linux"))]
-        let delay = self.device_timing.map_or(0., |t| t.heard_instant(self.device_rate, 0).saturating_duration_since(t.callback).as_secs_f64());
+        let delay = self
+            .device_timing
+            .filter(|t| t.lead().is_some())
+            .map(|t| t.heard_instant(self.device_rate, 0).saturating_duration_since(t.callback).as_secs_f64());
         #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-        let delay = 0.;
+        let delay: Option<f64> = None;
         let live = position.saturating_add(sr.samples(now.saturating_sub(stamp) as f64 / 1e6));
-        let desired = live.saturating_add(sr.samples(delay));
+        let presentation = delay.map(|seconds| live.saturating_add(sr.samples(seconds)));
+        let source_seek = seek_generation != self.chase_seek_generation;
         if !self.chasing || !self.playing {
             // A corroborated stopped locate protects its first attack for one start.
-            // Unanchored locks start at the source time the new audio will be heard.
-            let from = anchor.map(|p| p.session_sample(rate, sr, start, offset)).filter(|at| *at >= 0).unwrap_or(desired);
+            // Without a presentation estimate an unanchored start can still follow the incoming transport.
+            let from = anchor.map(|p| p.session_sample(rate, sr, start, offset)).filter(|at| *at >= 0).or(presentation).unwrap_or(live);
             self.begin_play(from, None, None, true);
             self.shared.speed.store(1000, Ordering::Relaxed);
             self.shared.playing.store(true, Ordering::Release);
-        } else {
+        } else if let Some(desired) = presentation.or_else(|| source_seek.then_some(live)) {
             let rendered = self.pos as f64 + self.read - self.pending_len as f64;
             if desired.abs_diff(rendered.round() as i64) > p.in_session_rate(rate).frame_samples(sr) as u64 {
                 let since = *self.drift_since.get_or_insert(stamp);
-                if seek_generation != self.chase_seek_generation || stamp.saturating_sub(since) >= 1_000_000 {
+                if source_seek || stamp.saturating_sub(since) >= 1_000_000 {
                     feed.mtc_relocated();
                     self.begin_play(desired, None, None, true);
                 }
             } else {
                 self.drift_since = None;
             }
+        } else {
+            // Only an observed presentation phase can establish sustained audio drift.
+            self.drift_since = None;
         }
         self.chase_seek_generation = seek_generation;
         self.chase_group = Some(stamp);
@@ -863,9 +877,9 @@ impl AudioState {
             let (heard_at, lead) = match self.device_timing {
                 Some(t) => {
                     clock.observe(t, self.device_buffer_frames as f64 / self.device_rate);
-                    (t.heard_instant(self.device_rate, 0), t.lead)
+                    (t.heard_instant(self.device_rate, 0), t.lead())
                 }
-                None => (std::time::Instant::now(), std::time::Duration::ZERO),
+                None => (std::time::Instant::now(), None),
             };
             super::sync_clock::Presentation {
                 generation: self.session_generation,
@@ -1208,6 +1222,7 @@ pub(crate) struct Side {
     pub(crate) clock_document: std::sync::Weak<Session>,
     // Index of the last published tempo-only snapshot, or None for the full base.
     published_grid: Option<usize>,
+    pub(crate) retry_grid: Option<soundcraft_time::TempoMap>,
     // Device and output worker may retain snapshots independently. Reuse only exclusively
     // owned entries. When all are occupied, the host coalesces edits until one returns.
     follow_pool: [Option<Arc<Session>>; FOLLOW_POOL_SLOTS],
@@ -1224,6 +1239,7 @@ impl Side {
             grid_base: None,
             clock_document: Default::default(),
             published_grid: None,
+            retry_grid: None,
             follow_pool: Default::default(),
             grid_return: Default::default(),
             shadow: HashMap::new(),
@@ -1240,15 +1256,15 @@ impl Side {
     pub(crate) fn set_follow_base(&mut self, doc: Arc<Session>) {
         self.grid_base = Some(doc);
         self.published_grid = None;
+        self.retry_grid = None;
         self.follow_pool = Default::default();
     }
 
-    pub(crate) fn published_tempo(&self) -> Option<&soundcraft_time::TempoMap> {
-        let snapshot = match self.published_grid {
-            Some(index) => self.follow_pool.get(index)?.as_ref()?,
-            None => self.grid_base.as_ref()?,
-        };
-        Some(&snapshot.tempo)
+    pub(crate) fn published_session(&self) -> Option<&Arc<Session>> {
+        match self.published_grid {
+            Some(index) => self.follow_pool[index].as_ref(),
+            None => self.grid_base.as_ref(),
+        }
     }
 
     pub(crate) fn follow_snapshot(&mut self, tempo: &soundcraft_time::TempoMap) -> Option<Arc<Session>> {
@@ -1275,8 +1291,11 @@ impl Side {
     /// Drops retired instances (closing their editors first, inside the plugin's drop) and
     /// replaced session snapshots.
     pub(crate) fn collect_garbage(&mut self) {
-        if let Some(retired) = Arc::get_mut(&mut self.grid_return) {
-            retired.take();
+        if let Some((candidate, Some(active))) = Arc::get_mut(&mut self.grid_return).and_then(|returned| returned.take())
+            && self.published_grid.and_then(|i| self.follow_pool[i].as_ref()).is_some_and(|sent| Arc::ptr_eq(sent, &candidate))
+        {
+            self.published_grid = self.follow_pool.iter().position(|slot| slot.as_ref().is_some_and(|s| Arc::ptr_eq(s, &active)));
+            self.retry_grid = Some(active.tempo.clone());
         }
         while let Ok(g) = self.garbage.try_recv() {
             for p in g {

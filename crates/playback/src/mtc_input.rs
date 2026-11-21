@@ -48,6 +48,9 @@ impl Position {
     }
 
     pub fn samples(self, sr: SampleRate) -> Samples {
+        if self.quarter % 4 == 0 {
+            return self.rate.samples_at_frame(self.quarter / 4, sr);
+        }
         (self.quarter as f64 * (self.rate.samples_per_frame(sr) / 4.)).round() as Samples
     }
 
@@ -178,6 +181,15 @@ impl Reader {
         self.fit.clear();
         self.jitter_count = 0;
         self.jitter_index = 0;
+    }
+    pub(crate) fn set_options(&mut self, options: Options) {
+        if (options.offset != self.options.offset || options.rate != self.options.rate)
+            && !self.locked
+            && let Some(p) = self.located_start
+        {
+            self.pending = Some(ChaseEvent::Locate(p));
+        }
+        self.options = options;
     }
     pub(crate) fn incoming_status(&self) -> (Option<Position>, Option<RateMismatch>) {
         let mismatch = self.incoming.and_then(|p| {
@@ -418,6 +430,14 @@ impl Reader {
         self.speed_mismatch = candidate.map(|incoming| RateMismatch { incoming, session: rate.label(), speed_deviation_ppm: Some(ppm) });
     }
 
+    /// A full-frame locate is stationary. Recent quarter frames can start rolling the
+    /// callback before the host sees a complete group, or an established transport.
+    pub(crate) fn transport_in_motion(&self, now: i64) -> bool {
+        // Before the first complete group, even its rate bits have not arrived yet.
+        // Eight quarter frames at 24000/1001 fps cover at most 83,417 microseconds.
+        self.rolling.is_some() || self.last_at.is_some_and(|at| now.saturating_sub(at) <= 83_417)
+    }
+
     pub(crate) fn tracking(&mut self, now: i64) -> Tracking {
         self.expire(now);
         if let Some((position, stamp)) = self.rolling {
@@ -480,6 +500,14 @@ mod tests {
         for (i, nibble) in [frame & 15, frame >> 4, 0, 0, 0, 0, 0, 2].into_iter().enumerate() {
             receive(&[0xf1, (i as u8) << 4 | nibble]);
         }
+    }
+
+    #[test]
+    fn full_frame_locate_matches_fractional_rate_session_start() {
+        let rate = FrameRate::Fps29_97;
+        let sr = SampleRate::default();
+        let p = Position::decode(0x60, 0, 0, 2).unwrap();
+        assert_eq!(p.session_sample(rate, sr, rate.samples_at_frame(2, sr), 0), 0);
     }
 
     #[test]

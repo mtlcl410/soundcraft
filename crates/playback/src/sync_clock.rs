@@ -1,6 +1,6 @@
 //! Presentation timestamps shared by external MIDI synchronization protocols.
 use crate::{Range, Session};
-use std::collections::VecDeque;
+use std::collections::{BTreeMap, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering::Relaxed};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -12,20 +12,41 @@ pub(crate) const CATCH_UP_SPACING: Duration = Duration::from_millis(1);
 #[derive(Clone, Copy)]
 pub(crate) struct DeviceTiming {
     pub callback: Instant,
-    pub lead: Duration,
+    lead: Option<Duration>,
     pub frame_offset: usize,
     pub clamped: bool,
 }
 
+/// One instance per built output stream, including a fresh instance on reopen.
+#[derive(Default)]
+pub(crate) struct StreamLead {
+    last_valid: Option<Duration>,
+}
+
+impl StreamLead {
+    pub(crate) fn observe(&mut self, now: Instant, report: Option<Duration>) -> DeviceTiming {
+        let valid = report.filter(|&v| v <= Duration::from_secs(1));
+        if valid.is_some() {
+            self.last_valid = valid;
+        }
+        DeviceTiming { callback: now, lead: self.last_valid, frame_offset: 0, clamped: valid.is_none() }
+    }
+}
+
 impl DeviceTiming {
+    #[cfg(test)]
     pub(crate) fn new(callback: Instant, reported: Option<Duration>, frame_offset: usize) -> Self {
-        let valid = reported.filter(|&v| v <= Duration::from_secs(1));
-        Self { callback, lead: valid.unwrap_or_default(), frame_offset, clamped: valid.is_none() }
+        Self { frame_offset, ..StreamLead::default().observe(callback, reported) }
+    }
+    pub(crate) fn lead(self) -> Option<Duration> {
+        self.lead
     }
     pub(crate) fn heard_instant(self, device_rate: f64, frame_index: usize) -> Instant {
         let frames = self.frame_offset.saturating_add(frame_index);
         let elapsed = Duration::try_from_secs_f64(frames as f64 / device_rate).unwrap_or_default();
-        self.callback.checked_add(self.lead).and_then(|t| t.checked_add(elapsed)).unwrap_or(self.callback)
+        // Without a report, this is the callback clock for uncompensated routes.
+        // The optional lead travels with the block; compensated routes wait for it.
+        self.callback.checked_add(self.lead.unwrap_or_default()).and_then(|t| t.checked_add(elapsed)).unwrap_or(self.callback)
     }
 }
 
@@ -45,7 +66,7 @@ pub struct Presentation {
     pub limit: f64,
     pub looped: Option<Range>,
     pub end: Option<i64>,
-    pub lead: Duration,
+    pub lead: Option<Duration>,
 }
 
 impl Presentation {
@@ -65,10 +86,11 @@ impl Presentation {
     pub fn instant_for(self, sample: f64) -> Instant {
         shift(self.heard_at, (sample - self.sample) / self.samples_per_second)
     }
-    fn adjusted(mut self, compensate: bool, offset_samples: i64) -> Self {
-        let (total, _) = delivery_offset(self.lead, self.system_delay_samples, self.sample_rate, compensate, offset_samples);
-        self.heard_at = shift(self.heard_at, total - self.lead.as_secs_f64());
-        self
+    fn adjusted(mut self, compensate: bool, offset_samples: i64) -> Option<Self> {
+        let lead = if compensate { self.lead? } else { self.lead.unwrap_or_default() };
+        let (total, _) = delivery_offset(lead, self.system_delay_samples, self.sample_rate, compensate, offset_samples);
+        self.heard_at = shift(self.heard_at, total - lead.as_secs_f64());
+        Some(self)
     }
     pub(crate) fn current(mut self, now: Instant) -> Self {
         let projected = self.sample_heard_at(now);
@@ -126,36 +148,101 @@ pub(crate) const MAX_REVISIONS: usize = 8;
 
 pub(crate) struct Timeline {
     maps: VecDeque<SessionRevision>,
+    // Overflow revisions actually rendered into the device queue. Only host and
+    // worker code owns or releases session references; push() stays allocation-free.
+    rendered_maps: BTreeMap<u64, SessionRevision>,
     blocks: VecDeque<Presentation>,
     pub(crate) late_transport_waiter: Option<std::thread::Thread>,
+    timing_waiter: Option<std::thread::Thread>,
 }
 impl Default for Timeline {
     fn default() -> Self {
-        Self { blocks: VecDeque::with_capacity(HISTORY), maps: VecDeque::with_capacity(MAX_REVISIONS), late_transport_waiter: None }
+        Self {
+            blocks: VecDeque::with_capacity(HISTORY),
+            maps: VecDeque::with_capacity(MAX_REVISIONS),
+            rendered_maps: BTreeMap::new(),
+            late_transport_waiter: None,
+            timing_waiter: None,
+        }
     }
 }
 impl Timeline {
     /// Called by the control thread, never by the audio callback.
     pub(crate) fn register(&mut self, revision: SessionRevision, active: bool) -> bool {
         if !active {
-            self.maps.clear();
+            // Replacing an idle session invalidates its old map for a new port.
+            // Buffers already queued for future playback still belong to that session.
+            let now = Instant::now();
+            let future: std::collections::HashSet<_> = self.blocks.iter().filter(|b| b.heard_at > now).map(|b| b.generation).collect();
+            self.rendered_maps.retain(|g, _| future.contains(g));
+            self.rendered_maps.extend(self.maps.drain(..).filter(|r| future.contains(&r.generation)).map(|r| (r.generation, r)));
         }
         let full = self.maps.len() == MAX_REVISIONS;
-        if full {
-            self.maps.pop_front();
-        }
+        let dropped = full && !self.retain_rendered_front();
         self.maps.push_back(revision);
-        full
+        dropped
+    }
+
+    fn retain_rendered_front(&mut self) -> bool {
+        let Some(oldest) = self.maps.pop_front() else { return false };
+        if !self.blocks.iter().any(|b| b.generation == oldest.generation) {
+            return false;
+        }
+        // A stalled or disconnected route can only look up generations that
+        // still have a presentation. Bound the overflow to that ring's capacity.
+        if self.rendered_maps.len() == HISTORY {
+            self.discard_unpresented_maps();
+        }
+        self.rendered_maps.insert(oldest.generation, oldest);
+        true
+    }
+    // A candidate is available to the worker immediately. Before registering the
+    // next one, remove revisions the callback declined so they cannot evict the
+    // accepted grid, including while all MIDI outputs are disconnected.
+    pub(crate) fn register_grid(&mut self, candidate: SessionRevision, accepted: &Arc<Session>, active: bool) {
+        self.reclaim_grid_history(accepted, active, Instant::now());
+        // Superseded candidates without a presentation never reached a MIDI
+        // destination. Every displaced revision with a presentation is retained.
+        self.register(candidate, true);
+    }
+
+    pub(crate) fn discard_unpresented_maps(&mut self) {
+        if !self.rendered_maps.is_empty() {
+            let present: std::collections::HashSet<_> = self.blocks.iter().map(|b| b.generation).collect();
+            self.rendered_maps.retain(|generation, _| present.contains(generation));
+        }
+    }
+
+    pub(crate) fn reclaim_grid_history(&mut self, accepted: &Arc<Session>, active: bool, now: Instant) {
+        if let Some(index) = self.maps.iter().rposition(|r| Arc::ptr_eq(&r.doc, accepted)) {
+            self.maps.truncate(index + 1);
+            if !active {
+                let generation = self.maps[index].generation;
+                let first_needed = self.blocks.iter().rfind(|b| b.heard_at <= now).or(self.blocks.front()).map_or(generation, |b| b.generation);
+                self.retire_before(generation.min(first_needed));
+            }
+        }
+    }
+    pub(crate) fn unconfigured(&self) -> bool {
+        self.maps.is_empty()
     }
     pub(crate) fn map(&self, generation: u64) -> Option<&SessionRevision> {
-        self.maps.iter().find(|r| r.generation == generation).or_else(|| self.maps.back())
+        self.maps.iter().find(|r| r.generation == generation).or_else(|| self.rendered_maps.get(&generation))
     }
     pub(crate) fn retire_before(&mut self, generation: u64) {
+        while self.rendered_maps.first_key_value().is_some_and(|(&g, _)| g < generation) {
+            self.rendered_maps.pop_first();
+        }
         while self.maps.len() > 1 && self.maps.front().is_some_and(|r| r.generation < generation) {
             self.maps.pop_front();
         }
     }
     pub(crate) fn push(&mut self, block: Presentation) {
+        if block.lead.is_some()
+            && let Some(worker) = self.timing_waiter.take()
+        {
+            worker.unpark();
+        }
         // The worker arms this once, only after its bounded wait has expired.
         // Ordinary callbacks publish under their existing try_lock without signalling.
         if self.late_transport_waiter.is_some()
@@ -172,28 +259,54 @@ impl Timeline {
     pub(crate) fn transport_state(&self) -> Option<(u64, bool)> {
         self.blocks.back().map(|block| (block.pass, block.playing))
     }
+    /// Called under the same lock as read(), so the first usable timestamp
+    /// cannot land between checking the timeline and registering the waiter.
+    pub(crate) fn wait_for_timing(&mut self) {
+        self.timing_waiter.get_or_insert_with(std::thread::current);
+    }
+    pub(crate) fn clear_waiters(&mut self) {
+        self.timing_waiter = None;
+        self.late_transport_waiter = None;
+    }
     /// Most recent audible block and first future transition for this destination.
     pub(crate) fn read(&self, now: Instant, compensate: bool, offset_samples: i64) -> (Option<Presentation>, Option<Instant>) {
+        if compensate && self.blocks.back().is_none_or(|b| b.lead.is_none()) {
+            return (None, None);
+        }
         let adjusted = |block: &Presentation| block.adjusted(compensate, offset_samples);
-        let Some(index) = self.blocks.iter().rposition(|block| adjusted(block).heard_at <= now) else {
-            return (None, self.blocks.front().map(|block| adjusted(block).heard_at));
+        let Some((index, block)) = self.blocks.iter().enumerate().rev().find_map(|(i, b)| adjusted(b).filter(|b| b.heard_at <= now).map(|b| (i, b)))
+        else {
+            return (None, self.blocks.iter().find_map(adjusted).map(|b| b.heard_at));
         };
-        let block = adjusted(&self.blocks[index]);
         let future = self
             .blocks
             .range(index + 1..)
+            .filter_map(adjusted)
             .find(|b| block.playing || b.playing || block.pass != b.pass || block.sample != b.sample || block.generation != b.generation);
-        (Some(block.current(now)), future.map(|b| adjusted(b).heard_at))
+        (Some(block.current(now)), future.map(|b| b.heard_at))
     }
 }
 
 #[derive(Default)]
 pub(crate) struct CallbackMetrics {
-    pub lead_us: AtomicU64,
+    // One coherent observation under concurrent status reads. 0 = unobserved,
+    // 1 = unknown; otherwise 2 + 2 * microseconds + retained. Valid lead <= 1 s.
+    lead_reading: AtomicU64,
+    pub(crate) fresh_lead_reports: AtomicU64,
     pub system_delay_samples: AtomicU64,
     pub max_gap_us: AtomicU64,
     pub late_buffers: AtomicU64,
     pub clamps: AtomicU64,
+}
+impl CallbackMetrics {
+    pub(crate) fn lead(&self) -> (Option<u64>, crate::OutputLeadSource) {
+        use crate::OutputLeadSource::*;
+        match self.lead_reading.load(Relaxed) {
+            0 => (None, Unobserved),
+            1 => (None, Unknown),
+            v => (Some((v - 2) / 2), if v % 2 == 0 { Reported } else { Retained }),
+        }
+    }
 }
 pub(crate) type View = Arc<Mutex<Timeline>>;
 pub(crate) struct Publisher {
@@ -211,7 +324,11 @@ impl Publisher {
         if timing.frame_offset != 0 {
             return;
         }
-        self.metrics.lead_us.store(timing.lead.as_micros() as u64, Relaxed);
+        let reading = timing.lead.map_or(1, |lead| 2 + 2 * lead.as_micros() as u64 + u64::from(timing.clamped));
+        self.metrics.lead_reading.store(reading, Relaxed);
+        if !timing.clamped {
+            self.metrics.fresh_lead_reports.fetch_add(1, Relaxed);
+        }
         if timing.clamped {
             self.metrics.clamps.fetch_add(1, Relaxed);
         }

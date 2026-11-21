@@ -900,9 +900,29 @@ pub fn run_ui_command(app: &mut SoundApp, id: &str, p: &Value) -> Option<Result<
                         if let Err(error) = crate::docking::validate(&ns.docking).and_then(|()| crate::docking::validate_mix(&ns.mix_docking)) {
                             return Some(Err(error));
                         }
+                        if let Err(error) = app.validate_sync_routing(&ns.midi_sync, ns.clock_follow_input.as_deref()) {
+                            return Some(Err(error));
+                        }
+                        if app.mtc_online && ns.gen_mtc {
+                            return Some(Err("Take MTC chase offline before enabling the generator".into()));
+                        }
                         let closed_preferences = app.ui.show_preferences && !ns.show_preferences;
                         crate::docking::cancel_replaced_state(app, &ns);
+                        let source_changed = app.ui.clock_follow_input != ns.clock_follow_input;
+                        if source_changed {
+                            app.transition_clock_source(
+                                app.clock_follow.enabled && ns.clock_follow_input.is_some(),
+                                ns.clock_follow_input.as_deref(),
+                            );
+                        } else if app.ui.clock_follow_input_offset() != ns.clock_follow_input_offset()
+                            && let Some(player) = &app.player
+                        {
+                            player.cancel_clock_resume();
+                        }
                         app.ui = ns;
+                        if source_changed {
+                            app.service_clock_follow();
+                        }
                         app.ui.undo_levels = app.ui.undo_levels.clamp(1, 64);
                         app.engine.set_history_limit(app.ui.undo_levels);
                         if closed_preferences {
