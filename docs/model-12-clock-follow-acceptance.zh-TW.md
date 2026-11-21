@@ -157,4 +157,30 @@ ASIO 輸入及輸出各擷取 372,091 個區塊，均為 64 取樣，序號無�
 - [x] **256 取樣的已知限制。** 在 Known limits 如實寫明先前 12 次中有 1 次波形偏差、原因未明，並開 issue 附上量測條件、偵測方式與證據追查。與本次 64 取樣的 40 取樣插入分別記錄。
   - 重算 12 組原始 WAV，只有重開串流後的第一個 8.000 秒起播（`repeat2-256/exact-a`）超標，右聲道殘差跳幅 455.46，其餘 11 次為 2.06–2.54（16-bit PCM 計數，門檻 16）。12 次均未觸發低電平判定。已在 [#1669 的 Known limits](https://github.com/storytold/soundcraft/pull/1669) 與 [追查 issue #1686（含對照圖）](https://github.com/storytold/soundcraft/issues/1686) 雙向連結；64 取樣第 13.498 秒的 +40 取樣另列為不同事件。
 - [x] **#1674 的修正歸屬。** 同一測試只在舊版外部 Continue 從 8.000 秒起播時漏音。修正保留在 #1669。完整矩陣與重跑方式見上方「#1674 起播首音的修正歸屬」。
-- [ ] **Ready 前複審。** 最終修改推到 #1669 之後、轉為 Ready for review 之前，手動觸發一次 CodeRabbit review，核對審查對應的 commit 並處理結果。
+- [ ] **Ready 前複審。** #1669 維持草稿。[首次手動觸發](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7062160670)涵蓋三支相依 PR 的累積差異。[CodeRabbit 完整審查](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005064083)提出 18 則行內意見、1 則行外同步設定問題、16 則次要意見與 1 則翻譯建議。
+  - [第一輪修正](https://github.com/storytold/soundcraft/pull/1669/commits/bfecc6e65f8f58cde1596b9fe6c31a3c89845868)及[請求複審與翻譯測試結果](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7062566656)。保留原有 pt-BR 翻譯。移出翻譯時，Clock 對話框、字串目錄完整性、選單三個既有測試均失敗；還原後三項都通過。
+
+### Windows 軟體驗證
+
+| 路徑 | 重現與修正後的結果 |
+| --- | --- |
+| 外部 Clock 起播 | 閒置的舊 Clock 逾時，曾取消較晚收到的 Start 或 Continue。修正後第一個新 Clock 才觸發起播；後續 Start 也會使過期的起播要求失效。 |
+| 起播點相同音高 | 前一音延後的 Note Off 曾切掉接上的同音高新音。修正後在第一個渲染區塊先結束舊音、再觸發新音；兩種 clip 排列順序都通過。 |
+| Clock 跟隨下同錄音訊與 MIDI | 120 BPM 專案跟隨 100 BPM。舊版關閉跟隨後，MIDI 音符可領先同錄音訊約 42 ms。修正後，關閉跟隨和寫檔重開，兩者在 48 kHz 下的起音都落在預期的第 12,000、24,000 個取樣。Coast、Stop on loss 與八小時加速模擬也通過。 |
+| MIDI 輸出 | 一個模擬目的埠阻塞時，另一埠送出八個 Clock 並在關閉前送達 Stop。送出失敗的 Stop 或清理訊息會按序重送。四組 180 BPM 的 Windows 埠交付量測，第 95 百分位延遲為 1.091–1.439 ms。此數值量到電腦端模擬目的埠。 |
+| MTC 與工程設定 | 驗證 29.97 non-drop 定位的取樣取整、舊專案起始時碼、定位時自動化點隨音檔一起移動、錄音命令執行時重新檢查 Online，以及停止後修改 offset 會更新游標。 |
+本輪為 Windows 軟體複審，沿用上方已完成的硬體驗收。歷次「同步時錄音」有三種條件，需分別判讀。Model 12 播放並送 MTC 時，電腦用 WASAPI 回錄過 S‑MU2000 的跟播輸出；Model 12 同步錄下 CH3、CH4 到 SD 的正式 64／128 取樣測試，本體 MIDI TIMECODE 均為 OFF；#1663 的 MTC Online 設計會阻擋 SoundCraft 專案軌錄音。尚未驗收 Model 12 本體同時錄 SD、送出 MTC 並帶動 SoundCraft 跟播。[MTC 跟播及獨立回錄](../../g11-hardware/REPORT.zh-TW.md)
+
+### 第二輪 CodeRabbit 驗證
+
+[第二輪審查](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005241859)在 `bfecc6e` 上提出 7 則行內意見與 1 則行外意見。[修正至 dca3107](https://github.com/storytold/soundcraft/pull/1669/commits/dca310746e5a77ccafb398e508b24b9d3e8242d8)，8 項都有回歸測試。以下均為 Windows 軟體驗證。
+
+| 問題 | 修正後的行為 |
+| --- | --- |
+| 有選取範圍時從 SPP 起播 | 在 0 至 10 秒的選取範圍內定位到 8 秒，停止游標移至第 384,000 個取樣，下一個 Continue 使用新位置。 |
+| 錄下的 MIDI 做 Loop 或修改力度 | 120 BPM 的工程跟隨 60 BPM。舊版可能把第 48,000 個取樣的起音延至 96,000；修正後複製片段與僅改力度都保住原起音。 |
+| 速度修正收到得太晚 | 音訊回呼確認後才重用暫存節拍網格。拒絕新網格後，新接上的 MIDI 埠仍能取得正在播放的網格；尚未送到實體輸出的第一個區塊也保留其對應版本。 |
+| 關閉 MIDI 輸出 | 模擬目的埠先拒絕 Clock、再拒絕第一次 Stop，最終在共用期限內成功收到一次 Stop。 |
+| 清除 Clock 來源、輸入計數器 | 移除輸入會解除已準備的 Continue。工程為 120 BPM、跟隨 60 BPM 時，輸入第 2 小節會定位到第 4 秒，位置及選取端點都使用相同網格。 |
+
+Windows 播放函式庫通過 207 項測試，7 項引擎回歸和四個 crate 的全 target 嚴格 Clippy 也通過。全量測試正在執行。 最新修正已推回原草稿，等待 CodeRabbit 檢查。 [最新複審請求](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7062962099)。
