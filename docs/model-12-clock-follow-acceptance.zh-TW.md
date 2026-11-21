@@ -194,3 +194,20 @@ ASIO 輸入及輸出各擷取 372,091 個區塊，均為 64 取樣，序號無�
 - GitHub 用 `main` 作為基底，CodeRabbit 也提醒檢查相依範圍。`dca3107` 的祖先包含 #1663 的 `ee80920`，相對 #1663 的差異沒有工作區依賴版本或 MTC 波形接合輔助函式的更動。此 PR 的計數器屬於外部 Clock 跟隨，ATTRIBUTION 新增的項目對應硬體量測圖。[與 #1663 的比較](https://github.com/mtlcl410/soundcraft/compare/feat/g11-mtc-generate-chase...feat/g11-external-clock-follow)
 
 最終軟體矩陣在 Windows 套用 #1536 後共 1,630 項通過、1 項失敗、5 項預設略過。唯一失敗的 Windows AAF 路徑測試，也在修正前的乾淨版本以相同錯誤重現。另行執行的八小時模擬與四個 crate 的全 target 嚴格 Clippy 均通過。 GitHub 下列流程待核准。[CI](https://github.com/storytold/soundcraft/actions/runs/44908846298) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44908846311) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44908846322)。 [最新手動複審](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7063278966)。
+
+### 第四輪 CodeRabbit 驗證
+
+[第四輪審查](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005529395)檢查了 `64e3daf`。兩則行內意見與四則跨差異意見涵蓋時脈跟隨錄下的 MIDI 片段，以及後續剪輯。下表記錄 Windows 軟體測試。先前的 Model 12 實機結果見上文。
+
+| 剪輯操作 | 舊行為或對照 | 回歸測試檢查項目 |
+| --- | --- | --- |
+| 移動後分割，專案速度由 120 變為 240 BPM，外部 60 BPM | 右半段音符落在取樣 180,000 | 音符應維持 192,000，跨過剪輯邊界的 CC7 留在正確一側 |
+| 局部複製與重複 | 第一次重複的起音落在 108,000 | Duplicate、Repeat、Duplicate and Extend 均應落在 96,000 |
+| 播放清單與音軌 | 新播放清單的第一音落在 120,000，Extract MIDI 產生的第一音落在 96,000 | 檢查整段、局部選取、未選取片段以及複製到新 MIDI 軌；原音符為 48,000 |
+| 合併跟隨錄音與一般 MIDI | 專案 120 BPM，跟隨錄音 60 BPM | 合併後分別驗證儲存用的 score ticks 與跟播 ticks，以及改變音高後的時序 |
+| Pitch Split、Paste Merge | 音高分軌與貼到空白位置會換 clip ID | 檢查新片段與原片段的音符，並在 Undo 後貼上 |
+<!-- r4-verification -->
+
+**左側裁切與 Undo／Redo。** 舊版會移除應位於第 120 tick、值 101 的 CC7。Trim to Selection、Trim Start to Insertion 和物件左側裁切均保留 CC7。Undo 恢復到第 600 tick，Redo 回到第 120 tick，音符始終在取樣 192,000。
+
+[最新修正 264d124](https://github.com/storytold/soundcraft/pull/1669/commits/264d124d852e87aeb8be5a0ecf9520cd7352850d)。複合片段的 score 起音為 1,920、5,040 ticks，跟播為 960、2,640 ticks。另驗證兩種錄音速度、音符及控制器、範圍端點和一般 MIDI 片段。Windows 套用 #1536 後，四個 crate 共 1,641 項通過、1 項失敗、5 項預設略過。唯一失敗為已在乾淨 `717f969` 重現的 Windows AAF 路徑測試（#1658）。另行執行八小時 Clock 模擬及四個 crate 全 target 的嚴格 Clippy 均通過。 GitHub 待核准流程：[CI](https://github.com/storytold/soundcraft/actions/runs/44911072686) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44911072875) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44911072771)。 [手動複審](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7063662732)。
