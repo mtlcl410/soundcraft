@@ -183,4 +183,4 @@ ASIO 輸入及輸出各擷取 372,091 個區塊，均為 64 取樣，序號無�
 | 關閉 MIDI 輸出 | 模擬目的埠先拒絕 Clock、再拒絕第一次 Stop，最終在共用期限內成功收到一次 Stop。 |
 | 清除 Clock 來源、輸入計數器 | 移除輸入會解除已準備的 Continue。工程為 120 BPM、跟隨 60 BPM 時，輸入第 2 小節會定位到第 4 秒，位置及選取端點都使用相同網格。 |
 
-Windows 播放函式庫通過 207 項測試，7 項引擎回歸和四個 crate 的全 target 嚴格 Clippy 也通過。全量測試正在執行。 最新修正已推回原草稿，等待 CodeRabbit 檢查。 [最新複審請求](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7062962099)。
+套用 #1536 先決修正後，四個受影響 crate 的 Windows 測試共 1,625 項通過、1 項失敗、5 項預設略過。手動執行的八小時模擬通過，四個 crate 的全 target 嚴格 Clippy 也通過。唯一失敗項目是 Windows AAF 絕對路徑，在乾淨的 `717f969` 亦以相同路徑、錯誤和行號重現。[AAF 修正 #1658](https://github.com/storytold/soundcraft/pull/1658) GitHub 的下列工作流程顯示需要維護者核准。[CI](https://github.com/storytold/soundcraft/actions/runs/44906594434) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44906594442) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44906594499)。 最新修正已推回原草稿，等待 CodeRabbit 檢查。 [最新複審請求](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7062962099)。
