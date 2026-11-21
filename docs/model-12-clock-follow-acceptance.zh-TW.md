@@ -223,4 +223,26 @@ ASIO 輸入及輸出各擷取 372,091 個區塊，均為 64 取樣，序號無�
 | 重疊片段及重複 Consolidate | 同一 score tick 的不同來源保留各自的跟播時序。連續合併 12 次後，最後一段可以釋放先前的中間錄音對應資料 |
 | Paste Merge 至已有 MIDI 音符的軌道、Undo/Redo 與存檔重開 | 新錄音的起音保持在 48,000 samples、CC 保持在 24,000 samples，原有 MIDI 音符與 CC 均保留。完全重開專案後讀到原儲存網格 |
 
-Windows 疊加 #1536，四個 crate 共 1,646 項通過、1 項失敗、5 項預設略過。唯一失敗為先前已獨立重現的 Windows AAF 路徑測試。全 target 嚴格 Clippy 與八小時 Clock 模擬均通過。 GitHub 待核准流程 [CI](https://github.com/storytold/soundcraft/actions/runs/44913621737) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44913621705) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44913621657)。 [手動複審](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7064044539)。
+Windows 疊加 #1536，四個 crate 共 1,646 項通過、1 項失敗、5 項預設略過。唯一失敗為先前已獨立重現的 Windows AAF 路徑測試。全 target 嚴格 Clippy 與八小時 Clock 模擬均通過。 GitHub 待核准流程 [CI](https://github.com/storytold/soundcraft/actions/runs/44913621737) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44913621705) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44913621657)。 [手動複審](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7064044539)。 [複審結果](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005988643)。本輪檢查提出五則行內與一則錄音 Undo 的意見，正在驗證。
+
+### 第六輪 CodeRabbit 驗證
+
+[審查](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005988643)檢查了 `3262658`。逐項驗證五則行內意見與一則有關重疊錄音 Undo 的意見。[修正 29236b9](https://github.com/storytold/soundcraft/pull/1669/commits/29236b97d62e48cbffe013853903375456e6a03d)。以下為軟體驗證。
+
+| 情境 | 驗證結果 |
+| --- | --- |
+| Paste Merge 的主片段與後來的片段重疊 | 第 72,000 個取樣已有另一片段時，Paste Merge 保留主片段原長 96,000 及末端資料 |
+| 重疊覆錄後 Undo 與 Redo | 修改前 Undo 使原音符 240→120 ticks，CC 360→180 ticks。Undo 現在復原覆錄前的時序和資料，Redo 恢復覆錄版本 |
+| Consolidate 邊界 | 片段在第 48,000 個取樣結束時排除該處事件，在 48,001 結束時納入，控制器與音符均有驗證 |
+| 跟播變慢後超出片段的音符 | 編輯時保留 score 資料，轉回原來的跟播速度後可播放 |
+| 力度修改、刪除相同的音符 | 修改力度保留已錄到的 tick；分別刪除兩個 score 資料相同但播放時間不同的音符，驗證另一個音符仍保有原來的跟播時間 |
+
+Windows 套用 #1536 後四個 crate 共 1,652 項通過、1 項失敗、5 項預設略過。唯一失敗與修正前版本的 Windows AAF 路徑測試相同。嚴格 Clippy 與另行執行的八小時 Clock 模擬均通過。 GitHub 待核准流程 [CI](https://github.com/storytold/soundcraft/actions/runs/44915839341) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44915839222) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44915839208)。 第六輪 CodeRabbit 實際檢查的是 `3262658`，本輪修正在 `29236b9` 推送並逐項回覆。尚無第七次手動審查。
+
+### 早期討論串的兩項追蹤
+
+MIDI callback 取得已準備的定位後，另一執行緒先完成編輯，再讓 callback 繼續。舊版把過期的 PlayClock 放進佇列。修正後失效的 cue 留給主執行緒依最新專案起播；有效的 cue 仍走裝置快速路徑。[複現競態與處置](https://github.com/storytold/soundcraft/pull/1669#discussion_r4652538099)
+
+第一個裝置區塊可聽前、尚未連接 MIDI 輸出時，先接受 11 次更新，再接上輸出。舊版在期限內沒有輸出。修正後在第一個期限收到 FA、F8。此測試分別涵蓋單一未來區塊，以及每次更新都有新區塊的情形；確實超過容量的情況以既有 backlog 指標記錄。[追蹤結果](https://github.com/storytold/soundcraft/pull/1669#discussion_r4652588357)
+
+[最新修正 e43742e](https://github.com/storytold/soundcraft/pull/1669/commits/e43742e1d822312dbe371d4593bc74215ef5f6e3)。最終 Windows 四 crate 驗證 1,653 項通過、1 項已知 AAF 失敗、5 項預設略過。嚴格 Clippy 與另行執行的八小時 Clock 模擬均通過。第六輪完整審查檢查的是 `3262658`，沒有另送第七次。GitHub 最近一次查詢有 38 個討論串，1 個尚未標記 resolved。 須維護者核准的工作流程為 [CI](https://github.com/storytold/soundcraft/actions/runs/44916674425) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44916674521) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44916674492)。
