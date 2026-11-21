@@ -183,4 +183,10 @@ ASIO 輸入及輸出各擷取 372,091 個區塊，均為 64 取樣，序號無�
 | 關閉 MIDI 輸出 | 模擬目的埠先拒絕 Clock、再拒絕第一次 Stop，最終在共用期限內成功收到一次 Stop。 |
 | 清除 Clock 來源、輸入計數器 | 移除輸入會解除已準備的 Continue。工程為 120 BPM、跟隨 60 BPM 時，輸入第 2 小節會定位到第 4 秒，位置及選取端點都使用相同網格。 |
 
-套用 #1536 先決修正後，四個受影響 crate 的 Windows 測試共 1,625 項通過、1 項失敗、5 項預設略過。手動執行的八小時模擬通過，四個 crate 的全 target 嚴格 Clippy 也通過。唯一失敗項目是 Windows AAF 絕對路徑，在乾淨的 `717f969` 亦以相同路徑、錯誤和行號重現。[AAF 修正 #1658](https://github.com/storytold/soundcraft/pull/1658) GitHub 的下列工作流程顯示需要維護者核准。[CI](https://github.com/storytold/soundcraft/actions/runs/44906594434) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44906594442) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44906594499)。 最新修正已推回原草稿，等待 CodeRabbit 檢查。 [最新複審請求](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7062962099)。
+套用 #1536 先決修正後，四個受影響 crate 的 Windows 測試共 1,625 項通過、1 項失敗、5 項預設略過。手動執行的八小時模擬通過，四個 crate 的全 target 嚴格 Clippy 也通過。唯一失敗項目是 Windows AAF 絕對路徑，在乾淨的 `717f969` 亦以相同路徑、錯誤和行號重現。[AAF 修正 #1658](https://github.com/storytold/soundcraft/pull/1658) GitHub 的下列工作流程顯示需要維護者核准。[CI](https://github.com/storytold/soundcraft/actions/runs/44906594434) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44906594442) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44906594499)。 [最新複審請求](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7062962099)。
+
+### 第三輪 CodeRabbit 驗證
+
+[第三輪審查](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005368836)在 `dca3107` 上提出兩項行內問題及一項剪貼簿與 Undo 的次要意見。目前正在重現「分割後的右片段」、「Undo 後貼上剪貼簿」與「已準備 Continue 後調整校準」三條路徑。
+
+CodeRabbit 另提示相依 PR 的改動範圍。核對 GitHub 比較，#1663 的 `ee80920` 是 `dca3107` 的祖先；只看此 PR 的差異，沒有工作區依賴版本或 `best_overlap_start` 的修改。計數器使用跟隨中的節拍格，ATTRIBUTION 項目對應本報告公開的量測圖。[與 #1663 的比較](https://github.com/mtlcl410/soundcraft/compare/feat/g11-mtc-generate-chase...feat/g11-external-clock-follow)
