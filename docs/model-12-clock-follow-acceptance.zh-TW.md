@@ -136,6 +136,7 @@ ASIO 輸入及輸出各擷取 372,091 個區塊，均為 64 取樣，序號無�
   - **Stop on loss**：停止送脈衝後，接收端逾時即結束播放與兩軌錄音。WAV 保留逾時前的 12,000 個取樣，MIDI clip 只含第一個音。MTC Online 禁止錄音的既有回歸也通過。本項驗證使用模擬音訊和 MIDI 輸入。上方的 Model 12 實機段落記錄的是既有播放與回錄驗收。
 - [x] **精簡 #1669 說明。** 把監聽預填、ASIO 緩衝比較、波形偵測方法與完整數據整理到 `docs/` 的硬體報告，PR 說明只留摘要與連結。
   - [公開硬體驗收報告](https://github.com/mtlcl410/soundcraft/blob/0d549b50030f486971b35082ae2876515129be18/docs/model-12-clock-follow-hardware.md) 已收錄監聽預填、直接 ASIO、緩衝對照、波形偵測和八張比較圖。已用未登入的連線從 GitHub 讀回報告與全部圖檔，核對圖檔內容。
-- [ ] **256 取樣的已知限制。** 在 Known limits 如實寫明先前 12 次中有 1 次波形偏差、原因未明，並開 issue 附上量測條件、偵測方式與證據追查。與本次 64 取樣的 40 取樣插入分別記錄。
+- [x] **256 取樣的已知限制。** 在 Known limits 如實寫明先前 12 次中有 1 次波形偏差、原因未明，並開 issue 附上量測條件、偵測方式與證據追查。與本次 64 取樣的 40 取樣插入分別記錄。
+  - 重算 12 組原始 WAV，只有重開串流後的第一個 8.000 秒起播（`repeat2-256/exact-a`）超標，右聲道殘差跳幅 455.46，其餘 11 次為 2.06–2.54（16-bit PCM 計數，門檻 16）。12 次均未觸發低電平判定。已在 [#1669 的 Known limits](https://github.com/storytold/soundcraft/pull/1669) 與 [追查 issue #1686（含對照圖）](https://github.com/storytold/soundcraft/issues/1686) 雙向連結；64 取樣第 13.498 秒的 +40 取樣另列為不同事件。
 - [ ] **#1674 的修正歸屬。** 在 main 與 Clock 跟隨分支以相同重現步驟比對；若 main 原已存在，將修正拆成獨立 PR。若只在 Clock 跟隨出現，再依證據處理 #1669。
 - [ ] **Ready 前複審。** 最終修改推到 #1669 之後、轉為 Ready for review 之前，手動觸發一次 CodeRabbit review，核對審查對應的 commit 並處理結果。
