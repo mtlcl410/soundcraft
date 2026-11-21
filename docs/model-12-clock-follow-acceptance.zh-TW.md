@@ -210,4 +210,17 @@ ASIO 輸入及輸出各擷取 372,091 個區塊，均為 64 取樣，序號無�
 
 **左側裁切與 Undo／Redo。** 舊版會移除應位於第 120 tick、值 101 的 CC7。Trim to Selection、Trim Start to Insertion 和物件左側裁切均保留 CC7。Undo 恢復到第 600 tick，Redo 回到第 120 tick，音符始終在取樣 192,000。
 
-[最新修正 264d124](https://github.com/storytold/soundcraft/pull/1669/commits/264d124d852e87aeb8be5a0ecf9520cd7352850d)。複合片段的 score 起音為 1,920、5,040 ticks，跟播為 960、2,640 ticks。另驗證兩種錄音速度、音符及控制器、範圍端點和一般 MIDI 片段。Windows 套用 #1536 後，四個 crate 共 1,641 項通過、1 項失敗、5 項預設略過。唯一失敗為已在乾淨 `717f969` 重現的 Windows AAF 路徑測試（#1658）。另行執行八小時 Clock 模擬及四個 crate 全 target 的嚴格 Clippy 均通過。 GitHub 待核准流程：[CI](https://github.com/storytold/soundcraft/actions/runs/44911072686) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44911072875) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44911072771)。 [手動複審](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7063662732)。
+[最新修正 264d124](https://github.com/storytold/soundcraft/pull/1669/commits/264d124d852e87aeb8be5a0ecf9520cd7352850d)。複合片段的 score 起音為 1,920、5,040 ticks，跟播為 960、2,640 ticks。另驗證兩種錄音速度、音符及控制器、範圍端點和一般 MIDI 片段。Windows 套用 #1536 後，四個 crate 共 1,641 項通過、1 項失敗、5 項預設略過。唯一失敗為已在乾淨 `717f969` 重現的 Windows AAF 路徑測試（#1658）。另行執行八小時 Clock 模擬及四個 crate 全 target 的嚴格 Clippy 均通過。 GitHub 待核准流程：[CI](https://github.com/storytold/soundcraft/actions/runs/44911072686) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44911072875) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44911072771)。 [手動複審](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7063662732)。 [複審結果](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005771428)。此輪有四則行內及一則跨差異意見，正在驗證。
+
+### 第五輪 CodeRabbit 驗證
+
+[審查](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005771428)檢查了 `264d124`。四則行內意見與一則跨差異意見以軟體測試重現。[修正 3262658](https://github.com/storytold/soundcraft/pull/1669/commits/3262658632bc75d399f0be90b797805e7a7be82e)。
+
+| 測試 | 驗證結果 |
+| --- | --- |
+| 錄製時 60 BPM，跟播改為 90 BPM，在取樣 36,000 分割 | 原本發生在取樣 32,000 的起音留在左側，既有的同速分割案例仍通過 |
+| 合併後調整 MIDI 力度 | 原先在跟播可聽到、但未存入分數網格的音高 71 現在也能編輯，力度修改後仍於第 120 tick 起音 |
+| 重疊片段及重複 Consolidate | 同一 score tick 的不同來源保留各自的跟播時序。連續合併 12 次後，最後一段可以釋放先前的中間錄音對應資料 |
+| Paste Merge 至已有 MIDI 音符的軌道、Undo/Redo 與存檔重開 | 新錄音的起音保持在 48,000 samples、CC 保持在 24,000 samples，原有 MIDI 音符與 CC 均保留。完全重開專案後讀到原儲存網格 |
+
+Windows 疊加 #1536，四個 crate 共 1,646 項通過、1 項失敗、5 項預設略過。唯一失敗為先前已獨立重現的 Windows AAF 路徑測試。全 target 嚴格 Clippy 與八小時 Clock 模擬均通過。 GitHub 待核准流程 [CI](https://github.com/storytold/soundcraft/actions/runs/44913621737) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44913621705) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44913621657)。 [手動複審](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7064044539)。
