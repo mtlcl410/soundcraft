@@ -187,6 +187,10 @@ ASIO 輸入及輸出各擷取 372,091 個區塊，均為 64 取樣，序號無�
 
 ### 第三輪 CodeRabbit 驗證
 
-[第三輪審查](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005368836)在 `dca3107` 上提出兩項行內問題及一項剪貼簿與 Undo 的次要意見。目前正在重現「分割後的右片段」、「Undo 後貼上剪貼簿」與「已準備 Continue 後調整校準」三條路徑。
+[第三輪審查](https://github.com/storytold/soundcraft/pull/1669#pullrequestreview-6005368836)在 `dca3107` 上提出 2 則行內意見及 1 則次要意見。[修正至 64e3daf](https://github.com/storytold/soundcraft/pull/1669/commits/64e3dafaac481ee3fe2ec8a86d3175fb29cda7e9)。三項均先重現，再以軟體測試驗證。
 
-CodeRabbit 另提示相依 PR 的改動範圍。核對 GitHub 比較，#1663 的 `ee80920` 是 `dca3107` 的祖先；只看此 PR 的差異，沒有工作區依賴版本或 `best_overlap_start` 的修改。計數器使用跟隨中的節拍格，ATTRIBUTION 項目對應本報告公開的量測圖。[與 #1663 的比較](https://github.com/mtlcl410/soundcraft/compare/feat/g11-mtc-generate-chase...feat/g11-external-clock-follow)
+- 分割跟隨外部 Clock 錄下的 MIDI 片段，右半段的起音以分割位置為基準。複製片段、執行 Undo、再貼上時，剪貼簿保有原錄音的時序，文件重用 clip ID 也能正確播放。
+- 停止中已準備 Continue，透過 `ui.set` 更新所選輸入的校準偏移後，下一個 Clock 會使用新偏移。調整其他埠能保留既有的起播準備。
+- GitHub 用 `main` 作為基底，CodeRabbit 也提醒檢查相依範圍。`dca3107` 的祖先包含 #1663 的 `ee80920`，相對 #1663 的差異沒有工作區依賴版本或 MTC 波形接合輔助函式的更動。此 PR 的計數器屬於外部 Clock 跟隨，ATTRIBUTION 新增的項目對應硬體量測圖。[與 #1663 的比較](https://github.com/mtlcl410/soundcraft/compare/feat/g11-mtc-generate-chase...feat/g11-external-clock-follow)
+
+最終軟體矩陣在 Windows 套用 #1536 後共 1,630 項通過、1 項失敗、5 項預設略過。唯一失敗的 Windows AAF 路徑測試，也在修正前的乾淨版本以相同錯誤重現。另行執行的八小時模擬與四個 crate 的全 target 嚴格 Clippy 均通過。 GitHub 下列流程待核准。[CI](https://github.com/storytold/soundcraft/actions/runs/44908846298) · [Nix](https://github.com/storytold/soundcraft/actions/runs/44908846311) · [SonarCloud](https://github.com/storytold/soundcraft/actions/runs/44908846322)。 [最新手動複審](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7063278966)。
