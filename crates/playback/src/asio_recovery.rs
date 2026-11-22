@@ -98,12 +98,14 @@ pub(crate) mod native {
             }
             release_input();
             drop(self._stream.take());
+            drop(self.asio_device.take());
             recovery.slow.store(false, Ordering::Relaxed);
             recovery.retry_at = Some(now + Duration::from_secs(3));
             let fault = Arc::new(Fault::default());
             match recovery.reopen(&fault, &self.shared) {
-                Ok((_device, stream)) => {
+                Ok((device, stream)) => {
                     self._stream = Some(stream);
+                    self.asio_device = Some(device);
                     self.fault = fault;
                     *self.watch.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = None;
                     log::info!("Reopened idle ASIO stream on {} after sustained slow callbacks", self.device_name);

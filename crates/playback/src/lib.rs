@@ -177,6 +177,8 @@ pub struct Player {
     #[cfg(all(windows, feature = "asio"))]
     asio_recovery: Option<asio_recovery::native::Recovery>,
     pub device_name: String,
+    #[cfg(all(windows, feature = "asio"))]
+    asio_device: Option<cpal::Device>,
     pub device_rate: u32,
     /// Output channels the device was opened with (0 for the silent clock).
     pub device_channels: u16,
@@ -184,6 +186,18 @@ pub struct Player {
     pub device_buffer: Option<u32>,
     /// True when no audio device could be opened (silent clock).
     pub silent: bool,
+}
+
+#[cfg(any(test, all(windows, feature = "asio")))]
+fn reuses_output_device(selected_input: Option<&str>, opened_output: &str) -> bool {
+    selected_input.is_none_or(|name| name == opened_output)
+}
+
+#[test]
+fn shared_asio_capture_requires_the_opened_output_or_default_input() {
+    assert!(reuses_output_device(None, "USB Mixer"));
+    assert!(reuses_output_device(Some("USB Mixer"), "USB Mixer"));
+    assert!(!reuses_output_device(Some("Other Input"), "USB Mixer"));
 }
 
 impl Player {
@@ -200,6 +214,19 @@ impl Player {
         // Hand the initial session's third-party plugins over.
         p.update_session(session);
         p
+    }
+
+    /// Open recording and monitoring on the configured input. Reuse the active ASIO device
+    /// when it is the selected input. Enumerating other drivers can fail with an active stream.
+    pub fn open_input(&self, cfg: &AudioConfig) -> Result<record::Recorder, record::InputOpenError> {
+        #[cfg(all(windows, feature = "asio"))]
+        if let Some(device) = &self.asio_device
+            && reuses_output_device(cfg.input.as_deref(), &self.device_name)
+        {
+            let buffer = self.device_buffer.map_or(cpal::BufferSize::Default, cpal::BufferSize::Fixed);
+            return record::Recorder::open_on_device(device, cfg, Some((self.device_rate, buffer)));
+        }
+        record::Recorder::open_with(cfg).map_err(Into::into)
     }
 
     /// What stopped the audio output, once: a bug in the engine, or the device went away or
@@ -325,6 +352,11 @@ impl Player {
                             _stream: Some(stream),
                             #[cfg(all(windows, feature = "asio"))]
                             asio_recovery: recovery,
+                            #[cfg(all(windows, feature = "asio"))]
+                            asio_device: {
+                                use cpal::traits::DeviceTrait;
+                                device.id().ok().filter(|id| id.host() == cpal::HostId::Asio).map(|_| device)
+                            },
                             device_name: name,
                             device_rate: rate,
                             device_channels: config.channels,
@@ -404,6 +436,8 @@ impl Player {
             _stream: None,
             #[cfg(all(windows, feature = "asio"))]
             asio_recovery: None,
+            #[cfg(all(windows, feature = "asio"))]
+            asio_device: None,
             device_name: "No audio device (silent)".into(),
             device_rate: rate,
             device_channels: 0,
