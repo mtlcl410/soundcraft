@@ -385,14 +385,17 @@ fn update_grid(grid: &mut TempoMap, anchor: Option<(i64, i64)>, waiting_tick: i6
     // A confirmed tempo step should reach the next unrendered beat even when a minor
     // correction was just published. Small jitter corrections retain the usual spacing.
     let tempo_step = (slope - bpm).abs() >= slope * 0.08;
-    let spacing = if s.recovering_tempo_step { 2 } else { 6 };
+    let spacing = if s.recovering_tempo_step || s.tempo_ramp { 2 } else { 6 };
     if s.state != State::Locked || s.pulse <= origin || (!tempo_step && since_edit < spacing * TICKS_PER_PULSE) {
         return false;
     }
     let start = grid.tick_to_samples(origin.saturating_mul(TICKS_PER_PULSE), sr);
     let elapsed = sr.samples(s.stamp_us.saturating_sub(stamp) as f64 / 1e6);
     let phase = sr.seconds(start.saturating_add(elapsed).saturating_sub(grid.tick_to_samples(tick, sr)));
-    if (slope - bpm).abs() < 0.15 && phase.abs() < 0.003 {
+    // Follow a sustained pitch-fader move more closely while preserving the
+    // noise-filtered wire period and phase in both modes.
+    let (bpm_deadband, phase_deadband) = if s.tempo_ramp { (0.035, 0.0005) } else { (0.15, 0.003) };
+    if (slope - bpm).abs() < bpm_deadband && phase.abs() < phase_deadband {
         return false;
     }
     if s.recovering_tempo_step {
@@ -414,9 +417,15 @@ fn update_grid(grid: &mut TempoMap, anchor: Option<(i64, i64)>, waiting_tick: i6
         }
         return false;
     }
-    let recovery_beats = if phase.abs() <= 0.006 { 8. } else { 4. };
+    let recovery_beats = if s.tempo_ramp {
+        0.6
+    } else if phase.abs() <= 0.006 {
+        8.
+    } else {
+        4.
+    };
     let target = bpm / (1. + (phase * bpm / (60. * recovery_beats)).clamp(-0.05, 0.05));
-    (slope - target).abs() >= 0.15 && grid.set_tempo(edit, target.clamp(5., 1000.)).is_ok()
+    (slope - target).abs() >= bpm_deadband && grid.set_tempo(edit, target.clamp(5., 1000.)).is_ok()
 }
 
 #[cfg(test)]
@@ -938,6 +947,7 @@ mod tests {
     }
 
     mod large_steps;
+    mod ramp_response;
     mod sampler_song;
 
     #[test]

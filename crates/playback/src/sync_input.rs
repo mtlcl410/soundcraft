@@ -133,6 +133,35 @@ impl<const N: usize> PulseFit<N> {
         Some(start)
     }
 
+    /// Detect sustained tempo motion without changing the stable linear period/phase estimates.
+    /// With evenly spaced pulse indices, the centred quadratic is orthogonal to both a constant
+    /// and a linear slope. A constant-speed clock therefore contributes no curvature.
+    pub(crate) fn is_tempo_ramp(&self) -> bool {
+        if self.len < 24 || self.slope <= 0. {
+            return false;
+        }
+        let Some((last, stamp)) = self.last else { return false };
+        let first = (self.cursor + N - self.len) % N;
+        if last.saturating_sub(self.points[first].0) != self.len as i64 - 1 {
+            return false;
+        }
+        let n = self.len as f64;
+        let center = (n - 1.) / 2.;
+        let variance = (n * n - 1.) / 12.;
+        let norm = n * (n * n - 1.) * (n * n - 4.) / 180.;
+        let projection = self.points[..self.len]
+            .iter()
+            .map(|&(i, t)| {
+                let x = i.saturating_sub(last) as f64 + center;
+                (x * x - variance) * t.saturating_sub(stamp) as f64
+            })
+            .sum::<f64>()
+            .abs();
+        // Reject stationary timestamp noise (three standard errors) and slow clock flutter.
+        // Twice the quadratic coefficient is the change in pulse period per pulse.
+        projection > 3. * self.jitter * norm.sqrt() && 2. * projection / norm > 0.00045 * self.slope * self.slope / 1_000_000.
+    }
+
     pub fn period_us(&self) -> Option<f64> {
         (self.len >= 2 && self.slope > 0.).then_some(self.slope)
     }
