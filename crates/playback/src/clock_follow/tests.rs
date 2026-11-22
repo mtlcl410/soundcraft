@@ -85,6 +85,9 @@ fn locks_and_predicts_pulses_across_tempos_jitter_and_usb_quantization() {
                 if pulse == 23 {
                     assert!((r.bpm().unwrap() - bpm).abs() < 2., "failed to acquire within a beat");
                 }
+                if pulse >= 24 {
+                    assert!(!r.steady.is_tempo_ramp(), "false ramp at {bpm} BPM/{jitter} us, pulse {pulse}");
+                }
                 if pulse >= 240 {
                     errors.push((r.bpm().unwrap() - bpm).abs());
                     phase_errors.push((r.phase_error_us as f64).abs());

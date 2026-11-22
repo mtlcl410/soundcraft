@@ -30,6 +30,8 @@ pub struct Snapshot {
     pub bpm: Option<f64>,
     /// The wire confirmed a tempo step during uninterrupted playback within the past beat.
     pub recovering_tempo_step: bool,
+    /// The source has a sustained tempo trend above its measured timestamp noise.
+    pub tempo_ramp: bool,
     pub jitter_us: f64,
     pub phase_error_us: i64,
     pub state: State,
@@ -242,6 +244,7 @@ impl Follower {
         Snapshot {
             bpm: self.bpm().or_else(|| self.coast_period_us.map(|p| 2_500_000. / p)),
             recovering_tempo_step: self.step_pulses_left > 0,
+            tempo_ramp: self.state == State::Locked && self.step_pulses_left == 0 && self.steady.is_tempo_ramp(),
             jitter_us: self.steady.jitter_us(),
             phase_error_us: self.phase_error_us,
             state: self.state,
