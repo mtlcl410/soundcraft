@@ -46,7 +46,12 @@ fn micros(samples: i64) -> i64 {
 
 fn note_song(bpm: i64, first: i64, end: i64) -> Session {
     let mut song = sampler_song(TempoMap::new(bpm as f64, 4, 4).unwrap(), SampleRate::HZ_48000, NOTES, end);
-    let ClipContent::Midi { sequence } = &mut song.tracks[0].playlist_mut().unwrap().clips[0].content else { unreachable!() };
+    let clip = &mut song.tracks[0].playlist_mut().unwrap().clips[0];
+    let sequence = match &mut clip.content {
+        ClipContent::Midi { sequence } => Some(sequence),
+        _ => None,
+    }
+    .unwrap();
     for (i, note) in sequence.notes.iter_mut().enumerate() {
         note.start += first * TICKS_PER_PULSE;
         note.velocity = 60 + i as u8 * 6;
