@@ -40,6 +40,8 @@ enum Policy {
     Reference,
     Hard,
     Predict,
+    Expired,
+    Clamped,
 }
 
 fn render(bpm: i64, buf: usize, lead_ms: i64, clicks: bool, policy: Policy) -> Vec<f32> {
@@ -60,6 +62,9 @@ fn render(bpm: i64, buf: usize, lead_ms: i64, clicks: bool, policy: Policy) -> V
     audio.device_buffer_frames = buf;
     let start = Instant::now();
     let epoch = feed.timestamp_at(start);
+    let mut stream_lead = crate::sync_clock::StreamLead::default();
+    let measured = Duration::from_millis(lead_ms as u64);
+    stream_lead.observe(start, Some(measured));
     let mut pulse = 0;
     feed.set_clock(epoch);
     feed.receive(1, &[0xfa]);
@@ -79,8 +84,13 @@ fn render(bpm: i64, buf: usize, lead_ms: i64, clicks: bool, policy: Policy) -> V
             pulse += 1;
         }
         feed.set_clock(epoch + (at * 1_000_000 + RATE / 2) / RATE);
-        audio.device_timing = (policy != Policy::Hard)
-            .then(|| DeviceTiming::new(start + Duration::from_secs_f64(at as f64 / RATE as f64), Some(Duration::from_millis(lead_ms as u64)), 0));
+        let callback = start + Duration::from_secs_f64(at as f64 / RATE as f64);
+        audio.device_timing = match policy {
+            Policy::Hard => None,
+            Policy::Expired => Some(DeviceTiming::new(callback - Duration::from_secs(2), Some(measured), 0)),
+            Policy::Clamped => Some(stream_lead.observe(callback, None)),
+            Policy::Reference | Policy::Predict => Some(DeviceTiming::new(callback, Some(measured), 0)),
+        };
         audio.fill(&mut out, 2);
         pcm.extend(out.chunks_exact(2).map(|f| f[0]));
     }
@@ -159,4 +169,13 @@ fn prediction_stops_at_the_first_overdue_or_slow_pulse() {
     assert_eq!(feed.clock_render_tick_for_output(493_000, 42_667, 550_000), feed.clock_render_tick());
     feed.receive(1, &[0xfc]);
     assert_eq!(feed.clock_render_tick_for_output(493_000, 42_667, 550_000), feed.clock_render_tick());
+}
+
+#[test]
+fn expired_and_clamped_device_timestamps_keep_the_hard_horizon() {
+    for clicks in [true, false] {
+        let hard = render(300, 1500, 50, clicks, Policy::Hard);
+        assert_eq!(hard, render(300, 1500, 50, clicks, Policy::Expired));
+        assert_eq!(hard, render(300, 1500, 50, clicks, Policy::Clamped));
+    }
 }
