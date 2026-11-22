@@ -12,7 +12,8 @@ const RATE: i64 = 48_000;
 const EIGHTHS: i64 = 32;
 
 fn song(bpm: i64, clicks: bool) -> Session {
-    let mut s = Session { tempo: TempoMap::new(bpm as f64, 4, 4).expect("valid fixture tempo"), sample_rate: SampleRate::HZ_48000, ..Session::default() };
+    let mut s =
+        Session { tempo: TempoMap::new(bpm as f64, 4, 4).expect("valid fixture tempo"), sample_rate: SampleRate::HZ_48000, ..Session::default() };
     s.edit.click = clicks;
     if !clicks {
         let id = s.add_track(TrackKind::Instrument, ChannelFormat::Stereo, None);
