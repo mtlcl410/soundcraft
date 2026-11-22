@@ -222,6 +222,18 @@ mod tests {
     use super::*;
 
     #[test]
+    fn mtc_sync_route_keeps_its_device_id_after_beat_clock_is_disabled() {
+        let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, crate::Services::default());
+        let label = "DIN (2)";
+        app.sync_command("setup.midi_beat_clock", &json!({"ports": {(label): {"enabled":true}}, "port_ids": {(label):"midi-b"}})).unwrap();
+        app.mtc_output_command(&json!({"port":label})).unwrap();
+        app.sync_command("setup.midi_beat_clock", &json!({"ports":{}})).unwrap();
+        assert_eq!(app.ui.midi_sync.port_ids.get(label).map(String::as_str),Some("midi-b"));
+        app.mtc_output_command(&json!({"port":null})).unwrap();
+        assert!(app.ui.midi_sync.port_ids.is_empty());
+    }
+
+    #[test]
     fn duplicate_calibrations_roundtrip_as_independent_enabled_routes() {
         let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, crate::Services::default());
         let settings = json!({"enabled": true, "ports": {

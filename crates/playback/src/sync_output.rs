@@ -100,6 +100,7 @@ impl WorkerSender {
 #[derive(Default)]
 pub(crate) struct Output {
     port_registry: Arc<ports::Registry>,
+    chase_feed: std::sync::Weak<crate::midi::MidiFeed>,
     view: View,
     metrics: Arc<CallbackMetrics>,
     session: Option<Arc<Session>>,
@@ -210,6 +211,11 @@ impl Output {
     }
     /// MidiFeed invokes this while it still holds the reader, before the callback
     /// can consume the new roll, stop or locate and publish its transport state.
+    pub(crate) fn attach_mtc_feed(&mut self, feed: &Arc<crate::midi::MidiFeed>) -> crate::midi::TransportWaker {
+        self.chase_feed = Arc::downgrade(feed);
+        self.transport_waker()
+    }
+
     pub(crate) fn transport_waker(&self) -> crate::midi::TransportWaker {
         let dest = self.wake_tx.clone();
         let pending = Arc::<AtomicBool>::default();
