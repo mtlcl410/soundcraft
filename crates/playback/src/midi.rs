@@ -267,6 +267,13 @@ impl MidiFeed {
         self.connected.store(ports, Ordering::Relaxed);
     }
 
+    /// Convert a device presentation timestamp (on the host monotonic clock) to
+    /// the epoch used by incoming driver timestamps.
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    pub(crate) fn timestamp_at(&self, instant: Instant) -> i64 {
+        i64::try_from(instant.saturating_duration_since(self.epoch).as_micros()).unwrap_or(i64::MAX)
+    }
+
     /// Microseconds since the feed was made.
     fn now(&self) -> i64 {
         #[cfg(any(test, feature = "test-input"))]
