@@ -231,6 +231,7 @@ impl Follower {
             || self.step_pulses_left != 0
             || !(2500. ..=500_000.).contains(&period)
             || !self.short.regular_intervals(period)
+            || self.steady.is_tempo_ramp()
         {
             return None;
         }
