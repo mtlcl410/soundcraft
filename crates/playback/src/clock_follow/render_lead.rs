@@ -59,8 +59,9 @@ fn render(bpm: i64, buf: usize, lead_ms: i64, clicks: bool, policy: Policy) -> V
     .unwrap();
     audio.device_buffer_frames = buf;
     let start = Instant::now();
+    let epoch = feed.timestamp_at(start);
     let mut pulse = 0;
-    feed.set_clock(0);
+    feed.set_clock(epoch);
     feed.receive(1, &[0xfa]);
     let mut out = vec![0.; buf * 2];
     // Samples before the first audible device block cannot be changed at Start.
@@ -73,11 +74,11 @@ fn render(bpm: i64, buf: usize, lead_ms: i64, clicks: bool, policy: Policy) -> V
         // Send precisely the wire pulses already delivered at the device callback.
         // No pulse that arrives mid-buffer can affect this callback's finished PCM.
         while pulse * RATE * 60 <= at * bpm * 24 {
-            feed.set_clock((pulse * 60_000_000 + bpm * 12) / (bpm * 24));
+            feed.set_clock(epoch + (pulse * 60_000_000 + bpm * 12) / (bpm * 24));
             feed.receive(1, &[0xf8]);
             pulse += 1;
         }
-        feed.set_clock((at * 1_000_000 + RATE / 2) / RATE);
+        feed.set_clock(epoch + (at * 1_000_000 + RATE / 2) / RATE);
         audio.device_timing = (policy != Policy::Hard)
             .then(|| DeviceTiming::new(start + Duration::from_secs_f64(at as f64 / RATE as f64), Some(Duration::from_millis(lead_ms as u64)), 0));
         audio.fill(&mut out, 2);
