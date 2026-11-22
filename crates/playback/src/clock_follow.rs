@@ -371,3 +371,6 @@ impl Follower {
 }
 #[cfg(test)]
 mod tests;
+
+#[cfg(all(test, any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+mod render_lead;

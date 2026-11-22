@@ -1,0 +1,110 @@
+use crate::callback::AudioState;
+use crate::midi::MidiFeed;
+use crate::sync_clock::DeviceTiming;
+use crate::{Cmd, MeterSnapshot, Shared};
+use soundcraft_midi::{Note, Sequence};
+use soundcraft_model::{ChannelFormat, Clip, Insert, Session, SourceAudio, SourceId, TrackKind};
+use soundcraft_time::{SampleRate, TempoMap};
+use std::sync::{Arc, Mutex, mpsc::channel};
+use std::time::{Duration,Instant};
+
+const RATE: i64 = 48_000;
+const EIGHTHS: i64 = 32;
+
+fn song(bpm: i64, clicks: bool) -> Session {
+    let mut s = Session {tempo:TempoMap::new(bpm as f64,4,4).unwrap(), sample_rate:SampleRate::HZ_48000,..Session::default()};
+    s.edit.click=clicks;
+    if !clicks {
+        let id=s.add_track(TrackKind::Instrument, ChannelFormat::Stereo, None);
+        let clip=s.new_clip_id();
+        let sid=SourceId(200);
+        let burst=(0..96).map(|n| 0.5+0.3*(n as f32*0.31).sin()).collect();
+        s.pool.insert(sid, Arc::new(SourceAudio::new(craft_audio::AudioBuffer{sample_rate:48000, channels:vec![burst]})));
+        let track=s.track_mut(id).unwrap();
+        let mut ins=Insert::new("sampler");
+        ins.sample=Some(sid);
+        ins.params.insert("root_note".into(),60.);
+        ins.params.insert("attack".into(),0.);
+        track.instrument=Some(ins);
+        let mut seq=Sequence::default();
+        for i in 1..=EIGHTHS {
+            seq.notes.push(Note{start:i*480,length:80,pitch:60,channel:0,velocity:110,release_velocity:64});
+        }
+        track.playlist_mut().unwrap().clips.push(Clip::midi(clip,"eighths",0,RATE*60,seq));
+    }
+    s
+}
+
+fn render(bpm:i64, buf:usize, lead_ms:i64, clicks:bool, follow:bool)->Vec<f32>{
+    let lead=lead_ms*RATE/1000;
+    let session=Arc::new(song(bpm,clicks));
+    let shared=Arc::new(Shared {position:0.into(),playing:false.into(),speed:1000.into(),meters:Mutex::new(MeterSnapshot::default())});
+    let (tx,rx)=channel();
+    let mut audio=AudioState::new(rx,shared,session,RATE as f64,channel().0);
+    let feed=Arc::new(MidiFeed::default());
+    feed.set_clock_follow(Some(1),true,0,false);
+    tx.send(Cmd::Midi(feed.clone())).unwrap();
+    tx.send(if follow {Cmd::PlayClock{origin:0,render_from:lead}} else {Cmd::Play{from:lead,end:None,looped:None}}).unwrap();
+    audio.device_buffer_frames=buf;
+    let start=Instant::now();
+    let mut pulse=0;
+    feed.set_clock(0);
+    feed.receive(1,&[0xfa]);
+    let mut out=vec![0.;buf*2];
+    // Samples before the first audible device block cannot be changed at Start.
+    let mut pcm=vec![0.;lead as usize];
+    let last=EIGHTHS*RATE*30/bpm;
+    // The final click has 30 ms of tail. Stop before the next beat.
+    let end=last+RATE*90/1000;
+    while (pcm.len() as i64)<end {
+        let at=pcm.len() as i64-lead;
+        // Send precisely the wire pulses already delivered at the device callback.
+        // No pulse that arrives mid-buffer can affect this callback's finished PCM.
+        while pulse*RATE*60 <= at*bpm*24 {
+            feed.set_clock((pulse*60_000_000+bpm*12)/(bpm*24));
+            feed.receive(1,&[0xf8]);
+            pulse+=1;
+        }
+        feed.set_clock((at*1_000_000+RATE/2)/RATE);
+        audio.device_timing=Some(DeviceTiming::new(start+Duration::from_secs_f64(at as f64/RATE as f64),Some(Duration::from_millis(lead_ms as u64)),0));
+        audio.fill(&mut out,2);
+        pcm.extend(out.chunks_exact(2).map(|f|f[0]));
+    }
+    pcm.truncate(end as usize);
+    pcm
+}
+
+// Merge short zero crossings in a single click, preserving the actual first and
+// last nonzero samples. A 30 ms click is separated from the next by at least 170 ms.
+fn bursts(pcm:&[f32])->Vec<(usize,usize)>{
+    let mut result:Vec<(usize,usize)>=Vec::new();
+    for (i,_) in pcm.iter().enumerate().filter(|(_,v)|v.abs()>1e-10){
+        if let Some(last)=result.last_mut() && i-last.1<=16 {
+            last.1=i+1;
+        } else { result.push((i,i+1)); }
+    }
+    result
+}
+
+#[test]
+fn fast_clock_notes_and_clicks_reach_the_device_on_the_reference_samples(){
+    let mut all=true;
+    for bpm in [200,240,300] {
+        for buf in [128,512,2048] {
+            for lead in [30,50] {
+                for clicks in [false,true] {
+                    let reference=render(bpm,buf,lead,clicks,false);
+                    let pcm=render(bpm,buf,lead,clicks,true);
+                    let expected=bursts(&reference);
+                    let actual=bursts(&pcm);
+                    assert_eq!(expected.len(),(if clicks {EIGHTHS/2} else {EIGHTHS}) as usize);
+                    let errors:Vec<_>=actual.iter().zip(&expected).map(|(&(on,_),&(at,_))|on as i64-at as i64).collect();
+                    let intact=actual.iter().zip(&expected).filter(|&(&(on,off),&(at,end))| pcm[on..off]==reference[at..end]).count();
+                    eprintln!("lead bpm={bpm} frames={buf} ms={lead} clicks={clicks} count={}/{} intact={intact} samples={errors:?}",actual.len(),expected.len());
+                    all &= actual.len()==expected.len() && intact==expected.len() && errors.iter().all(|e|*e==0);
+                }
+            }
+        }
+    }
+    assert!(all,"externally clocked output differed from the presentation-aligned PCM reference");
+}
