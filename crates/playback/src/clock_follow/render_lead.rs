@@ -12,7 +12,7 @@ const RATE: i64 = 48_000;
 const EIGHTHS: i64 = 32;
 
 fn song(bpm: i64, clicks: bool) -> Session {
-    let mut s = Session { tempo: TempoMap::new(bpm as f64, 4, 4).unwrap(), sample_rate: SampleRate::HZ_48000, ..Session::default() };
+    let mut s = Session { tempo: TempoMap::new(bpm as f64, 4, 4).expect("valid fixture tempo"), sample_rate: SampleRate::HZ_48000, ..Session::default() };
     s.edit.click = clicks;
     if !clicks {
         let id = s.add_track(TrackKind::Instrument, ChannelFormat::Stereo, None);
@@ -20,7 +20,7 @@ fn song(bpm: i64, clicks: bool) -> Session {
         let sid = SourceId(200);
         let burst = (0..96).map(|n| 0.5 + 0.3 * (n as f32 * 0.31).sin()).collect();
         s.pool.insert(sid, Arc::new(SourceAudio::new(craft_audio::AudioBuffer { sample_rate: 48000, channels: vec![burst] })));
-        let track = s.track_mut(id).unwrap();
+        let track = s.track_mut(id).expect("new instrument track");
         let mut ins = Insert::new("sampler");
         ins.sample = Some(sid);
         ins.params.insert("root_note".into(), 60.);
@@ -30,7 +30,7 @@ fn song(bpm: i64, clicks: bool) -> Session {
         for i in 1..=EIGHTHS {
             seq.notes.push(Note { start: i * 480, length: 80, pitch: 60, channel: 0, velocity: 110, release_velocity: 64 });
         }
-        track.playlist_mut().unwrap().clips.push(Clip::midi(clip, "eighths", 0, RATE * 60, seq));
+        track.playlist_mut().expect("instrument playlist").clips.push(Clip::midi(clip, "eighths", 0, RATE * 60, seq));
     }
     s
 }
@@ -52,13 +52,13 @@ fn render(bpm: i64, buf: usize, lead_ms: i64, clicks: bool, policy: Policy) -> V
     let mut audio = AudioState::new(rx, shared, session, RATE as f64, channel().0);
     let feed = Arc::new(MidiFeed::default());
     feed.set_clock_follow(Some(1), true, 0, false);
-    tx.send(Cmd::Midi(feed.clone())).unwrap();
+    tx.send(Cmd::Midi(feed.clone())).expect("connected audio command queue");
     tx.send(if policy != Policy::Reference {
         Cmd::PlayClock { origin: 0, render_from: lead }
     } else {
         Cmd::Play { from: lead, end: None, looped: None }
     })
-    .unwrap();
+    .expect("connected playback command queue");
     audio.device_buffer_frames = buf;
     let start = Instant::now();
     let epoch = feed.timestamp_at(start);
@@ -92,7 +92,7 @@ fn render(bpm: i64, buf: usize, lead_ms: i64, clicks: bool, policy: Policy) -> V
             Policy::Reference | Policy::Predict => Some(DeviceTiming::new(callback, Some(measured), 0)),
         };
         audio.fill(&mut out, 2);
-        pcm.extend(out.chunks_exact(2).map(|f| f[0]));
+        pcm.extend(out.as_chunks::<2>().0.iter().map(|f| f[0]));
     }
     pcm.truncate(end as usize);
     pcm
