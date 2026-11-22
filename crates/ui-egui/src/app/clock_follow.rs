@@ -961,6 +961,7 @@ mod tests {
     mod ramp_response;
     mod packet_steps;
     mod sampler_song;
+    mod slowdown_sweep;
 
     #[test]
     fn tempo_step_updates_future_beat_spacing_and_preserves_elapsed_bars() {
