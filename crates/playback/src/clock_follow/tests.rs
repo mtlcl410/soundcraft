@@ -5,6 +5,19 @@ fn feed(reader: &mut Follower, byte: u8, at: i64) {
 }
 
 #[test]
+fn coalesced_delivery_expires_after_individually_timed_pulses_resume() {
+    let mut follower = Follower::default();
+    for stamp in [0, 200, 400, 60_000, 60_200, 60_400] {
+        feed(&mut follower, 0xf8, stamp);
+    }
+    assert!(follower.snapshot(60_400).packed_delivery);
+    for stamp in [120_000, 140_000, 160_000, 180_000, 200_000] {
+        feed(&mut follower, 0xf8, stamp);
+    }
+    assert!(!follower.snapshot(200_000).packed_delivery);
+}
+
+#[test]
 fn start_continue_spp_stop_and_realtime_inside_sysex() {
     let mut r = Follower::default();
     r.receive(&[0xf2, 11, 1], 0);

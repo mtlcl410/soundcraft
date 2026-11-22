@@ -105,10 +105,16 @@ impl<const N: usize> PulseFit<N> {
     /// Oldest point in a train of consistent intervals that depart from a previous
     /// period. A delayed packet and the shorter interval that follows it do not qualify.
     pub fn confirmed_step_start(&self, previous: f64, noise_us: f64) -> Option<(i64, i64)> {
+        self.confirmed_step(previous, noise_us).map(|(start, _)| start)
+    }
+
+    pub(crate) fn confirmed_step(&self, previous: f64, noise_us: f64) -> Option<((i64, i64), u8)> {
         // Two nearly identical intervals can distinguish a large jump from a
         // delayed packet followed by a short one. Keep the four-interval noise
         // test for ordinary changes and for devices with appreciable jitter.
-        self.step_intervals(previous, 2, 0.30, noise_us * 8., 0.03).or_else(|| self.step_intervals(previous, 4, 0.08, noise_us * 2., 0.4))
+        self.step_intervals(previous, 2, 0.30, noise_us * 8., 0.03)
+            .map(|head| (head, 2))
+            .or_else(|| self.step_intervals(previous, 4, 0.08, noise_us * 2., 0.4).map(|head| (head, 4)))
     }
 
     fn step_intervals(&self, previous: f64, count: usize, bpm_fraction: f64, noise_floor: f64, tolerance: f64) -> Option<(i64, i64)> {
@@ -117,16 +123,24 @@ impl<const N: usize> PulseFit<N> {
         }
         let first = (self.cursor + N - count - 1) % N;
         let start = self.points[first];
-        let (_, end) = self.last?;
-        let period = end.saturating_sub(start.1) as f64 / count as f64;
+        let (index, end) = self.last?;
+        let pulses = index.saturating_sub(start.0) as f64;
+        let period = end.saturating_sub(start.1) as f64 / pulses;
         let change = period - previous;
         // BPM is reciprocal period. Allow for the microsecond rounding of the endpoints.
-        if period <= 0. || change.abs() + 1. / (count as f64) < period * bpm_fraction || change.abs() < noise_floor {
+        if !(2500. ..=500_000.).contains(&period) || change.abs() + 1. / pulses < period * bpm_fraction || change.abs() < noise_floor {
             return None;
         }
+        // Timestamp jitter moves neighbouring intervals in opposite directions. Its
+        // observed amplitude can justify a wider agreement band, while every interval
+        // must still depart from the old period in the direction of this change.
+        let jitter_margin = if count == 2 { (0.40 * noise_floor).min(change.abs() * 0.25) } else { (1.7 * noise_floor).min(change.abs() * 0.95) };
+        let band = (change.abs() * tolerance).max(jitter_margin);
         for i in 0..count {
-            let interval = self.points[(first + i + 1) % N].1.saturating_sub(self.points[(first + i) % N].1) as f64;
-            if (interval - period).abs() > change.abs() * tolerance {
+            let (a, start) = self.points[(first + i) % N];
+            let (b, end) = self.points[(first + i + 1) % N];
+            let interval = end.saturating_sub(start) as f64 / b.saturating_sub(a) as f64;
+            if (interval - period).abs() > band {
                 return None;
             }
         }
