@@ -444,7 +444,7 @@ impl MidiFeed {
         };
         let stamp = self.clock_render_stamp.load(Ordering::SeqCst);
         let period = f64::from_bits(self.clock_render_period.load(Ordering::SeqCst));
-        if generation % 2 != 0 || self.clock_render_generation.load(Ordering::SeqCst) != generation {
+        if !generation.is_multiple_of(2) || self.clock_render_generation.load(Ordering::SeqCst) != generation {
             return (self.clock_render_tick(), false);
         }
         let age = callback_us.saturating_sub(stamp);

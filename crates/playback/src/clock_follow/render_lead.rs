@@ -127,6 +127,9 @@ fn fast_clock_notes_and_clicks_reach_the_device_on_the_reference_samples() {
                     let small = (buf as i64) * bpm * 24 < RATE * 60;
                     let expected = bursts(&reference);
                     assert_eq!(expected.len(), (if clicks { EIGHTHS / 2 } else { EIGHTHS }) as usize);
+                    let starts: Vec<_> = expected.iter().map(|(start, _)| *start).collect();
+                    let lengths: Vec<_> = expected.iter().map(|(start, end)| end - start).collect();
+                    eprintln!("reference bpm={bpm} frames={buf} ms={lead} clicks={clicks} starts={starts:?} lengths={lengths:?}");
                     for (policy, pcm) in [(Policy::Hard, &hard), (Policy::Predict, &predict)] {
                         let actual = bursts(pcm);
                         let errors: Vec<_> = actual.iter().zip(&expected).map(|(&(on, _), &(at, _))| on as i64 - at as i64).collect();
