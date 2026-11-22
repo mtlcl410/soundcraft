@@ -358,7 +358,7 @@ impl SoundApp {
     }
 }
 
-// Only append tempo changes at or after the latest pulse. Elapsed playback and recorded
+// Keep edits beyond the committed audio. Elapsed playback and recorded
 // note positions remain fixed; future beat spacing follows the incoming clock and phase.
 fn update_grid(grid: &mut TempoMap, anchor: Option<(i64, i64)>, waiting_tick: i64, s: Snapshot, sr: SampleRate, render_until: i64) -> bool {
     let Some(bpm) = s.bpm else { return false };
@@ -370,7 +370,14 @@ fn update_grid(grid: &mut TempoMap, anchor: Option<(i64, i64)>, waiting_tick: i6
         return false;
     };
     let tick = s.pulse.saturating_mul(TICKS_PER_PULSE);
-    let edit = tick.max(grid.samples_to_ticks(render_until, sr).saturating_add(1));
+    let writable = grid.samples_to_ticks(render_until, sr).saturating_add(1);
+    // A batched acceleration can report a pulse far beyond the committed audio.
+    // Start the confirmed correction at the first writable tick in that case.
+    let edit = if render_until > 0 && s.packed_delivery && s.recovering_tempo_step {
+        writable.max(origin.saturating_mul(TICKS_PER_PULSE))
+    } else {
+        tick.max(writable)
+    };
     // On a slowdown the audio cursor can be several Clock pulses ahead of the wire.
     // Compare against the writable position while slewing so an earlier correction
     // cannot hold up the next one after playback has already crossed it.
@@ -392,7 +399,8 @@ fn update_grid(grid: &mut TempoMap, anchor: Option<(i64, i64)>, waiting_tick: i6
     let start = grid.tick_to_samples(origin.saturating_mul(TICKS_PER_PULSE), sr);
     let elapsed = sr.samples(s.stamp_us.saturating_sub(stamp) as f64 / 1e6);
     let phase = sr.seconds(start.saturating_add(elapsed).saturating_sub(grid.tick_to_samples(tick, sr)));
-    if (slope - bpm).abs() < 0.15 && phase.abs() < 0.003 {
+    let (slope_floor, phase_floor) = if s.recovering_tempo_step && s.jitter_us > 50. { (0.03, 0.001) } else { (0.15, 0.003) };
+    if (slope - bpm).abs() < slope_floor && phase.abs() < phase_floor {
         return false;
     }
     if s.recovering_tempo_step {
@@ -938,6 +946,7 @@ mod tests {
     }
 
     mod large_steps;
+    mod packet_steps;
     mod sampler_song;
 
     #[test]
