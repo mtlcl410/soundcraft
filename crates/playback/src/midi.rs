@@ -434,21 +434,28 @@ impl MidiFeed {
     /// microseconds in the input feed's epoch. A short buffer, uncertain lock, stale
     /// pulse or concurrent source change keeps the ordinary one-pulse wire limit.
     pub fn clock_render_tick_for_output(&self, callback_us: i64, buffer_us: i64, presentation_end_us: i64) -> Option<i64> {
+        self.clock_output_window(callback_us, buffer_us, presentation_end_us).0
+    }
+
+    pub(crate) fn clock_output_window(&self, callback_us: i64, buffer_us: i64, presentation_end_us: i64) -> (Option<i64>, bool) {
         let generation = self.clock_render_generation.load(Ordering::SeqCst);
-        let hard = self.clock_render_tick()?;
+        let Some(hard) = self.clock_render_tick() else {
+            return (None, false);
+        };
         let stamp = self.clock_render_stamp.load(Ordering::SeqCst);
         let period = f64::from_bits(self.clock_render_period.load(Ordering::SeqCst));
         if generation % 2 != 0 || self.clock_render_generation.load(Ordering::SeqCst) != generation {
-            return self.clock_render_tick();
+            return (self.clock_render_tick(), false);
         }
         let age = callback_us.saturating_sub(stamp);
         if period == 0. || (buffer_us as f64) < period || age < 0 || age > period.ceil() as i64 || presentation_end_us <= callback_us {
-            return Some(hard);
+            return (Some(hard), false);
         }
         const TICKS: i64 = soundcraft_time::TICKS_PER_QUARTER / 24;
         let elapsed = presentation_end_us.saturating_sub(stamp) as f64;
         let extent = (elapsed * TICKS as f64 / period).ceil() as i64;
-        Some(hard.saturating_add(extent.saturating_sub(TICKS).max(0)))
+        let projected = hard.saturating_add(extent.saturating_sub(TICKS).max(0));
+        (Some(projected), projected > hard)
     }
 
     /// Inclusive clip/click event horizon. Coasting has no external render limit.
