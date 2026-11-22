@@ -75,7 +75,7 @@ fn templates() -> [Vec<Vec<f32>>; 2] {
     let song = note_song(120, 0, 150_000);
     let mut click = Session { tempo: song.tempo.clone(), sample_rate: song.sample_rate, ..Default::default() };
     click.edit.click = true;
-    let mut mix = MixEngine::new(RATE as f64, CHUNK);
+    let mut mix = MixEngine::new(RATE as f32, CHUNK);
     let mut audio = vec![vec![0.; CHUNK]; 2];
     let mut pcm = Vec::new();
     for at in (0..125_000).step_by(CHUNK) {
@@ -87,7 +87,7 @@ fn templates() -> [Vec<Vec<f32>>; 2] {
     assert!(hats.iter().enumerate().all(|(i, wave)| wave.len() == 96 && !hats[..i].contains(wave)));
     let mut clicks = Vec::new();
     for at in [0, RATE / 2] {
-        let mut metro = MixEngine::new(RATE as f64, 2048);
+        let mut metro = MixEngine::new(RATE as f32, 2048);
         metro.metronome = true;
         let mut block = vec![vec![0.; 2048]; 2];
         metro.render(&click, at, 2048, &mut block);
@@ -110,8 +110,8 @@ fn render(case: Case, prediction: bool) -> [Vec<f32>; 2] {
     let mut song = note_song(case.bpm, FIRST, case.at(LAST) + RATE);
     let mut click = Session { tempo: song.tempo.clone(), sample_rate: rate, ..Default::default() };
     click.edit.click = true;
-    let mut hats = MixEngine::new(RATE as f64, CHUNK);
-    let mut metro = MixEngine::new(RATE as f64, CHUNK);
+    let mut hats = MixEngine::new(RATE as f32, CHUNK);
+    let mut metro = MixEngine::new(RATE as f32, CHUNK);
     metro.metronome = true;
     let mut audio = vec![vec![0.; CHUNK]; 2];
     let mut pcm = [Vec::new(), Vec::new()];
