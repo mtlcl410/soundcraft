@@ -223,6 +223,18 @@ impl Follower {
         }
     }
 
+    pub(crate) fn render_prediction(&self) -> Option<(i64, f64)> {
+        let period = self.steady.period_us()?;
+        if self.state != State::Locked
+            || self.step_pulses_left != 0
+            || !(2500. ..=500_000.).contains(&period)
+            || !self.short.regular_intervals(period)
+        {
+            return None;
+        }
+        Some((self.latest?, period))
+    }
+
     fn bpm(&self) -> Option<f64> {
         self.steady.period_us().or_else(|| self.short.period_us()).filter(|p| (2500. ..=500_000.).contains(p)).map(|p| 2_500_000. / p)
     }
