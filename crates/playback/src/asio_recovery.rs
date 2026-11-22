@@ -34,6 +34,8 @@ pub(crate) mod native {
     use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
     use std::sync::atomic::AtomicBool;
 
+    static TEST_EPOCH: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+
     pub(crate) struct Recovery {
         device_id: cpal::DeviceId,
         config: cpal::StreamConfig,
@@ -53,13 +55,22 @@ pub(crate) mod native {
             let slow = Arc::clone(&self.slow);
             let rate = self.config.sample_rate;
             let mut cadence = Cadence::default();
+            let generation = TEST_EPOCH.load(Ordering::Relaxed);
+            let mut observed = Instant::now();
             stream::build_format(
                 device,
                 self.config,
                 self.format,
                 fault,
                 shared,
-                move |frames| slow.store(cadence.observe(Instant::now(), frames, rate), Ordering::Relaxed),
+                move |frames| {
+                    if generation != TEST_EPOCH.load(Ordering::Relaxed) {
+                        observed += Duration::from_millis(251);
+                    } else {
+                        observed = Instant::now();
+                    }
+                    slow.store(cadence.observe(observed, frames, rate), Ordering::Relaxed);
+                },
                 move |data, channels| {
                     // Only the live stream renders. Never wait on a retiring callback.
                     if let Ok(mut state) = graph.try_lock() {
@@ -88,6 +99,9 @@ pub(crate) mod native {
         pub(crate) fn recover_idle_stream(&mut self, playing: bool, recording: bool, pending: bool, release_input: impl FnOnce()) {
             let playing = playing || self.is_playing();
             let Some(recovery) = &mut self.asio_recovery else { return };
+            if let Some(value) = std::env::var_os("SC_DIAGNOSTIC_EPOCH").and_then(|p| std::fs::read_to_string(p).ok()).and_then(|s| s.trim().parse::<u32>().ok()) {
+                TEST_EPOCH.store(value, Ordering::Relaxed);
+            }
             let now = Instant::now();
             if self.fault.failed.load(Ordering::Relaxed) {
                 return;
