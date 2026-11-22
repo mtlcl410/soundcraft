@@ -11,8 +11,12 @@ use std::time::{Duration, Instant};
 const RATE: i64 = 48_000;
 const EIGHTHS: i64 = 32;
 
-fn song(bpm: i64, clicks: bool) -> Session {
-    let mut s = Session { tempo: TempoMap::new(bpm as f64, 4, 4).expect("valid fixture tempo"), sample_rate: SampleRate::HZ_48000, ..Session::default() };
+fn song(bpm: i64, clicks: bool) -> Result<Session, &'static str> {
+    let mut s = Session {
+        tempo: TempoMap::new(bpm as f64, 4, 4).map_err(|_| "invalid fixture tempo")?,
+        sample_rate: SampleRate::HZ_48000,
+        ..Session::default()
+    };
     s.edit.click = clicks;
     if !clicks {
         let id = s.add_track(TrackKind::Instrument, ChannelFormat::Stereo, None);
@@ -20,7 +24,7 @@ fn song(bpm: i64, clicks: bool) -> Session {
         let sid = SourceId(200);
         let burst = (0..96).map(|n| 0.5 + 0.3 * (n as f32 * 0.31).sin()).collect();
         s.pool.insert(sid, Arc::new(SourceAudio::new(craft_audio::AudioBuffer { sample_rate: 48000, channels: vec![burst] })));
-        let track = s.track_mut(id).expect("new instrument track");
+        let track = s.track_mut(id).ok_or("instrument track missing")?;
         let mut ins = Insert::new("sampler");
         ins.sample = Some(sid);
         ins.params.insert("root_note".into(), 60.);
@@ -30,9 +34,9 @@ fn song(bpm: i64, clicks: bool) -> Session {
         for i in 1..=EIGHTHS {
             seq.notes.push(Note { start: i * 480, length: 80, pitch: 60, channel: 0, velocity: 110, release_velocity: 64 });
         }
-        track.playlist_mut().expect("instrument playlist").clips.push(Clip::midi(clip, "eighths", 0, RATE * 60, seq));
+        track.playlist_mut().ok_or("instrument playlist missing")?.clips.push(Clip::midi(clip, "eighths", 0, RATE * 60, seq));
     }
-    s
+    Ok(s)
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -44,21 +48,21 @@ enum Policy {
     Clamped,
 }
 
-fn render(bpm: i64, buf: usize, lead_ms: i64, clicks: bool, policy: Policy) -> Vec<f32> {
+fn render(bpm: i64, buf: usize, lead_ms: i64, clicks: bool, policy: Policy) -> Result<Vec<f32>, &'static str> {
     let lead = lead_ms * RATE / 1000;
-    let session = Arc::new(song(bpm, clicks));
+    let session = Arc::new(song(bpm, clicks)?);
     let shared = Arc::new(Shared { position: 0.into(), playing: false.into(), speed: 1000.into(), meters: Mutex::new(MeterSnapshot::default()) });
     let (tx, rx) = channel();
     let mut audio = AudioState::new(rx, shared, session, RATE as f64, channel().0);
     let feed = Arc::new(MidiFeed::default());
     feed.set_clock_follow(Some(1), true, 0, false);
-    tx.send(Cmd::Midi(feed.clone())).expect("connected audio command queue");
+    tx.send(Cmd::Midi(feed.clone())).map_err(|_| "audio command queue closed")?;
     tx.send(if policy != Policy::Reference {
         Cmd::PlayClock { origin: 0, render_from: lead }
     } else {
         Cmd::Play { from: lead, end: None, looped: None }
     })
-    .expect("connected playback command queue");
+    .map_err(|_| "playback command queue closed")?;
     audio.device_buffer_frames = buf;
     let start = Instant::now();
     let epoch = feed.timestamp_at(start);
@@ -95,7 +99,7 @@ fn render(bpm: i64, buf: usize, lead_ms: i64, clicks: bool, policy: Policy) -> V
         pcm.extend(out.as_chunks::<2>().0.iter().map(|f| f[0]));
     }
     pcm.truncate(end as usize);
-    pcm
+    Ok(pcm)
 }
 
 // Merge short zero crossings in a single click, preserving the actual first and
@@ -115,15 +119,15 @@ fn bursts(pcm: &[f32]) -> Vec<(usize, usize)> {
 }
 
 #[test]
-fn fast_clock_notes_and_clicks_reach_the_device_on_the_reference_samples() {
+fn fast_clock_notes_and_clicks_reach_the_device_on_the_reference_samples() -> Result<(), &'static str> {
     let mut all = true;
     for bpm in [200, 240, 300] {
         for buf in [128, 512, 2048] {
             for lead in [30, 50] {
                 for clicks in [false, true] {
-                    let reference = render(bpm, buf, lead, clicks, Policy::Reference);
-                    let hard = render(bpm, buf, lead, clicks, Policy::Hard);
-                    let predict = render(bpm, buf, lead, clicks, Policy::Predict);
+                    let reference = render(bpm, buf, lead, clicks, Policy::Reference)?;
+                    let hard = render(bpm, buf, lead, clicks, Policy::Hard)?;
+                    let predict = render(bpm, buf, lead, clicks, Policy::Predict)?;
                     let small = (buf as i64) * bpm * 24 < RATE * 60;
                     let expected = bursts(&reference);
                     assert_eq!(expected.len(), (if clicks { EIGHTHS / 2 } else { EIGHTHS }) as usize);
@@ -152,6 +156,7 @@ fn fast_clock_notes_and_clicks_reach_the_device_on_the_reference_samples() {
         }
     }
     assert!(all, "externally clocked output differed from the presentation-aligned PCM reference");
+    Ok(())
 }
 
 #[test]
@@ -175,10 +180,11 @@ fn prediction_stops_at_the_first_overdue_or_slow_pulse() {
 }
 
 #[test]
-fn expired_and_clamped_device_timestamps_keep_the_hard_horizon() {
+fn expired_and_clamped_device_timestamps_keep_the_hard_horizon() -> Result<(), &'static str> {
     for clicks in [true, false] {
-        let hard = render(300, 1500, 50, clicks, Policy::Hard);
-        assert_eq!(hard, render(300, 1500, 50, clicks, Policy::Expired));
-        assert_eq!(hard, render(300, 1500, 50, clicks, Policy::Clamped));
+        let hard = render(300, 1500, 50, clicks, Policy::Hard)?;
+        assert_eq!(hard, render(300, 1500, 50, clicks, Policy::Expired)?);
+        assert_eq!(hard, render(300, 1500, 50, clicks, Policy::Clamped)?);
     }
+    Ok(())
 }
