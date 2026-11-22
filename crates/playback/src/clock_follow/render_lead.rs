@@ -188,3 +188,23 @@ fn expired_and_clamped_device_timestamps_keep_the_hard_horizon() -> Result<(), &
     }
     Ok(())
 }
+
+#[test]
+fn held_note_remains_a_complete_voice_when_device_prediction_reopens() -> Result<(), &'static str> {
+    let s = song(300, false)?;
+    let mut free = soundcraft_mix::MixEngine::new(RATE as f32, 2048);
+    let mut follow = soundcraft_mix::MixEngine::new(RATE as f32, 2048);
+    let mut buf = vec![vec![0.; 2048]; 2];
+    free.render(&s, 4096, 2048, &mut buf);
+    let reference = buf[0][704..800].to_owned();
+    assert!(reference.iter().all(|v| v.abs() > 1e-10));
+    // The attack at 4800 and release at 5600 were both held by the wire gate.
+    follow.render_with_clock_limit(&s, 4096, 2048, &mut buf, Some(418));
+    assert!(bursts(&buf[0]).is_empty());
+    follow.render_with_clock_prediction(&s, 6144, 512, &mut buf, 666);
+    let actual = bursts(&buf[0][..512]);
+    assert_eq!(actual.len(), 1, "the overdue attack must not collapse into its release");
+    let (start, end) = actual[0];
+    assert_eq!(&buf[0][start..end], reference);
+    Ok(())
+}
