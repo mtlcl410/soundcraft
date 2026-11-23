@@ -420,3 +420,6 @@ fn first_integer_sample_of_an_even_fractional_frame_emits_its_quarter_group() {
 }
 
 mod anchored_start;
+
+#[cfg(test)]
+mod silent_lead_replay { include!(r"E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-evidence\silence_replay.rs"); }

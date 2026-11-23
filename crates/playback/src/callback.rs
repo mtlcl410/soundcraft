@@ -461,6 +461,10 @@ impl AudioState {
             // A corroborated stopped locate protects its first attack for one start.
             // Without a presentation estimate an unanchored start can still follow the incoming transport.
             let anchor = anchor.map(|p| p.session_sample(rate, sr, start, offset)).filter(|at| *at >= 0);
+            #[cfg(test)]
+            let anchor = anchor.filter(|at| !TEST_SILENCE_END.with(|bound| {
+                presentation.is_some_and(|live| live > *at && live <= bound.get()) && TEST_SILENT_PREROLL.with(|opt| opt.get())
+            }));
             if anchor.is_some() && !self.playing {
                 // Present the stopped locate one render block after lock. The callback that
                 // consumes the lock may already be partway through that interval. Render the
@@ -1502,4 +1506,11 @@ fn fold_gains(s: &Session) -> [(f32, f32); MAX_CHANNELS] {
         g[0] = (std::f32::consts::FRAC_1_SQRT_2, std::f32::consts::FRAC_1_SQRT_2);
     }
     g
+}
+
+
+#[cfg(test)]
+thread_local! {
+    pub(crate) static TEST_SILENCE_END: std::cell::Cell<i64> = const { std::cell::Cell::new(-1) };
+    pub(crate) static TEST_SILENT_PREROLL: std::cell::Cell<bool> = std::cell::Cell::new(std::env::var_os("SC_TEST_SILENT_PREFIX").is_some());
 }
