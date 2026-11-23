@@ -926,6 +926,10 @@ mod tests {
         assert!(grid.tempo_at_tick(82 * TICKS_PER_PULSE) < 100.);
     }
 
+    mod performance_scenarios;
+    mod large_steps;
+    mod sampler_song;
+
     #[test]
     fn chorus_tempo_step_keeps_the_next_backbeat_within_one_clock() {
         let sr = SampleRate::new(48_000).unwrap();
