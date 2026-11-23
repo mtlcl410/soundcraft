@@ -139,6 +139,24 @@ mod config_tests {
     use super::*;
 
     #[test]
+    fn bad_clock_follow_prefs_reset_only_the_invalid_leaf_and_keep_workstation_settings() {
+        let path = std::env::temp_dir().join(format!("soundcraft-clock-follow-pref-{}.json", std::process::id()));
+        for (field, invalid) in [("clock_follow_stop_on_loss",serde_json::json!(7)),("clock_follow_input",serde_json::json!(" ")),("clock_follow_input_offsets",serde_json::json!({"DIN":"bad","Keys":120}))] {
+            let mut stored = serde_json::json!({"gen_mtc":true,"clock_follow_input":"DIN","clock_follow_stop_on_loss":true,"clock_follow_input_offsets":{"DIN":360,"Keys":120}});
+            stored[field] = invalid;
+            std::fs::write(&path, serde_json::to_vec(&stored).unwrap()).unwrap();
+            let ui = load_ui(&path).unwrap().unwrap();
+            assert!(ui.gen_mtc);
+            assert_eq!(ui.clock_follow_input.as_deref(),(field!="clock_follow_input").then_some("DIN"));
+            assert_eq!(ui.clock_follow_stop_on_loss,field!="clock_follow_stop_on_loss");
+            assert_eq!(ui.clock_follow_input_offsets["Keys"],120);
+            assert_eq!(ui.clock_follow_input_offsets.get("DIN").copied(),(field!="clock_follow_input_offsets").then_some(360));
+            assert!(ui.status.contains(field), "{}",ui.status);
+        }
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
     fn native_file_reload_preserves_edit_mix_and_hidden_floating_panels() {
         use soundcraft_ui_egui::{MainWindow, Services, SoundApp, docking::Panel};
         let directory = std::env::temp_dir().join(format!("soundcraft-dock-prefs-{}", std::process::id()));
