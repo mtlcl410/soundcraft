@@ -961,6 +961,8 @@ mod tests {
     mod ramp_response;
     mod packet_steps;
     mod sampler_song;
+    mod dj_render;
+    mod dj_tempos;
     mod slowdown_sweep;
 
     #[test]
