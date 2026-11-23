@@ -1,0 +1,1015 @@
+{
+ "worktrees": [
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/1662-storage-auto-ui",
+   "original_head": "a88f3b3148ed8b14f4f64f28e6c274861e19bf59",
+   "original_branch": null,
+   "snapshot": "dbe00a4cc6897bb04c7d26c3672b34ecf8732dce",
+   "file_count": 5,
+   "index_backup": "index-states/a57eee593860"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/1662-storage-recovery-ui",
+   "original_head": "515580ff825486fc124290a9a7cff803b6acabf0",
+   "original_branch": null,
+   "snapshot": "340c53d73db8a2059ab52877330ea9c0e736d48a",
+   "file_count": 12,
+   "index_backup": "index-states/ea739615073c"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/1662-storage-ui-final",
+   "original_head": "e758cf2a2ab6057d7dfd34a2b3196e5327fa9c5c",
+   "original_branch": null,
+   "snapshot": "aefc61b7454485633a078dbef48f4c82b5471da5",
+   "file_count": 9,
+   "index_backup": "index-states/64e973ddb57a"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/1662-storage-ui-red",
+   "original_head": "97d8cd01be085f4df9f7fdf220f6a3dd4be3f0d7",
+   "original_branch": null,
+   "snapshot": "0499760285e6f733de91da41c2e505367a9d8d4d",
+   "file_count": 1,
+   "index_backup": "index-states/cc36ca278c0c"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/1663-mtc-lead-consumer",
+   "original_head": "62ea084c71a86d669226434a0564a388fbc68976",
+   "original_branch": null,
+   "snapshot": "62ea084c71a86d669226434a0564a388fbc68976"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/1663-storage-final",
+   "original_head": "4ff8ced71eea56fb5ff94ce88e5dbf189c02ac41",
+   "original_branch": null,
+   "snapshot": "4ff8ced71eea56fb5ff94ce88e5dbf189c02ac41"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/1669-r5-repro",
+   "original_head": "264d124d852e87aeb8be5a0ecf9520cd7352850d",
+   "original_branch": null,
+   "snapshot": "78101f8f07d5bfe645f7843d4520eadb293ba9b4",
+   "file_count": 1,
+   "index_backup": "index-states/818e4c198335"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/1669-r6-range-red",
+   "original_head": "3262658632bc75d399f0be90b797805e7a7be82e",
+   "original_branch": null,
+   "snapshot": "7aa7924d0a7cb454bb95f731ed16211dd6224538",
+   "file_count": 1,
+   "index_backup": "index-states/e6df06f47d5f"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/1669-review-windows",
+   "original_head": "15518c6ff00e962336707db9a75fb92fcbaf1229",
+   "original_branch": null,
+   "snapshot": "ccfc8457f15fdc58f30a87e6911907c25549f291",
+   "file_count": 54,
+   "index_backup": "index-states/331be9967cd2"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-a10-recovery/beat",
+   "original_head": "b1a9d50c9e68bb49905570d91afcc54e802ba5bd",
+   "original_branch": null,
+   "snapshot": "b1a9d50c9e68bb49905570d91afcc54e802ba5bd"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-a10-recovery/beat-red",
+   "original_head": "91366d09fd5f925492152c00be914d7dff7c0330",
+   "original_branch": null,
+   "snapshot": "4aee6da7ecb78b9c0eb836ef2905fe56ab1530cf",
+   "file_count": 1,
+   "index_backup": "index-states/f10eae14b675"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-a10-recovery/follow",
+   "original_head": "49a85d8e10f11163d2e1c72f834bf8d6844a125f",
+   "original_branch": null,
+   "snapshot": "49a85d8e10f11163d2e1c72f834bf8d6844a125f"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-a10-recovery/main",
+   "original_head": "85623f28f99a9a788123f0f6b48829f95f07962f",
+   "original_branch": null,
+   "snapshot": "85623f28f99a9a788123f0f6b48829f95f07962f"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-a10-recovery/main-red",
+   "original_head": "85623f28f99a9a788123f0f6b48829f95f07962f",
+   "original_branch": null,
+   "snapshot": "85623f28f99a9a788123f0f6b48829f95f07962f"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-a10-recovery/mtc",
+   "original_head": "7e6215a21dd6fff853a5f891619d55c79f103f84",
+   "original_branch": null,
+   "snapshot": "7e6215a21dd6fff853a5f891619d55c79f103f84"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-a10-recovery/mtc-red",
+   "original_head": "0819e6101d115e9bc2f1e61e2cfac66c9a2731f1",
+   "original_branch": null,
+   "snapshot": "b451b1a021f817bfb7de562fe66177dffe016d91",
+   "file_count": 2,
+   "index_backup": "index-states/d05e16af8cf2"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-beat-clock",
+   "original_head": "91366d09fd5f925492152c00be914d7dff7c0330",
+   "original_branch": "refs/heads/feat/g11-midi-beat-clock-out",
+   "snapshot": "c65db75197a5f182ab9389e1aec66d6f114da853",
+   "file_count": 3,
+   "index_backup": "index-states/df54ded09ad3"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-717f969-baseline",
+   "original_head": "717f96953313c385ee2acf24a1b0aedeb7672585",
+   "original_branch": null,
+   "snapshot": "717f96953313c385ee2acf24a1b0aedeb7672585"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-follow",
+   "original_head": "b7b7d87390fe5cfcd83b34bb8e64df77c5668c7b",
+   "original_branch": "refs/heads/feat/g11-external-clock-follow",
+   "snapshot": "b7b7d87390fe5cfcd83b34bb8e64df77c5668c7b"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-follow-r3",
+   "original_head": "6cfa7ca0f479d6a04dfc1188c28a81ee46441e0b",
+   "original_branch": "refs/heads/fix/g11-clock-follow-r3",
+   "snapshot": "6cfa7ca0f479d6a04dfc1188c28a81ee46441e0b"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-record",
+   "original_head": "69eadb83a15561d213b3fb25bb24fcf7cf3d9ca6",
+   "original_branch": "refs/heads/fix/g11-clock-follow-record",
+   "snapshot": "69eadb83a15561d213b3fb25bb24fcf7cf3d9ca6"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-stress/baseline",
+   "original_head": "af4af80b626bab785de97ba895f76187b76da99d",
+   "original_branch": null,
+   "snapshot": "a596ba85c5df1e7a907e7443e958a4cdb9242bb7",
+   "file_count": 3,
+   "index_backup": "index-states/167f0489088e"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-stress/checks",
+   "original_head": "8d84e4a6e92bbc9cbb8366bc648c3f2c17cc016a",
+   "original_branch": null,
+   "snapshot": "8d84e4a6e92bbc9cbb8366bc648c3f2c17cc016a"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-stress/integration",
+   "original_head": "8d84e4a6e92bbc9cbb8366bc648c3f2c17cc016a",
+   "original_branch": null,
+   "snapshot": "8d84e4a6e92bbc9cbb8366bc648c3f2c17cc016a"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-stress/lead",
+   "original_head": "b2284f71b6a836957607368d7ff524a5012038c1",
+   "original_branch": null,
+   "snapshot": "290e8d111fcee6311657942152e1e3d27da7cf38",
+   "file_count": 1,
+   "index_backup": "index-states/6cc3bf3f18d2"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-stress/lead-fix",
+   "original_head": "3b80fb8a2f69f88eb19f0c390743f48c42bb72f6",
+   "original_branch": null,
+   "snapshot": "3b80fb8a2f69f88eb19f0c390743f48c42bb72f6"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-stress/packets",
+   "original_head": "5385c892351f5ccdf067c173208c377c332824be",
+   "original_branch": null,
+   "snapshot": "5385c892351f5ccdf067c173208c377c332824be"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-stress/publish",
+   "original_head": "614be5667ef9581ab01ea5c6c858f029c9ba2649",
+   "original_branch": "refs/heads/audit/1669-pcm-final",
+   "snapshot": "614be5667ef9581ab01ea5c6c858f029c9ba2649"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-stress/ramp-before",
+   "original_head": "af4af80b626bab785de97ba895f76187b76da99d",
+   "original_branch": null,
+   "snapshot": "688facc3574cac2f1192c23ec0d80873d3118c66",
+   "file_count": 2,
+   "index_backup": "index-states/62bc5946311e"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-stress/ramps",
+   "original_head": "c814547f294498301e9588708c3ab5bba97afa4b",
+   "original_branch": null,
+   "snapshot": "c814547f294498301e9588708c3ab5bba97afa4b"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-clock-stress/slow-harness",
+   "original_head": "6554e0590f1ec2890dc0243242a993657a8ba595",
+   "original_branch": null,
+   "snapshot": "6554e0590f1ec2890dc0243242a993657a8ba595"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-coast-verification/tree",
+   "original_head": "82cc19c6f3cfda50267280e20384982ed380cbde",
+   "original_branch": null,
+   "snapshot": "82cc19c6f3cfda50267280e20384982ed380cbde"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-combined-baseline-aaf",
+   "original_head": "cb18bbc93f094fc7fc31ea632e20383929aa431f",
+   "original_branch": null,
+   "snapshot": "cb18bbc93f094fc7fc31ea632e20383929aa431f"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-combined-windows-follow",
+   "original_head": "0a8f5534d68920c4470d0da1c80b194bd67180b7",
+   "original_branch": null,
+   "snapshot": "2788acfa029e9d86c9a851efbbbd0e15569c61b2",
+   "file_count": 14,
+   "index_backup": "index-states/8b0ed4d529c2"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-combined-windows-gate",
+   "original_head": "585cc1a1ef17e43923dc175a26808e86978adf0c",
+   "original_branch": null,
+   "snapshot": "585cc1a1ef17e43923dc175a26808e86978adf0c"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-combined-windows-mtc",
+   "original_head": "ef7feaf41def12af3275932e55028928cdd8bc9c",
+   "original_branch": null,
+   "snapshot": "ef7feaf41def12af3275932e55028928cdd8bc9c"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-continue-trace",
+   "original_head": "0a8f5534d68920c4470d0da1c80b194bd67180b7",
+   "original_branch": null,
+   "snapshot": "58a30c3d8db8ae1f78bb405838aa7bde59bbebc6",
+   "file_count": 14,
+   "index_backup": "index-states/5174a75636bc"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-direct-asio-follow",
+   "original_head": "67ee258461a151d0cf4fa1ecf65dff306f7a2e44",
+   "original_branch": null,
+   "snapshot": "0c62bb9f1af7af025ad3c9e0de0dbecb31d0a463",
+   "file_count": 3,
+   "index_backup": "index-states/28a4368dd91f"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-dj-audit/dj/repo",
+   "original_head": "c093aedbdf3bef40837bee6257dcc3c3e1dfe963",
+   "original_branch": null,
+   "snapshot": "b9cfa983d4e4837dc53b6373e5163c3029803083",
+   "file_count": 3,
+   "index_backup": "index-states/28b92acfce93"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-eight-bars-main",
+   "original_head": "85623f28f99a9a788123f0f6b48829f95f07962f",
+   "original_branch": null,
+   "snapshot": "b24d7cd5ba7027f06b84e2487ea346748caf8371",
+   "file_count": 3,
+   "index_backup": "index-states/2d26db99b004"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/beat",
+   "original_head": "8fd150681cb7ed2497887fdb784e82e1c399bafa",
+   "original_branch": "refs/heads/final-round-beat-output",
+   "snapshot": "8fd150681cb7ed2497887fdb784e82e1c399bafa"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/brake69",
+   "original_head": "ab79976dd24455d881d5d26f58e1fe197c65584f",
+   "original_branch": "refs/heads/audit/final-brake69",
+   "snapshot": "505eef5bd9e2c1308dcba6134b8a759c9ec32f30",
+   "file_count": 1,
+   "index_backup": "index-states/55e934aa8301"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/edge69",
+   "original_head": "3edb1898381fb157ca773ace431bb44d79fd90ec",
+   "original_branch": "refs/heads/final/threshold69",
+   "snapshot": "3edb1898381fb157ca773ace431bb44d79fd90ec"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/follow",
+   "original_head": "33dfa5f5d3b6afd33bf0b6b8df57b755d662a8fa",
+   "original_branch": "refs/heads/final-round-1669",
+   "snapshot": "33dfa5f5d3b6afd33bf0b6b8df57b755d662a8fa"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/mtc",
+   "original_head": "bab993121ab583b5916272907b1230e8a4f4bd91",
+   "original_branch": "refs/heads/final-round-mtc",
+   "snapshot": "bab993121ab583b5916272907b1230e8a4f4bd91"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/owner-red62",
+   "original_head": "7ff81296df6d36a565c4636d75da682d52bc5423",
+   "original_branch": null,
+   "snapshot": "c2499a37896517522dbf091273687c79d14fb9d7",
+   "file_count": 6,
+   "index_backup": "index-states/baaada16d16f"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/packed69",
+   "original_head": "fa3919021716d60de84b0d2c4d07d2314f5a5780",
+   "original_branch": "refs/heads/final/packed69",
+   "snapshot": "fa3919021716d60de84b0d2c4d07d2314f5a5780"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/packed69-red",
+   "original_head": "f5b188bf5ca18ef98443e107a4d447ca99e36449",
+   "original_branch": null,
+   "snapshot": "f5b188bf5ca18ef98443e107a4d447ca99e36449"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/phase69",
+   "original_head": "c3d6e0dc3237da3f8acf73456bf1386c02f5a9d2",
+   "original_branch": "refs/heads/audit/final-phase69",
+   "snapshot": "c3d6e0dc3237da3f8acf73456bf1386c02f5a9d2"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/ports-cr63",
+   "original_head": "93d18d1383ef77dc819ad2d06c9ec64f3e66056d",
+   "original_branch": "refs/heads/final/ports-cr63",
+   "snapshot": "93d18d1383ef77dc819ad2d06c9ec64f3e66056d"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/ports-upper",
+   "original_head": "365be371f8326c235cc4578d4dcb86a3f920ac96",
+   "original_branch": null,
+   "snapshot": "116b57b2bd1fb4d93ced66843fcd33e1966d9034",
+   "file_count": 19,
+   "index_backup": "index-states/798448a0b704"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/ports62",
+   "original_head": "ce8695d2af74c84dfc8afc271483a253bf3762fc",
+   "original_branch": "refs/heads/final/ports62",
+   "snapshot": "ce8695d2af74c84dfc8afc271483a253bf3762fc"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/ports63",
+   "original_head": "a77d5c5f88bbb4ab96206bc73f1b993a85ae81e5",
+   "original_branch": "refs/heads/final/ports63",
+   "snapshot": "a77d5c5f88bbb4ab96206bc73f1b993a85ae81e5"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/ports63-red",
+   "original_head": "a77d5c5f88bbb4ab96206bc73f1b993a85ae81e5",
+   "original_branch": null,
+   "snapshot": "a77d5c5f88bbb4ab96206bc73f1b993a85ae81e5"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/prefs62",
+   "original_head": "13d21a3d610f55e87e0cd94b421b50c5fee27a8d",
+   "original_branch": "refs/heads/local/g11-final-prefs62",
+   "snapshot": "13d21a3d610f55e87e0cd94b421b50c5fee27a8d"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/prefs63",
+   "original_head": "36eea94fee70dd0d9c94170452c19d92370df519",
+   "original_branch": "refs/heads/local/g11-final-prefs63",
+   "snapshot": "36eea94fee70dd0d9c94170452c19d92370df519"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/prefs69",
+   "original_head": "7bd076fdee6d533f04c2aa7aa56206f152909a45",
+   "original_branch": "refs/heads/local/g11-final-prefs69",
+   "snapshot": "7bd076fdee6d533f04c2aa7aa56206f152909a45"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/recovery63",
+   "original_head": "e9c45417be1faf3cb1ce8376af67cb69340b0dab",
+   "original_branch": "refs/heads/local/g11-final-recovery63",
+   "snapshot": "e9c45417be1faf3cb1ce8376af67cb69340b0dab"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/red63",
+   "original_head": "1403082039f756f8f61d062b5e20da548c19cb07",
+   "original_branch": null,
+   "snapshot": "23c4be4db4366630199feba57d3819a9e497dd08",
+   "file_count": 4,
+   "index_backup": "index-states/50e14647341c"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/red69dj",
+   "original_head": "c093aedbdf3bef40837bee6257dcc3c3e1dfe963",
+   "original_branch": null,
+   "snapshot": "432634fea19dd9687b6e38f3cd70ed7edf1c609c",
+   "file_count": 4,
+   "index_backup": "index-states/bc6eea0beb4b"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/registry69",
+   "original_head": "2026ac937a79e7ccdb0d57582bd0a8774a458557",
+   "original_branch": "refs/heads/final/registry69",
+   "snapshot": "2026ac937a79e7ccdb0d57582bd0a8774a458557"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/research69",
+   "original_head": "c093aedbdf3bef40837bee6257dcc3c3e1dfe963",
+   "original_branch": null,
+   "snapshot": "c4cbccefccc6a9233ebd4be0b4efc0c02be349bc",
+   "file_count": 5,
+   "index_backup": "index-states/852ddbc052a5"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/route62",
+   "original_head": "59185cbda9a3b980b5f6a3f3213b15c31f164d96",
+   "original_branch": "refs/heads/audit/final-route62",
+   "snapshot": "59185cbda9a3b980b5f6a3f3213b15c31f164d96"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/route63",
+   "original_head": "372f839df4ffefb30f94500612dc01b719b73c28",
+   "original_branch": "refs/heads/audit/final-route63",
+   "snapshot": "372f839df4ffefb30f94500612dc01b719b73c28"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/verify-final-upper",
+   "original_head": "56704671e7eeec1161341eca29008556ff8d7f43",
+   "original_branch": "refs/heads/audit/verify-final-upper",
+   "snapshot": "56704671e7eeec1161341eca29008556ff8d7f43"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-final-round/verify69-ui-doc",
+   "original_head": "c5b371a4ed26e67c1ef0f7167d4da69baf3d9d52",
+   "original_branch": "refs/heads/verify69-ui-doc",
+   "snapshot": "c5b371a4ed26e67c1ef0f7167d4da69baf3d9d52"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/asio-cadence-diagnostic",
+   "original_head": "56dbdbc5bf58dff7fa8fae85e389fd95e3837031",
+   "original_branch": null,
+   "snapshot": "56dbdbc5bf58dff7fa8fae85e389fd95e3837031"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/asio-cadence-hardware",
+   "original_head": "eee6a79b2c07a8daa528239541d01ca211e92045",
+   "original_branch": "refs/heads/local/asio-cadence-model12",
+   "snapshot": "eee6a79b2c07a8daa528239541d01ca211e92045"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/asio-cadence-main",
+   "original_head": "28da1ffaf79aef70e5c798b47619503af82e2d88",
+   "original_branch": "refs/heads/local/asio-idle-cadence-recovery",
+   "snapshot": "28da1ffaf79aef70e5c798b47619503af82e2d88"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/asio-cadence-pre-fix",
+   "original_head": "85623f28f99a9a788123f0f6b48829f95f07962f",
+   "original_branch": null,
+   "snapshot": "e7712d850ddf7a406e898cf018568c78c7f695ce",
+   "file_count": 1,
+   "index_backup": "index-states/04aac5958d58"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-0d490c68",
+   "original_head": "0d490c68d60da49ecc02c0fa1582cbbcfa90bf04",
+   "original_branch": null,
+   "snapshot": "01cc58169ea99e99a83cdf0d3ae6bf109e87187d",
+   "file_count": 1,
+   "index_backup": "index-states/11ab9a573355"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-17016e30",
+   "original_head": "17016e305c43276a34b45cabf296da7ea15f8c4c",
+   "original_branch": null,
+   "snapshot": "f49b3f9aeea50a2408bde57b519b50c53edd74db",
+   "file_count": 1,
+   "index_backup": "index-states/989222fd1fd9"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-4cfaf099",
+   "original_head": "4cfaf0996b86ca4793f4e10dd71b7e08df3c52bb",
+   "original_branch": null,
+   "snapshot": "c9549257ccfeaec0522e588b74479e8edf3d233d",
+   "file_count": 1,
+   "index_backup": "index-states/07b2bca36d99"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-4ed607bf",
+   "original_head": "4ed607bfd7eff6a8804fbe848680942e510ef8ca",
+   "original_branch": null,
+   "snapshot": "d210c786210455c851a15db9951f65a096eb8658",
+   "file_count": 1,
+   "index_backup": "index-states/a0311baae04e"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-56dbdbc5",
+   "original_head": "56dbdbc5bf58dff7fa8fae85e389fd95e3837031",
+   "original_branch": null,
+   "snapshot": "69e6673717a9fcf1969fc1fc5c7261f8732d8bb4",
+   "file_count": 1,
+   "index_backup": "index-states/eafe190d6025"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-6849b48f",
+   "original_head": "6849b48f418d5bddef3d1a62edbe882bb116d0e6",
+   "original_branch": null,
+   "snapshot": "30fece1f2a5627d7f38be1e1d156ba4f3dfafb56",
+   "file_count": 1,
+   "index_backup": "index-states/23ed7d1f98cf"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-85623f28",
+   "original_head": "85623f28f99a9a788123f0f6b48829f95f07962f",
+   "original_branch": null,
+   "snapshot": "3b13a4d6acf0d95eedcc02873b955229f2011548",
+   "file_count": 1,
+   "index_backup": "index-states/3dfc6164e2e9"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-8fd15068",
+   "original_head": "8fd150681cb7ed2497887fdb784e82e1c399bafa",
+   "original_branch": null,
+   "snapshot": "32ff65c5cd5eb99d2302137db94a1684afb99b62",
+   "file_count": 1,
+   "index_backup": "index-states/abb24c87ec4b"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-df50ec8e",
+   "original_head": "df50ec8e3fca6c0fcf3d5dc20e73de57f642c3a7",
+   "original_branch": null,
+   "snapshot": "c6b4ab0c524b72d96ced84f968b9d0653dd80875",
+   "file_count": 1,
+   "index_backup": "index-states/8f05149bd1e7"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-eee6a79b",
+   "original_head": "eee6a79b2c07a8daa528239541d01ca211e92045",
+   "original_branch": null,
+   "snapshot": "5a20db4dbfd00f2b9e0e7f6cc1c89ead67adfe90",
+   "file_count": 1,
+   "index_backup": "index-states/ebf6be4769ae"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-f13949d9",
+   "original_head": "f13949d9f8b2513f003508eb31444cf8c1458f67",
+   "original_branch": null,
+   "snapshot": "7701eeb6879c3e31b29b6eb4787a67129bada0ac",
+   "file_count": 1,
+   "index_backup": "index-states/ac4365445cc4"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-f561a57a",
+   "original_head": "f561a57aecf451bd53024b084aa84559809de8cf",
+   "original_branch": null,
+   "snapshot": "f44360efd261379f1403e387415fb4c772cb1b92",
+   "file_count": 1,
+   "index_backup": "index-states/5a86f7f1afc4"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/audio/build/soundcraft-f60b1632",
+   "original_head": "f60b16323756d731c9d398aacfed7e21baa865dc",
+   "original_branch": null,
+   "snapshot": "d4f398ce703e0b1b568a21fa6040f03dfdf80b8d",
+   "file_count": 1,
+   "index_backup": "index-states/f2c9a954ef4c"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/full-take-original",
+   "original_head": "33dfa5f5d3b6afd33bf0b6b8df57b755d662a8fa",
+   "original_branch": null,
+   "snapshot": "e286120b4823446d3d26481d257fae4f9f12d26f",
+   "file_count": 2,
+   "index_backup": "index-states/832d5f7f7937"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/h4a-anchor-candidate",
+   "original_head": "adebe63558ec9055ff2f4293ea79952f3f21793a",
+   "original_branch": "refs/heads/local/mtc-anchor-phase",
+   "snapshot": "adebe63558ec9055ff2f4293ea79952f3f21793a"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/h4a-follow-candidate",
+   "original_head": "8cba3d618fbbff245ec38135476810429bd465f3",
+   "original_branch": null,
+   "snapshot": "45201dad6356994645c48b8ae245a5a4d71a2f04",
+   "file_count": 5,
+   "index_backup": "index-states/b672a87245d7"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/h4a-hardware-candidate",
+   "original_head": "f13949d9f8b2513f003508eb31444cf8c1458f67",
+   "original_branch": null,
+   "snapshot": "f13949d9f8b2513f003508eb31444cf8c1458f67"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/h4a-phase-replay",
+   "original_head": "bab993121ab583b5916272907b1230e8a4f4bd91",
+   "original_branch": null,
+   "snapshot": "3983c09d83c81ed281f307b5862b7c34e5756add",
+   "file_count": 4,
+   "index_backup": "index-states/150129748598"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/integrated-beat",
+   "original_head": "2f4d245c0b0d3633224fa402b776004e8c8ba81d",
+   "original_branch": null,
+   "snapshot": "2f4d245c0b0d3633224fa402b776004e8c8ba81d"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/integrated-follow",
+   "original_head": "f561a57aecf451bd53024b084aa84559809de8cf",
+   "original_branch": null,
+   "snapshot": "fb4db348ca62757472af91fe95b36b898a5df902",
+   "embedded_checkout": "env-main-control",
+   "file_count": 1,
+   "index_backup": "index-states/45c0c959148b"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/integrated-follow/env-main-control",
+   "original_head": "85623f28f99a9a788123f0f6b48829f95f07962f",
+   "original_branch": null,
+   "snapshot": "85623f28f99a9a788123f0f6b48829f95f07962f"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/integrated-mtc",
+   "original_head": "36102831103831e493d2d113b24f2a4e2a2b3009",
+   "original_branch": null,
+   "snapshot": "36102831103831e493d2d113b24f2a4e2a2b3009"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/main-i24-storage-control",
+   "original_head": "0d490c68d60da49ecc02c0fa1582cbbcfa90bf04",
+   "original_branch": null,
+   "snapshot": "0d490c68d60da49ecc02c0fa1582cbbcfa90bf04"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-combined-rounded",
+   "original_head": "89f23837f08cb40038765cfde71c02bf0d10b831",
+   "original_branch": "refs/heads/local/g11-combined-rounded-polls",
+   "snapshot": "89f23837f08cb40038765cfde71c02bf0d10b831"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-cue-prearmed",
+   "original_head": "9c5f8c03312d01d722a6a0dcf9fac05328e29285",
+   "original_branch": "refs/heads/local/g11-prearmed-cue",
+   "snapshot": "9c5f8c03312d01d722a6a0dcf9fac05328e29285"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-cue-spacing",
+   "original_head": "843c0d5e56da6a8203cb1518dbc0aaab6f12e453",
+   "original_branch": "refs/heads/local/g11-cue-spacing",
+   "snapshot": "843c0d5e56da6a8203cb1518dbc0aaab6f12e453"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-device-grid",
+   "original_head": "9933a2c543bc044e83266ed74afd641476e0cbe5",
+   "original_branch": "refs/heads/local/g11-device-grid",
+   "snapshot": "9933a2c543bc044e83266ed74afd641476e0cbe5"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-h10-control",
+   "original_head": "4cfaf0996b86ca4793f4e10dd71b7e08df3c52bb",
+   "original_branch": null,
+   "snapshot": "4cfaf0996b86ca4793f4e10dd71b7e08df3c52bb"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-mtc-rate-proof",
+   "original_head": "1db8bdb65c156d845b3b2dec0c1fb28865659a2c",
+   "original_branch": "refs/heads/local/g11-mtc-device-rate-proof",
+   "snapshot": "1db8bdb65c156d845b3b2dec0c1fb28865659a2c"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-poll-bench-after",
+   "original_head": "33f05047022fb93277ff88028b72d5aa37dad835",
+   "original_branch": null,
+   "snapshot": "f0f2e6606688dfe68cae34b0490793c50829ae3a",
+   "file_count": 1,
+   "index_backup": "index-states/05968889c0e8"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-poll-bench-before",
+   "original_head": "a79b98668a769dbb47d7e3b3ad49e78e1cb4b445",
+   "original_branch": null,
+   "snapshot": "f640dbd23371ef3c5af21b76bf35c077cf4e9780",
+   "file_count": 1,
+   "index_backup": "index-states/363551dfecc8"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-prearmed-red",
+   "original_head": "585ec0c3fc928a4a37172f11726d0ac163bf68ad",
+   "original_branch": null,
+   "snapshot": "585ec0c3fc928a4a37172f11726d0ac163bf68ad"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-publication-red",
+   "original_head": "a79b98668a769dbb47d7e3b3ad49e78e1cb4b445",
+   "original_branch": null,
+   "snapshot": "a79b98668a769dbb47d7e3b3ad49e78e1cb4b445"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-render-publication",
+   "original_head": "33f05047022fb93277ff88028b72d5aa37dad835",
+   "original_branch": "refs/heads/local/g11-render-publication",
+   "snapshot": "33f05047022fb93277ff88028b72d5aa37dad835"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-rounded-beat-only",
+   "original_head": "c7e2d50f363ea90387965eb89e71c74ae06c6f66",
+   "original_branch": "refs/heads/local/g11-clock-rounded-only",
+   "snapshot": "c7e2d50f363ea90387965eb89e71c74ae06c6f66"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-stop-witness",
+   "original_head": "f60b16323756d731c9d398aacfed7e21baa865dc",
+   "original_branch": "refs/heads/local/g11-stop-stage-witness",
+   "snapshot": "f60b16323756d731c9d398aacfed7e21baa865dc"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/morning-v3-hardware",
+   "original_head": "6849b48f418d5bddef3d1a62edbe882bb116d0e6",
+   "original_branch": null,
+   "snapshot": "6849b48f418d5bddef3d1a62edbe882bb116d0e6"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-beat-only",
+   "original_head": "bba12cc7949dd6eec737810df81edde0c71fe434",
+   "original_branch": "refs/heads/local/overnight-beat-only",
+   "snapshot": "bba12cc7949dd6eec737810df81edde0c71fe434"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-g11",
+   "original_head": "de85a2938ee8a4861ac348bd134d001f073eb122",
+   "original_branch": "refs/heads/local/g11-overnight-perf",
+   "snapshot": "de85a2938ee8a4861ac348bd134d001f073eb122"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-guide-wav-replay",
+   "original_head": "4036fd9bd8d4c9f3e59e9b23f5f0024a8a6a041a",
+   "original_branch": null,
+   "snapshot": "4036fd9bd8d4c9f3e59e9b23f5f0024a8a6a041a"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-mtc-only",
+   "original_head": "b6d756e9eb70d47f91809cb9ed423e39f8eb0bbe",
+   "original_branch": "refs/heads/local/overnight-mtc-only",
+   "snapshot": "b6d756e9eb70d47f91809cb9ed423e39f8eb0bbe"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-mtc-replay",
+   "original_head": "8b6e386953df987aa18a98f4b0696cd3c60d5c43",
+   "original_branch": null,
+   "snapshot": "2f8a988e0d9f35f8ac8c957818c3bc9bb3d9644a",
+   "file_count": 2,
+   "index_backup": "index-states/611c02245c27"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-port-replay",
+   "original_head": "56260049b350659a093326cd9c8a2177957d1aa2",
+   "original_branch": null,
+   "snapshot": "56260049b350659a093326cd9c8a2177957d1aa2"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/software-h4b/owner",
+   "original_head": "bab993121ab583b5916272907b1230e8a4f4bd91",
+   "original_branch": null,
+   "snapshot": "ddcd7e25fe63116dabfc1a35a2f276413336c2fb",
+   "file_count": 1,
+   "index_backup": "index-states/89a655644da7"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/stop-ordinal-hardware",
+   "original_head": "4ed607bfd7eff6a8804fbe848680942e510ef8ca",
+   "original_branch": null,
+   "snapshot": "4ed607bfd7eff6a8804fbe848680942e510ef8ca"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/stop-ordinal-local",
+   "original_head": "1af5815b6a65635d5327dc7c53b8eea937ecd4d7",
+   "original_branch": null,
+   "snapshot": "1af5815b6a65635d5327dc7c53b8eea937ecd4d7"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-large-tempo/tree",
+   "original_head": "49a85d8e10f11163d2e1c72f834bf8d6844a125f",
+   "original_branch": null,
+   "snapshot": "2621a3acda850446d1f10a3d814c8a2b7e01d898",
+   "file_count": 5,
+   "index_backup": "index-states/8f3742b11863"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-large-tempo/work",
+   "original_head": "af4af80b626bab785de97ba895f76187b76da99d",
+   "original_branch": null,
+   "snapshot": "af4af80b626bab785de97ba895f76187b76da99d"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-mtc",
+   "original_head": "0819e6101d115e9bc2f1e61e2cfac66c9a2731f1",
+   "original_branch": "refs/heads/feat/g11-mtc-generate-chase",
+   "snapshot": "0819e6101d115e9bc2f1e61e2cfac66c9a2731f1"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-mtc-combined-dev",
+   "original_head": "7cc2c3952c084560fa0d42c342e8d4b8ac12c396",
+   "original_branch": null,
+   "snapshot": "7cc2c3952c084560fa0d42c342e8d4b8ac12c396"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-mtc-head-bench",
+   "original_head": "1894632e42e0bbc83bd21e98536ae767e0a57a23",
+   "original_branch": null,
+   "snapshot": "e37a7ff4ee91b4f4d43ab4e5c95766e990c9a4ee",
+   "file_count": 1,
+   "index_backup": "index-states/7c61ee8b891e"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-mtc-review-base",
+   "original_head": "e27e3f1ea3c594ce274eb8e205d3e07f6a02bf86",
+   "original_branch": null,
+   "snapshot": "82bf90de9e2194f55046c6d4092e176c1d7be3ea",
+   "file_count": 1,
+   "index_backup": "index-states/24b234aa20eb"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-mtc-review4-mutation",
+   "original_head": "e807ab72081235739e138bd194c51153c715a79d",
+   "original_branch": null,
+   "snapshot": "1fb7c77e6b47594500a0c5bd0ca1d014d14a5993",
+   "file_count": 11,
+   "index_backup": "index-states/977c56a84f02"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-pair-verify",
+   "original_head": "853bffb72ebf5d4f92e2ec22ed6b050e6a44386b",
+   "original_branch": null,
+   "snapshot": "70d30f4f05be693f7239697425aeb945ff3db467",
+   "file_count": 2,
+   "index_backup": "index-states/5ad09e0fd4b3"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-pr-packaging/publish1662",
+   "original_head": "168a18102bccb78b5de694563821890d488b2316",
+   "original_branch": null,
+   "snapshot": "168a18102bccb78b5de694563821890d488b2316"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-pr-packaging/publish1663",
+   "original_head": "1403082039f756f8f61d062b5e20da548c19cb07",
+   "original_branch": null,
+   "snapshot": "1403082039f756f8f61d062b5e20da548c19cb07"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-pr-packaging/publish1669",
+   "original_head": "c093aedbdf3bef40837bee6257dcc3c3e1dfe963",
+   "original_branch": null,
+   "snapshot": "c093aedbdf3bef40837bee6257dcc3c3e1dfe963"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-pr-packaging/w1662",
+   "original_head": "7e3058420718739fd1d1f1fa12218d1302d92f43",
+   "original_branch": null,
+   "snapshot": "7e3058420718739fd1d1f1fa12218d1302d92f43"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-pr-packaging/w1663",
+   "original_head": "0b229072c2b48cc9e23714611fad3510850e3d4e",
+   "original_branch": null,
+   "snapshot": "0b229072c2b48cc9e23714611fad3510850e3d4e"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-pr-packaging/w1669",
+   "original_head": "095e1ed26182f4e967d8d1a3a8955456cbfe95c6",
+   "original_branch": null,
+   "snapshot": "095e1ed26182f4e967d8d1a3a8955456cbfe95c6"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-r4-buffer-probe",
+   "original_head": "97d8cd01be085f4df9f7fdf220f6a3dd4be3f0d7",
+   "original_branch": null,
+   "snapshot": "e80cebb3cffb82f0a0b349183c9500309468eee2",
+   "file_count": 2,
+   "index_backup": "index-states/78b1adf81a3d"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-r4-main-sync",
+   "original_head": "500e9670d6fc28a1938a3b72ce45a4ce61a64f7d",
+   "original_branch": null,
+   "snapshot": "500e9670d6fc28a1938a3b72ce45a4ce61a64f7d"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-r4-timing-probes",
+   "original_head": "7b912d8ed288e9aec4b65030897c0f5b2d59dd32",
+   "original_branch": null,
+   "snapshot": "1e5c122207ccca15d42ddf134d763bcc13c692d0",
+   "file_count": 11,
+   "index_backup": "index-states/1ad353fa177f"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-r4-ui-followup",
+   "original_head": "02e63c602d31bd6c53ade0ae3fe487cd994ac5e5",
+   "original_branch": null,
+   "snapshot": "02e63c602d31bd6c53ade0ae3fe487cd994ac5e5"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-review-1662-integration",
+   "original_head": "4f2cc3a338ffded0e948bbc19e9c8b9c0d94b206",
+   "original_branch": null,
+   "snapshot": "f77bbc0d83b142540f0cf776c7026989b299867b",
+   "file_count": 14,
+   "index_backup": "index-states/c4d28c1ff79c"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-review-1663-integration",
+   "original_head": "c68bd411255dfa1d83706f2bf69889770693322c",
+   "original_branch": null,
+   "snapshot": "c68bd411255dfa1d83706f2bf69889770693322c"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-review3-mtc-fix",
+   "original_head": "2a9d42ce7a7670da158abebc4cc5456af0277d28",
+   "original_branch": null,
+   "snapshot": "2a9d42ce7a7670da158abebc4cc5456af0277d28"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-review3-mtc-playback",
+   "original_head": "be09025e45326abd6140d3db8171a174d1d10a80",
+   "original_branch": null,
+   "snapshot": "be09025e45326abd6140d3db8171a174d1d10a80"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-round4-baseline-beat",
+   "original_head": "7b912d8ed288e9aec4b65030897c0f5b2d59dd32",
+   "original_branch": null,
+   "snapshot": "3a01716a247e7ddf4dd40868fa69a9807b825dfb",
+   "file_count": 3,
+   "index_backup": "index-states/a5d039c1366e"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-scenarios-20261122/mtc-tree",
+   "original_head": "0819e6101d115e9bc2f1e61e2cfac66c9a2731f1",
+   "original_branch": null,
+   "snapshot": "7003469c38d26847acd7e21d8360413fc082b3fe",
+   "file_count": 10,
+   "index_backup": "index-states/20c1242cec57"
+  },
+  {
+   "worktree": "E:/soundcraft/compatibility-audit/g11-storage-clock-follow",
+   "original_head": "6b82d9bc84af17b259b98970dc5557a93c80d7a0",
+   "original_branch": null,
+   "snapshot": "ad3c24aaa8557f72e783bf7917a72a265477a274",
+   "file_count": 10,
+   "index_backup": "index-states/2857f191cd14"
+  }
+ ],
+ "branches": [
+  "cb584c0d882e8e2598dae1651077af7aa591d7f5 archive/g11-mtc-continuous-chase-cb584c0",
+  "614be5667ef9581ab01ea5c6c858f029c9ba2649 audit/1669-pcm-final",
+  "ab79976dd24455d881d5d26f58e1fe197c65584f audit/final-brake69",
+  "c3d6e0dc3237da3f8acf73456bf1386c02f5a9d2 audit/final-phase69",
+  "59185cbda9a3b980b5f6a3f3213b15c31f164d96 audit/final-route62",
+  "372f839df4ffefb30f94500612dc01b719b73c28 audit/final-route63",
+  "56704671e7eeec1161341eca29008556ff8d7f43 audit/verify-final-upper",
+  "b7b7d87390fe5cfcd83b34bb8e64df77c5668c7b feat/g11-external-clock-follow",
+  "91366d09fd5f925492152c00be914d7dff7c0330 feat/g11-midi-beat-clock-out",
+  "0819e6101d115e9bc2f1e61e2cfac66c9a2731f1 feat/g11-mtc-generate-chase",
+  "33dfa5f5d3b6afd33bf0b6b8df57b755d662a8fa final-round-1669",
+  "8fd150681cb7ed2497887fdb784e82e1c399bafa final-round-beat-output",
+  "bab993121ab583b5916272907b1230e8a4f4bd91 final-round-mtc",
+  "fa3919021716d60de84b0d2c4d07d2314f5a5780 final/packed69",
+  "93d18d1383ef77dc819ad2d06c9ec64f3e66056d final/ports-cr63",
+  "ce8695d2af74c84dfc8afc271483a253bf3762fc final/ports62",
+  "a77d5c5f88bbb4ab96206bc73f1b993a85ae81e5 final/ports63",
+  "a8bbd57454db010ed146ea7100113779af263d30 final/ports63-fixture-red",
+  "2026ac937a79e7ccdb0d57582bd0a8774a458557 final/registry69",
+  "3edb1898381fb157ca773ace431bb44d79fd90ec final/threshold69",
+  "6cfa7ca0f479d6a04dfc1188c28a81ee46441e0b fix/g11-clock-follow-r3",
+  "69eadb83a15561d213b3fb25bb24fcf7cf3d9ca6 fix/g11-clock-follow-record",
+  "eee6a79b2c07a8daa528239541d01ca211e92045 local/asio-cadence-model12",
+  "28da1ffaf79aef70e5c798b47619503af82e2d88 local/asio-idle-cadence-recovery",
+  "cecb51c52045b83d59c8ad8aa8de232694a3ce96 local/g11-beat-clock",
+  "c7e2d50f363ea90387965eb89e71c74ae06c6f66 local/g11-clock-rounded-only",
+  "89f23837f08cb40038765cfde71c02bf0d10b831 local/g11-combined-rounded-polls",
+  "843c0d5e56da6a8203cb1518dbc0aaab6f12e453 local/g11-cue-spacing",
+  "9933a2c543bc044e83266ed74afd641476e0cbe5 local/g11-device-grid",
+  "13d21a3d610f55e87e0cd94b421b50c5fee27a8d local/g11-final-prefs62",
+  "36eea94fee70dd0d9c94170452c19d92370df519 local/g11-final-prefs63",
+  "7bd076fdee6d533f04c2aa7aa56206f152909a45 local/g11-final-prefs69",
+  "e9c45417be1faf3cb1ce8376af67cb69340b0dab local/g11-final-recovery63",
+  "cecb51c52045b83d59c8ad8aa8de232694a3ce96 local/g11-mtc",
+  "1db8bdb65c156d845b3b2dec0c1fb28865659a2c local/g11-mtc-device-rate-proof",
+  "de85a2938ee8a4861ac348bd134d001f073eb122 local/g11-overnight-perf",
+  "9c5f8c03312d01d722a6a0dcf9fac05328e29285 local/g11-prearmed-cue",
+  "33f05047022fb93277ff88028b72d5aa37dad835 local/g11-render-publication",
+  "f533e1db7336c4879308134c94438df530cc8e9a local/g11-stop-ordinal-nov23",
+  "1af5815b6a65635d5327dc7c53b8eea937ecd4d7 local/g11-stop-ordinal-tested",
+  "f60b16323756d731c9d398aacfed7e21baa865dc local/g11-stop-stage-witness",
+  "adebe63558ec9055ff2f4293ea79952f3f21793a local/mtc-anchor-phase",
+  "bba12cc7949dd6eec737810df81edde0c71fe434 local/overnight-beat-only",
+  "b6d756e9eb70d47f91809cb9ed423e39f8eb0bbe local/overnight-mtc-only",
+  "c5b371a4ed26e67c1ef0f7167d4da69baf3d9d52 verify69-ui-doc"
+ ],
+ "stashes": [
+  "dad16d78a217379dd4b86a12983d6f7a566ddbe9 stash@{0} On feat/g11-external-clock-follow: g11-clock-follow-wip-onto-timebase"
+ ]
+}
