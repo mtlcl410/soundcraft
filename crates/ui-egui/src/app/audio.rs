@@ -60,6 +60,10 @@ impl SoundApp {
         let Some(p) = &self.player else { return };
         let Some(trouble) = p.trouble() else { return };
         let name = p.device_name.clone();
+        self.report_output_trouble(trouble, name);
+    }
+
+    fn report_output_trouble(&mut self, trouble: OutputTrouble, name: String) {
         let (cause, then) = match trouble {
             OutputTrouble::Bug => (
                 crate::localization::text("the audio engine hit an internal error (see the log)").to_string(),
@@ -192,4 +196,32 @@ mod audio_input_tests {
         s.track_mut(vox).unwrap().mixer.record_arm = true;
         assert!(wants_audio_input(&s));
     }
+}
+
+#[cfg(test)]
+mod timing_warning_tests {
+    use super::*;
+
+    #[test]
+    fn storage_loss_warning_stays_visible_after_other_status_updates() {
+        let mut app = SoundApp::new(crate::Engine::default(), None, crate::Services::default());
+        app.report_output_trouble(OutputTrouble::Gone, "Previous USB output".into());
+        assert!(app.ui.status.contains("Previous USB output"));
+        app.ui.status = "Saved".into();
+        let ctx = egui::Context::default();
+        let mut found = false;
+        app.set_system_fonts(false);
+        for _ in 0..4 {
+            let raw =
+                egui::RawInput { screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1300., 800.))), ..Default::default() };
+            let mut output = ctx.run_ui(raw, |ui| {
+                app.logic(ui.ctx());
+                app.ui(ui);
+            });
+            output.textures_delta.clear();
+            found |= output.shapes.iter().any(|s| matches!(&s.shape, egui::Shape::Text(t) if t.galley.text().contains("Previous USB output")));
+        }
+        assert!(found, "The visible device warning disappeared after an unrelated status update");
+    }
+
 }
