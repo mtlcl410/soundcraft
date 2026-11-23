@@ -2,7 +2,7 @@ use crate::callback::AudioState;
 use crate::midi::MidiFeed;
 use crate::sync_clock::DeviceTiming;
 use crate::{Cmd, MeterSnapshot, Shared};
-use soundcraft_midi::{Note, Sequence};
+use soundcraft_model::soundcraft_midi::{Note, Sequence};
 use soundcraft_model::{ChannelFormat, Clip, Insert, Session, SourceAudio, SourceId, TrackKind};
 use soundcraft_time::{SampleRate, TempoMap};
 use std::sync::{Arc, Mutex, mpsc::channel};
@@ -55,7 +55,7 @@ fn render(bpm:i64, buf:usize, lead_ms:i64, clicks:bool, follow:bool)->Vec<f32>{
     let mut pcm=vec![0.;lead as usize];
     let last=EIGHTHS*RATE*30/bpm;
     // The final click has 30 ms of tail. Stop before the next beat.
-    let end=last+RATE*90/1000;
+    let end=last+RATE*140/1000;
     while (pcm.len() as i64)<end {
         let at=pcm.len() as i64-lead;
         // Send precisely the wire pulses already delivered at the device callback.
