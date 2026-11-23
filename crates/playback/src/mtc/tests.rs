@@ -418,3 +418,6 @@ fn first_integer_sample_of_an_even_fractional_frame_emits_its_quarter_group() {
         }
     }
 }
+
+#[cfg(test)]
+mod phase_probe;
