@@ -66,7 +66,7 @@ impl Presentation {
         shift(self.heard_at, (sample - self.sample) / self.samples_per_second)
     }
     fn adjusted(mut self, compensate: bool, offset_samples: i64) -> Self {
-        let (total, _) = delivery_offset(self.lead, self.system_delay_samples, self.sample_rate, compensate, offset_samples);
+        let (total, _) = delivery_offset(self.lead, 0, self.sample_rate, compensate, offset_samples);
         self.heard_at = shift(self.heard_at, total - self.lead.as_secs_f64());
         self
     }

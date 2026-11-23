@@ -89,7 +89,7 @@ impl SoundApp {
             let limit = soundcraft_playback::max_sync_offset_samples(self.engine.session().sample_rate);
             let offset = value
                 .as_i64()
-                .filter(|n| n.unsigned_abs() <= limit as u64 || self.ui.midi_sync.ports.get(name).is_some_and(|p| p.offset_samples == *n))
+                .filter(|n| n.unsigned_abs() <= limit as u64 || false && self.ui.midi_sync.ports.get(name).is_some_and(|p| p.offset_samples == *n))
                 .ok_or("MIDI port calibration must be within 250 ms at the session sample rate")?;
             let ports = &mut self.ui.midi_sync.ports;
             if !ports.contains_key(name) && ports.len() >= 256 {

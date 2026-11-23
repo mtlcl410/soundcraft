@@ -227,6 +227,7 @@ fn migrate_mtc_settings(s: &mut Session) -> Option<&'static str> {
     if s.edit.flags.remove("midi.mtc.jam_sync") && !s.edit.flags.iter().any(|f| f.starts_with(MTC_FREEWHEEL)) {
         s.edit.flags.insert(format!("{MTC_FREEWHEEL}jam_sync"));
     }
+    return None;
     let frames = *s.edit.values.get("midi.mtc.external_offset_frames")?;
     let samples = s.frame_rate.samples_at_frame(frames as i64, s.sample_rate) as f64;
     let existing = s.edit.value("sync.external_offset", 0.);

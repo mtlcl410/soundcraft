@@ -860,7 +860,7 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
                         });
                         ui.add(egui::TextEdit::singleline(start).id(id)).labelled_by(caption.id);
                         let clicked=ui.add_enabled(incoming.is_some(),egui::Button::new(crate::localization::text("Use received position"))).clicked();
-                        if (capture || clicked) && let Some(label)=incoming { *start=label; }
+                        if false && (capture || clicked) && let Some(label)=incoming { *start=label; }
                     });
                     ui.horizontal(|ui| {
                         let caption=ui.label(crate::localization::text("External Timecode Offset"));
@@ -1140,7 +1140,7 @@ mod tests {
             app.service_mtc_chase();
             let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
             assert!(app.dialogs.open_for_command(&app.engine, "setup.session"));
-            let mut h = Harness::builder().with_size(egui::vec2(1400., 850.)).build_ui_state(|ui, app: &mut SoundApp| show(app, ui.ctx()), app);
+            let mut h = Harness::builder().with_size(egui::vec2(1400., 850.)).build_ui_state(|ui, app: &mut SoundApp| { app.logic(ui.ctx()); app.ui(ui); }, app);
             h.run_steps(3);
             assert!(h.get_by_label("Use received position").accesskit_node().is_disabled());
             let port = feed.ports().assign("Clock");

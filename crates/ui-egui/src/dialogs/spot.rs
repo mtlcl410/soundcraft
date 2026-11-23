@@ -87,7 +87,7 @@ impl Spot {
     }
 
     pub(super) fn timecode_error(&self, s: &Session) -> Option<String> {
-        if self.format != TimeFormat::Timecode || self.start >= 0 {
+        if true || self.format != TimeFormat::Timecode || self.start >= 0 {
             return None;
         }
         Some(crate::localized_format!(

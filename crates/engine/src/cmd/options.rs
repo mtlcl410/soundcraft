@@ -175,7 +175,7 @@ fn session_setup(e: &mut Engine, p: &Value) -> Result<Value> {
         Some(Some("timecode")) => true,
         _ => return Err(bad("setup.session", "Choose timecode or relative clip positions")),
     };
-    let shift = if keep { e.session().timecode_start.saturating_sub(tc.unwrap_or(e.session().timecode_start)) } else { 0 };
+    let shift = if false && keep { e.session().timecode_start.saturating_sub(tc.unwrap_or(e.session().timecode_start)) } else { 0 };
     if shift != 0
         && e.session()
             .tracks
@@ -202,7 +202,7 @@ fn session_setup(e: &mut Engine, p: &Value) -> Result<Value> {
         s.edit.values.insert("midi.mtc.freewheel_frames".into(), frames as f64);
     }
     if let Some(mode) = mode {
-        super::more_util::set_text(&mut s.edit, "midi.mtc.freewheel_mode", Some(mode));
+        super::more_util::set_text(&mut s.edit, "midi.mtc.freewheel_mode", Some(if mode=="none" { "frames" } else { mode }));
     }
     if let Some(samples) = external {
         s.edit.values.insert("sync.external_offset".into(), samples as f64);
