@@ -869,6 +869,88 @@ mod tests {
     }
 
     #[test]
+    fn clock_six_split_keeps_score_events_temporarily_outside_the_source() {
+        let mut e = Engine::default();
+        let t = armed(&mut e, "Follow", "MIDI:*:keys");
+        e.playback_tempo = Some(TempoMap::new(60., 4, 4).unwrap());
+        add_midi_recording(&mut e, Range::new(0,96_000), &[
+            ev(84_000,0,0x90,65,127), ev(88_000,0,0x80,65,0), ev(84_000,0,0xb0,7,88)
+        ], &["keys".into()], false);
+        e.playback_tempo = Some(TempoMap::new(45.,4,4).unwrap());
+        e.execute("edit.separate",&json!({"tracks":[t.0],"at":36_000})).unwrap();
+        let score=e.session();
+        let clips=score.track(t).unwrap().clips();
+        let ClipContent::Midi { sequence:left } = &clips[0].content else { panic!("MIDI") };
+        let ClipContent::Midi { sequence:right } = &clips[1].content else { panic!("MIDI") };
+        assert!(left.notes.is_empty() && left.ctrls.is_empty());
+        assert_eq!((right.notes.len(),right.ctrls.len()),(1,1),"keep the editable attack and CC");
+        assert_eq!(attack_and_cc_samples(score,t),[(65,84_000),(88,84_000)]);
+        assert!(attack_and_cc_samples(&e.playback_session(),t).is_empty(),"the slow clock still places both events outside the clip");
+        e.playback_tempo=Some(TempoMap::new(60.,4,4).unwrap());
+        assert_eq!(attack_and_cc_samples(&e.playback_session(),t).len(),2,"both events sound again on return to capture tempo");
+    }
+
+    /// Count only attacks and CCs that fall inside their own clip, like the audio scheduler.
+    fn attack_and_cc_samples(doc: &Session, t: TrackId) -> Vec<(i32, Samples)> {
+        let mut events=Vec::new();
+        for clip in doc.track(t).unwrap().clips() {
+            let ClipContent::Midi { sequence } = &clip.content else { continue };
+            let origin=doc.tempo.samples_to_ticks(clip.start,doc.sample_rate);
+            for (value,tick) in sequence.notes.iter().map(|n|(i32::from(n.pitch),n.start)).chain(sequence.ctrls.iter().map(|c|(c.value,c.tick))) {
+                let at=doc.tempo.tick_to_samples(origin + tick,doc.sample_rate);
+                if clip.range().contains(at) {
+                    events.push((value,at));
+                }
+            }
+        }
+        events.sort_unstable();
+        events
+    }
+
+    #[test]
+    fn clock_six_consolidation_checks_half_open_samples_for_notes_and_ccs() {
+        for mixed in [false,true] {
+            for end in [48_000,48_001] {
+                let mut e=Engine::default();
+                let t=armed(&mut e,"Follow","MIDI:*:keys");
+                e.playback_tempo=Some(TempoMap::new(60.,4,4).unwrap());
+                let take=add_midi_recording(&mut e,Range::new(0,96_000),&[ev(48_000,0,0x90,65,127),ev(72_000,0,0x80,65,0),ev(48_000,0,0xb0,7,88)],&["keys".into()],false);
+                let mut expected=vec![(65,48_000),(88,48_000)];
+                if mixed {
+                    let ClipContent::Midi { mut sequence }=e.session().find_clip(take.clips[0]).unwrap().1.content.clone() else {panic!("MIDI")};
+                    sequence.notes[0].pitch=70;
+                    sequence.notes[0].start=960;
+                    sequence.ctrls[0].tick=960;
+                    sequence.ctrls[0].value=99;
+                    let doc=e.session_mut();
+                    let id=doc.new_clip_id();
+                    doc.track_mut(t).unwrap().playlist_mut().unwrap().clips.push(Clip::midi(id,"ordinary",0,96_000,sequence));
+                    expected.extend([(70,48_000),(99,48_000)]);
+                    expected.sort_unstable();
+                }
+                assert_eq!(attack_and_cc_samples(&e.playback_session(),t),expected);
+                e.execute("edit.consolidate",&json!({"tracks":[t.0],"start":0,"end":end})).unwrap();
+                let playback=e.playback_session();
+                let clip=playback.track(t).unwrap().clips().iter().find(|c|c.start==0).unwrap();
+                let ClipContent::Midi { sequence } = &clip.content else {panic!("MIDI")};
+                let pairs=if end==48_000 {0} else {1+usize::from(mixed)};
+                assert_eq!((sequence.notes.len(),sequence.ctrls.len()),(pairs,pairs),"end {end}, mixed {mixed}");
+                assert_eq!(attack_and_cc_samples(&playback,t),expected,"exactly once across the consolidated and remaining material");
+            }
+        }
+    }
+
+    #[test]
+    fn clock_six_ordinary_baseline() {
+        let (mut e,t,_)=captured_clock_note();
+        e.clear_follow_grid();
+        e.execute("edit.consolidate",&json!({"tracks":[t.0],"start":0,"end":48_001})).unwrap();
+        let clips=e.session().track(t).unwrap().clips();
+        let ClipContent::Midi { sequence }=&clips[0].content else {panic!("MIDI")};
+        assert_eq!(sequence.notes.len(),0,"ordinary consolidation rounds the exclusive end to a tick on baseline");
+    }
+
+    #[test]
     fn clock_rendered_range_cut_one_sample_from_an_attack_keeps_its_exact_tick() {
         for cut in [31_999, 32_000, 32_001] {
             let (mut engine, track, _) = captured_clock_note();
