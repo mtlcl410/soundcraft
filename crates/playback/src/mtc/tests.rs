@@ -130,3 +130,42 @@ fn delayed_port_resumes_at_a_complete_quarter_frame_group() {
     output.tx.send((now, Packet::Quarter([0xf1, 0x01]))).unwrap();
     assert_eq!(received.recv_timeout(Duration::from_secs(2)).unwrap(), [0xf1, 0x01]);
 }
+
+#[test]
+fn review_measure_callback() {
+    for frames in [64,2048] { for enabled in [false,true] {
+        let (mut state,tx,packets)=callback(session(FrameRate::Fps30),48000.);
+        if !enabled { tx.send(Cmd::Mtc(None)).unwrap(); }
+        tx.send(Cmd::Play{from:0,end:None,looped:None}).unwrap();
+        let mut buf=vec![0.;frames*2];let mut batches=Vec::new();
+        for i in 0..220 {
+            let t=Instant::now();
+            for _ in 0..16 {state.fill(std::hint::black_box(&mut buf),2);}
+            let ns=t.elapsed().as_nanos()as f64/16.;
+            if i>=20 {batches.push(ns);}
+            while packets.try_recv().is_ok(){}
+        }
+        batches.sort_by(f64::total_cmp);
+        println!("frames {frames} enabled {enabled} median_ns {} p95_ns {}",batches[100],batches[190]);
+    }}
+}
+
+#[test]
+fn review_measure_delivery() {
+    // Producer queues a group 30 ms before DAC presentation, consumer stamps actual send.
+    for fps in [24.,30.] {
+        let (tx,rx)=channel();
+        let out=MtcOutput::with_sink(move|_m|tx.send(Instant::now()).map_err(|e|e.to_string())).unwrap();
+        let start=Instant::now()+Duration::from_millis(50);
+        for i in 0..360 {
+            let due=start+Duration::from_secs_f64(i as f64/(4.*fps));
+            std::thread::sleep((due-Duration::from_millis(30)).saturating_duration_since(Instant::now()));
+            out.tx.send((due,Packet::Quarter([0xf1,(i%8) as u8*16]))).unwrap();
+        }
+        let times:Vec<_>=(0..360).map(|_|rx.recv_timeout(Duration::from_secs(2)).unwrap()).collect();
+        let mut late:Vec<f64>=times.iter().enumerate().map(|(i,t)|t.duration_since(start+Duration::from_secs_f64(i as f64/(4.*fps))).as_secs_f64()*1000.).collect();
+        let mut errors:Vec<f64>=times.windows(2).map(|p|((p[1]-p[0]).as_secs_f64()*1000.-250./fps).abs()).collect();
+        late.sort_by(f64::total_cmp);errors.sort_by(f64::total_cmp);
+        println!("fps {fps} count {} late_p95_ms {:.3} interval_error_p95_ms {:.3}",times.len(),late[342],errors[341]);
+    }
+}
