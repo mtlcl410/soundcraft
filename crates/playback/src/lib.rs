@@ -64,6 +64,8 @@ pub fn midi_sync_output_ids(saved: &BTreeMap<String, String>) -> Result<BTreeMap
 }
 pub mod devices;
 pub mod midi;
+#[cfg(windows)]
+mod stop_witness;
 pub mod mtc;
 pub mod mtc_input;
 pub mod record;
@@ -960,6 +962,8 @@ impl Player {
     }
 
     pub fn stop(&self) {
+        #[cfg(windows)]
+        stop_witness::mark(&stop_witness::HOST_STOP);
         self.shared.playing.store(false, Ordering::Relaxed);
         self.send_transport(Cmd::Stop);
     }

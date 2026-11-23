@@ -28,7 +28,13 @@ trait SyncPort: Send {
 impl SyncPort for MidiOutputConnection {
     fn send_at(&mut self, _at: Instant, bytes: &[u8]) -> Result<Instant, String> {
         let handed = Instant::now();
+        #[cfg(windows)]
+        let stamp = matches!(bytes, [0xf8] | [0xfc]).then(crate::stop_witness::qpc);
         self.send(bytes).map_err(|e| e.to_string())?;
+        #[cfg(windows)]
+        if let Some(stamp) = stamp {
+            crate::stop_witness::after_send(bytes[0], stamp);
+        }
         Ok(handed)
     }
 }

@@ -325,7 +325,11 @@ impl AudioState {
                     self.following_clock = true;
                 }
                 Cmd::PlayMtc(from) => self.begin_play(from, None, None, true),
-                Cmd::Stop => self.halt(),
+                Cmd::Stop => {
+                    #[cfg(windows)]
+                    crate::stop_witness::mark(&crate::stop_witness::AUDIO_STOP);
+                    self.halt();
+                }
                 Cmd::EndChase(observed) => {
                     if self.chasing && observed.is_none_or(|lock| self.midi.as_ref().is_some_and(|m| m.is_mtc_lock(lock))) {
                         self.halt();

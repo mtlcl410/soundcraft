@@ -508,6 +508,10 @@ impl MidiFeed {
         }
         let mut input = self.clock_follow.lock().unwrap_or_else(PoisonError::into_inner);
         if input.source == Some(port) && open.is_none_or(|g| g.load(Ordering::Acquire)) {
+            #[cfg(windows)]
+            if bytes == [0xfc] {
+                crate::stop_witness::mark(&crate::stop_witness::IN_FC);
+            }
             let action = input.receive(bytes, at);
             self.publish_clock_render(&input);
             if action {
