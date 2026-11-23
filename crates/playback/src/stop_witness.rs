@@ -1,10 +1,7 @@
-// Private acceptance build, one selected output. Values are Windows QPC ticks.
+// Private acceptance build, one selected output. Process-local monotonic nanoseconds.
 use std::sync::atomic::{AtomicI64, Ordering::Relaxed};
-
-#[link(name = "kernel32")]
-unsafe extern "system" {
-    fn QueryPerformanceCounter(result: *mut i64) -> i32;
-}
+use std::sync::OnceLock;
+use std::time::Instant;
 
 pub(super) static IN_FC: AtomicI64 = AtomicI64::new(0);
 pub(super) static HOST_STOP: AtomicI64 = AtomicI64::new(0);
@@ -13,9 +10,8 @@ static F8_BEGIN: AtomicI64 = AtomicI64::new(0);
 static F8_END: AtomicI64 = AtomicI64::new(0);
 
 pub(super) fn qpc() -> i64 {
-    let mut value = 0;
-    unsafe { QueryPerformanceCounter(&mut value) };
-    value
+    static EPOCH: OnceLock<Instant> = OnceLock::new();
+    EPOCH.get_or_init(Instant::now).elapsed().as_nanos() as i64 + 1
 }
 pub(super) fn mark(stage: &AtomicI64) {
     stage.store(qpc(), Relaxed);
