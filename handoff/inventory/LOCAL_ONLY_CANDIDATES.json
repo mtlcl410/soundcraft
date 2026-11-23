@@ -1,178 +1,734 @@
 {
- "method": "All original local named branches minus ancestry of live fork or upstream heads available in this shallow local object store. Missing or shallow ancestry can inflate this count. BEFORE.json contains the literal git log --branches --not --remotes output.",
- "advertised_heads_unique": 78,
- "available_heads": 27,
+ "method": "Literal pre-handoff git log --branches --not --remotes subjects from the primary common repository, expanded to full SHA, minus full commit ancestry reachable from every pre-handoff advertised fork and upstream head. Evaluated in a separate bare repository fetched from GitHub with --filter=tree:0, without a shallow cutoff. Coverage limited to those advertised branches and the original local query.",
+ "initial_rows": 417,
+ "remote_distinct_heads": 78,
+ "remaining": 145,
+ "G11_archived": 109,
  "commits": [
-  "1af5815b6a65635d5327dc7c53b8eea937ecd4d7",
-  "f533e1db7336c4879308134c94438df530cc8e9a",
-  "f60b16323756d731c9d398aacfed7e21baa865dc",
-  "1db8bdb65c156d845b3b2dec0c1fb28865659a2c",
-  "df50ec8e3fca6c0fcf3d5dc20e73de57f642c3a7",
-  "89f23837f08cb40038765cfde71c02bf0d10b831",
-  "6a816d6bd215dfe17ce575bad91663e1d6ee6838",
-  "c7e2d50f363ea90387965eb89e71c74ae06c6f66",
-  "d1ff1d31973cb2f94cd35a6e9eafc4f5f83e703c",
-  "9ed0be2c483342064935442be4bb539c4f6bf06e",
-  "6849b48f418d5bddef3d1a62edbe882bb116d0e6",
-  "9c5f8c03312d01d722a6a0dcf9fac05328e29285",
-  "33f05047022fb93277ff88028b72d5aa37dad835",
-  "a79b98668a769dbb47d7e3b3ad49e78e1cb4b445",
-  "b345a1db7ffc11f988263ef7b38c9490c6c970a6",
-  "0be65e01d567f8fe04c3d009656d07c605445751",
-  "9a74ea69ff73fecb346125c848b9b1c3fb02b5ac",
-  "585ec0c3fc928a4a37172f11726d0ac163bf68ad",
-  "9933a2c543bc044e83266ed74afd641476e0cbe5",
-  "de85a2938ee8a4861ac348bd134d001f073eb122",
-  "b949a92dfcb186d1001955b757b042962f5b874a",
-  "b6d756e9eb70d47f91809cb9ed423e39f8eb0bbe",
-  "10c72f7e9446387f45da460d15bb066a9f226a34",
-  "e97f7da8a002d7d49b860ba465c7507f379dfc8a",
-  "0f90970908c1ea4bc492008ce1d890d803402f27",
-  "bba12cc7949dd6eec737810df81edde0c71fe434",
-  "4cfaf0996b86ca4793f4e10dd71b7e08df3c52bb",
-  "d0b93da9a5d5f08d02ac8c7c577a04e2a4c9777a",
-  "19707514b59bad9f6ca3da89f1529da0f3dbc4d3",
-  "f0b45764a04a8cb95e6510a7d4579b66753e34cb",
-  "843c0d5e56da6a8203cb1518dbc0aaab6f12e453",
-  "90a1e06189901d14348af7fa165395a93ed46aa8",
-  "17016e305c43276a34b45cabf296da7ea15f8c4c",
-  "44de4b91708a6086e99e5b3a55bcfcadae850ec4",
-  "3e8b94dc30295c7dc3cefb772f43ffb422742fc1",
-  "56260049b350659a093326cd9c8a2177957d1aa2",
-  "4036fd9bd8d4c9f3e59e9b23f5f0024a8a6a041a",
-  "f3fb19f435cda83f15ae0becbb53af1c06bf7bdc",
-  "9b5b4f77a7f6f2b8b7e99a8cec802702eec683d1",
-  "c219ef4f52eb62b5509e4c6f78b691c09c949c83",
-  "03c23df800596d6c63586552546f3d0a891434f5",
-  "374f3e86090e8deba96298e2626704fbc1491ff7",
-  "89411e84b7a8ef9fe358139fc485fab20a9993b8",
-  "7b7a2f25acd4e6d3d89bb1659622b01942d38b2c",
-  "8b6e386953df987aa18a98f4b0696cd3c60d5c43",
-  "aacfdcf3fe3207ef0b357782e97db6ce3093567d",
-  "030277080ec32a71fdf4ea82b860c1b466b5570f",
-  "f13949d9f8b2513f003508eb31444cf8c1458f67",
-  "8cba3d618fbbff245ec38135476810429bd465f3",
-  "adebe63558ec9055ff2f4293ea79952f3f21793a",
-  "eee6a79b2c07a8daa528239541d01ca211e92045",
-  "f561a57aecf451bd53024b084aa84559809de8cf",
-  "3edb1898381fb157ca773ace431bb44d79fd90ec",
-  "e9c45417be1faf3cb1ce8376af67cb69340b0dab",
-  "467844f3f2eafd5cc1071ff24b1a71475b1173fd",
-  "93d18d1383ef77dc819ad2d06c9ec64f3e66056d",
-  "94f463eaa11f3d9205d516cf025612377948b899",
-  "b3a3ed9f682cafc7c94c4bdc5f984cb232b030ad",
-  "59b5e3c41f415efe3163558eac5e729401967e6c",
-  "7bd076fdee6d533f04c2aa7aa56206f152909a45",
-  "c3d6e0dc3237da3f8acf73456bf1386c02f5a9d2",
-  "b673ccddbf197f17230529a9d2b0459ea860abfb",
-  "be050fc411f1b68f2456033b7c0a6dbaf708731e",
-  "0eb0b79e09e32bd73685e1d2c7f1956cabe5fcfd",
-  "3e6b316a74963edec32fb466f32566e203bdfb48",
-  "2026ac937a79e7ccdb0d57582bd0a8774a458557",
-  "39f4d348803d288be1a1e097ac083534f74a6d63",
-  "587f43dca8fe74a435d8d04e75d43c199428687e",
-  "a5abacbee8b9fdfbd75b929d6e09eb1328020fa2",
-  "ab79976dd24455d881d5d26f58e1fe197c65584f",
-  "fa3919021716d60de84b0d2c4d07d2314f5a5780",
-  "f4e92225cc8997ad067a7197ec7566c659b8058e",
-  "f4028668652c80414579b267341cd9c77b925fa7",
-  "10d1d9c72c393ed199ea3a7c5e31f8e24e923384",
-  "42415cc3805a3c69b056a7d84ce39107dfa0a48b",
-  "c43c2c42b09bf71f8985237e3d7912c25e2b4af8",
-  "ba94eef104f0c163e7d7a68c5fa6eaa480e3dfc5",
-  "a8bbd57454db010ed146ea7100113779af263d30",
-  "a77d5c5f88bbb4ab96206bc73f1b993a85ae81e5",
-  "905ec97b26971adf8890be9aa78618db31d6bbee",
-  "36eea94fee70dd0d9c94170452c19d92370df519",
-  "82a6afc7b4f1273b7f95f1246fb0a203256c6f04",
-  "372f839df4ffefb30f94500612dc01b719b73c28",
-  "8418b8695206f156ba4bcc100862df8864043821",
-  "386030cdab598b157db28e745763b23d1a3ae291",
-  "61de9c8bb9a294196aa4b0038a5a6f8a67105a15",
-  "13d21a3d610f55e87e0cd94b421b50c5fee27a8d",
-  "ce8695d2af74c84dfc8afc271483a253bf3762fc",
-  "ac620f7e5e079c3f8fe7492980b7e385321f94a5",
-  "59185cbda9a3b980b5f6a3f3213b15c31f164d96",
-  "b7b7d87390fe5cfcd83b34bb8e64df77c5668c7b",
-  "5aa00e9cc9ea826d742874690adf7fbfc999ee33",
-  "da062390ccc37ff9707d56b419e28b72deafa835",
-  "b2f1a0becdfce0b8eb79642de858e79dcb2f405b",
-  "9d291a8778277f32f92fa1847dff35e0c276c850",
-  "858cf2de7d9914342ec63e5daf3fd9cb0b6a0582",
-  "ceedb0fbbcdf449ab6ee71b9e246713b50ee64e3",
-  "02054f6199fec58d93da0791a8f1b1bd98cc9fba",
-  "ee16e1182a18e256fe580ce200736663a6740873",
-  "de9360ccc023fc77ef3115629cf07d598d5b0d4c",
-  "0fba0360bb4431816005e210aa49b2d4f4773d59",
-  "5189be4580369c4a0bdddbc1de46dca1b236afbf",
-  "2922b373cee4fd041030ce1b17caa7c81a3fddf4",
-  "44931b88d495eef446a0cd03fe2096354991d024",
-  "005524610309487725e87ea8b1a4d486fef606b7",
-  "40820600f534b852ddd4e9fde3e9679bdf411835",
-  "9979741147703bf52bf81a2920c9c7ddc20bda06",
-  "bf233ff347cc46fd9c8738274d951bfbef4c50c3",
-  "6cfa7ca0f479d6a04dfc1188c28a81ee46441e0b",
-  "f0e343564d43c3e6f8ce544c59c65bc5f933d8c8",
-  "a2606b4009ffa79ed63e076694451219160809b3",
-  "becbe31cec3d3b91d5318a3e2ea2e32e6d6efca5",
-  "f96ae73b1ca374874039d7b94dd643e09904140f",
-  "5e320ef9ec83bf7a725583b7b2d28f1dbe460eaf",
-  "ef63d8f65893b77a5d664acc8d9f08068747c5f2",
-  "9a80984adb6876ee5ef4f696682f0a00ccb758f2",
-  "3273417fab98a2ea8d127e7e63d2d77103e6fda5",
-  "c9105ee83193cb8f6b5630720d26a3d955a2799d",
-  "01956273b53e3e6f6c0e3130ff8a363060c2ba12",
-  "1cb0e7d675c506ffc81a136b5dec452e4d76b06a",
-  "e09681f7728b4ed5ba4e532204c933c419c28ce8",
-  "d81af91ad7edfe53578f7a943baee94cdd5c2981",
-  "b5bfecfe6f15fb0459a49af80289e3228ff4952b",
-  "223e823a93616fb16e9cb75417cefa8af3320713",
-  "4230b4a646f0210f82c2a421c923dea514958fb1",
-  "79872e4778b28bf5bf39fb71e84af7537f069ec9",
-  "1ac730a0d62f47fef2a0202e97bea6b83ca4623f",
-  "d072ae46b780fe2a4388023db94569179f660ccb",
-  "b8bbd89bdfecaa38681048ec138b54a18ff72ffc",
-  "e37b0eff0f5d1ec22a58b894ac3dc2b146ebf6bb",
-  "09713cceb0aa431e201dc0354107ca4a08eeff01",
-  "39718865fc52f65abfad0737cb332c146f122119",
-  "859a0377b46f2a4564fc145f29072a3874d124fc",
-  "84288de8dc49e242af2c5cb8b4b35950815317c7",
-  "b09ccbf1770e3affc079db8966436b2fa5f815c8",
-  "4a5caf7cf1bca8877fccff9ff91bee4dfb843589",
-  "b68408557db71903989b9f98ee76a25413b83bad",
-  "70dc520e34c6ffb24155c441df26ce542544111c",
-  "5e7c18f4d0ce4034107681fe1d57c2b6771ed9d7",
-  "ca34b9daf9a9fa0f685c91b5c0bb0530ba91168b",
-  "52eca26c53c8132b16b39d475f331f5605c7e227",
-  "d5279aa7ba395b9bc0f5f37c68105289cf35866a",
-  "f0b75a5fe108cfb607e08806b6c87ed277ef1c21",
-  "21b404a3439b17f7ffc92c2baecff2e47a7f8dac",
-  "01b012b8732204b7d37e77b5e962585d541b8e02",
-  "b14e7abdade1f34c2c21839a6a4abf7f0123638b",
-  "91244c89ca98207a62c0681436b2be5288f9da9d",
-  "7db57cce878cd5cb89812d0751b8d3ed0647d548",
-  "d45efa3ca935e6716afb8a0230655ae7ea06b299",
-  "5f987255440615cc5b4b82ad5b697a9ef483d5d3",
-  "a8276c93d02edc137cd310be297b7acd59cb4f08",
-  "f741e775ef9f3b8c6c10acd316c8c4e5a3bb8a70",
-  "a132350c3f56a2e5ab39bf42738f19ffb003a066",
-  "a58e54a93c1ba57e699b315fa619cc1c5be46f0f",
-  "eb311372bb3b48036fa1773bab0ec5f2f4ad9411",
-  "2bcecbb24a09e079949e8785dc7fdd45c7173889",
-  "71442917df1f2b1200396ceea5bc40ea1f563592",
-  "f4715ebde2242521d4c6432a206423861489d132",
-  "4cedb4dc0ae6333158e5015333849705688e30ed",
-  "54940b547d20ec2b42003e6c392656e083010afc",
-  "1e6ce93c85e23e941045081657dbf8923313ee99",
-  "1085836babbd1b7348bd621f57cb69b7e48e2e97",
-  "4bc78e690301421c1d91349ec8c595a097df1db0",
-  "283363da7ddcfc338ef79e5817aa56060360b1e4",
-  "0c981e120933f37a2e020fc6d39e3cf757c818ab",
-  "9cc0e76dcbbd9d7ec81e8527f8f5d57fc75ccf13",
-  "a9cd32dfbb317935ba7e8254a16f5b802607af85",
-  "a66c756bcd73036bbcecc5dc3f1fced58b82a6df",
-  "91a97f3a47ba3d94dd1a2056c5f6b9b120c8d927",
-  "c01714310577153e15d2cf7ff733b042615e92bb",
-  "ead5379ed8f0fe9e93f73ecd0ada99bab89038eb"
+  {
+   "sha": "1af5815b6a65635d5327dc7c53b8eea937ecd4d7",
+   "subject": "Exercise an external Stop between two native sends in one outstanding batch",
+   "G11_archive": true
+  },
+  {
+   "sha": "f533e1db7336c4879308134c94438df530cc8e9a",
+   "subject": "Bound pending Beat Clock delivery at a followed external Stop",
+   "G11_archive": true
+  },
+  {
+   "sha": "f60b16323756d731c9d398aacfed7e21baa865dc",
+   "subject": "Use safe process-local monotonic times for the private stage witness",
+   "G11_archive": true
+  },
+  {
+   "sha": "1db8bdb65c156d845b3b2dec0c1fb28865659a2c",
+   "subject": "Verify generated MTC addresses against the presentation sample clock",
+   "G11_archive": true
+  },
+  {
+   "sha": "df50ec8e3fca6c0fcf3d5dc20e73de57f642c3a7",
+   "subject": "Local witness for incoming Stop and the final native MIDI handoffs",
+   "G11_archive": true
+  },
+  {
+   "sha": "89f23837f08cb40038765cfde71c02bf0d10b831",
+   "subject": "Keep read-only Clock status polls off the render publication path",
+   "G11_archive": true
+  },
+  {
+   "sha": "6a816d6bd215dfe17ce575bad91663e1d6ee6838",
+   "subject": "Cover unchanged host status reads and the transition to Coast",
+   "G11_archive": true
+  },
+  {
+   "sha": "c7e2d50f363ea90387965eb89e71c74ae06c6f66",
+   "subject": "Preserve rounded pulse deadlines for a newly attached Clock output",
+   "G11_archive": true
+  },
+  {
+   "sha": "d1ff1d31973cb2f94cd35a6e9eafc4f5f83e703c",
+   "subject": "Keep a known zero cue through a late first external Clock buffer",
+   "G11_archive": true
+  },
+  {
+   "sha": "9ed0be2c483342064935442be4bb539c4f6bf06e",
+   "subject": "Cover prearmed, cold-attached, and late-attached Clock starts",
+   "G11_archive": true
+  },
+  {
+   "sha": "6849b48f418d5bddef3d1a62edbe882bb116d0e6",
+   "subject": "Preserve rounded pulse deadlines for a newly attached Clock output",
+   "G11_archive": true
+  },
+  {
+   "sha": "9c5f8c03312d01d722a6a0dcf9fac05328e29285",
+   "subject": "Preserve rounded pulse deadlines for a newly attached Clock output",
+   "G11_archive": true
+  },
+  {
+   "sha": "33f05047022fb93277ff88028b72d5aa37dad835",
+   "subject": "Keep read-only Clock status polls off the render publication path",
+   "G11_archive": true
+  },
+  {
+   "sha": "a79b98668a769dbb47d7e3b3ad49e78e1cb4b445",
+   "subject": "Cover unchanged host status reads and the transition to Coast",
+   "G11_archive": true
+  },
+  {
+   "sha": "b345a1db7ffc11f988263ef7b38c9490c6c970a6",
+   "subject": "Keep a known zero cue through a late first external Clock buffer",
+   "G11_archive": true
+  },
+  {
+   "sha": "0be65e01d567f8fe04c3d009656d07c605445751",
+   "subject": "Cover prearmed, cold-attached, and late-attached Clock starts",
+   "G11_archive": true
+  },
+  {
+   "sha": "9a74ea69ff73fecb346125c848b9b1c3fb02b5ac",
+   "subject": "Keep a known zero cue through a late first external Clock buffer",
+   "G11_archive": true
+  },
+  {
+   "sha": "585ec0c3fc928a4a37172f11726d0ac163bf68ad",
+   "subject": "Cover prearmed, cold-attached, and late-attached Clock starts",
+   "G11_archive": true
+  },
+  {
+   "sha": "9933a2c543bc044e83266ed74afd641476e0cbe5",
+   "subject": "Use signed microseconds in the missing-observation regression",
+   "G11_archive": true
+  },
+  {
+   "sha": "de85a2938ee8a4861ac348bd134d001f073eb122",
+   "subject": "Use signed microseconds in the missing-observation regression",
+   "G11_archive": true
+  },
+  {
+   "sha": "b949a92dfcb186d1001955b757b042962f5b874a",
+   "subject": "Project external Clock tempo into the measured playback sample clock",
+   "G11_archive": true
+  },
+  {
+   "sha": "b6d756e9eb70d47f91809cb9ed423e39f8eb0bbe",
+   "subject": "Join a live MTC group after missing multiple pieces at startup",
+   "G11_archive": true
+  },
+  {
+   "sha": "10c72f7e9446387f45da460d15bb066a9f226a34",
+   "subject": "Join a live MTC group after missing multiple pieces at startup",
+   "G11_archive": true
+  },
+  {
+   "sha": "e97f7da8a002d7d49b860ba465c7507f379dfc8a",
+   "subject": "Space a late initial Beat Clock across the first beat",
+   "G11_archive": true
+  },
+  {
+   "sha": "0f90970908c1ea4bc492008ce1d890d803402f27",
+   "subject": "Space a late initial Beat Clock across the first beat",
+   "G11_archive": true
+  },
+  {
+   "sha": "bba12cc7949dd6eec737810df81edde0c71fe434",
+   "subject": "Space a late initial Beat Clock across the first beat",
+   "G11_archive": true
+  },
+  {
+   "sha": "4cfaf0996b86ca4793f4e10dd71b7e08df3c52bb",
+   "subject": "Project external Clock tempo into the measured playback sample clock",
+   "G11_archive": true
+  },
+  {
+   "sha": "d0b93da9a5d5f08d02ac8c7c577a04e2a4c9777a",
+   "subject": "Join a live MTC group after missing multiple pieces at startup",
+   "G11_archive": true
+  },
+  {
+   "sha": "19707514b59bad9f6ca3da89f1529da0f3dbc4d3",
+   "subject": "Space a late initial Beat Clock across the first beat",
+   "G11_archive": true
+  },
+  {
+   "sha": "f0b45764a04a8cb95e6510a7d4579b66753e34cb",
+   "subject": "Project external Clock tempo into the measured playback sample clock",
+   "G11_archive": true
+  },
+  {
+   "sha": "843c0d5e56da6a8203cb1518dbc0aaab6f12e453",
+   "subject": "Join a live MTC group after missing multiple pieces at startup",
+   "G11_archive": true
+  },
+  {
+   "sha": "90a1e06189901d14348af7fa165395a93ed46aa8",
+   "subject": "Space a late initial Beat Clock across the first beat",
+   "G11_archive": true
+  },
+  {
+   "sha": "17016e305c43276a34b45cabf296da7ea15f8c4c",
+   "subject": "Publish the incoming external Clock cue separately from the audio lead",
+   "G11_archive": true
+  },
+  {
+   "sha": "44de4b91708a6086e99e5b3a55bcfcadae850ec4",
+   "subject": "Publish the incoming external Clock cue separately from the audio lead",
+   "G11_archive": true
+  },
+  {
+   "sha": "3e8b94dc30295c7dc3cefb772f43ffb422742fc1",
+   "subject": "Address distinct WinMM connectors by their enumerated name and interface ID",
+   "G11_archive": true
+  },
+  {
+   "sha": "56260049b350659a093326cd9c8a2177957d1aa2",
+   "subject": "Address distinct WinMM connectors by their enumerated name and interface ID",
+   "G11_archive": true
+  },
+  {
+   "sha": "4036fd9bd8d4c9f3e59e9b23f5f0024a8a6a041a",
+   "subject": "Allow an isolated muted capture strip during dry-guide chase",
+   "G11_archive": true
+  },
+  {
+   "sha": "f3fb19f435cda83f15ae0becbb53af1c06bf7bdc",
+   "subject": "Allow an isolated muted capture strip during dry-guide chase",
+   "G11_archive": true
+  },
+  {
+   "sha": "9b5b4f77a7f6f2b8b7e99a8cec802702eec683d1",
+   "subject": "Avoid redundant atomic writes in MIDI sync output statistics",
+   "G11_archive": true
+  },
+  {
+   "sha": "c219ef4f52eb62b5509e4c6f78b691c09c949c83",
+   "subject": "Clamp out-of-range source offsets on narrow index targets",
+   "G11_archive": true
+  },
+  {
+   "sha": "03c23df800596d6c63586552546f3d0a891434f5",
+   "subject": "Join MTC at presentation across verified silent PCM preroll",
+   "G11_archive": true
+  },
+  {
+   "sha": "374f3e86090e8deba96298e2626704fbc1491ff7",
+   "subject": "Read MTC diagnostic percentiles without sorting both windows",
+   "G11_archive": true
+  },
+  {
+   "sha": "89411e84b7a8ef9fe358139fc485fab20a9993b8",
+   "subject": "Clamp out-of-range source offsets on narrow index targets",
+   "G11_archive": true
+  },
+  {
+   "sha": "7b7a2f25acd4e6d3d89bb1659622b01942d38b2c",
+   "subject": "Join MTC at presentation across verified silent PCM preroll",
+   "G11_archive": true
+  },
+  {
+   "sha": "8b6e386953df987aa18a98f4b0696cd3c60d5c43",
+   "subject": "Reuse the tempo ramp estimate between incoming Clock pulses",
+   "G11_archive": true
+  },
+  {
+   "sha": "aacfdcf3fe3207ef0b357782e97db6ce3093567d",
+   "subject": "Read MTC diagnostic percentiles without sorting both windows",
+   "G11_archive": true
+  },
+  {
+   "sha": "030277080ec32a71fdf4ea82b860c1b466b5570f",
+   "subject": "Avoid redundant atomic writes in MIDI sync output statistics",
+   "G11_archive": true
+  },
+  {
+   "sha": "f13949d9f8b2513f003508eb31444cf8c1458f67",
+   "subject": "Merge branch 'local/mtc-anchor-phase' into HEAD",
+   "G11_archive": true
+  },
+  {
+   "sha": "8cba3d618fbbff245ec38135476810429bd465f3",
+   "subject": "Merge branch 'local/mtc-anchor-phase' into HEAD",
+   "G11_archive": true
+  },
+  {
+   "sha": "adebe63558ec9055ff2f4293ea79952f3f21793a",
+   "subject": "Align anchored MTC starts to the device sample inside the callback",
+   "G11_archive": true
+  },
+  {
+   "sha": "eee6a79b2c07a8daa528239541d01ca211e92045",
+   "subject": "Merge commit 'a89e9a4e53cbb6c14ed38f9bc649775eb98c5fba' into local/asio-cadence-model12",
+   "G11_archive": true
+  },
+  {
+   "sha": "f561a57aecf451bd53024b084aa84559809de8cf",
+   "subject": "Local hardware acceptance with Model 12 packed PCM support",
+   "G11_archive": true
+  },
+  {
+   "sha": "3edb1898381fb157ca773ace431bb44d79fd90ec",
+   "subject": "Use derived defaults and propagate absent Clock step candidates",
+   "G11_archive": true
+  },
+  {
+   "sha": "e9c45417be1faf3cb1ce8376af67cb69340b0dab",
+   "subject": "Reconnect the selected audio endpoint on its actual host and clear recovered warnings",
+   "G11_archive": true
+  },
+  {
+   "sha": "467844f3f2eafd5cc1071ff24b1a71475b1173fd",
+   "subject": "Keep callback failures latched and retry persistent WASAPI endpoints after cooldown",
+   "G11_archive": true
+  },
+  {
+   "sha": "93d18d1383ef77dc819ad2d06c9ec64f3e66056d",
+   "subject": "Discard stale sync presentations and preserve MIDI transport across recovery",
+   "G11_archive": true
+  },
+  {
+   "sha": "94f463eaa11f3d9205d516cf025612377948b899",
+   "subject": "Exclude ambiguous MIDI endpoints even when one name is unavailable",
+   "G11_archive": true
+  },
+  {
+   "sha": "b3a3ed9f682cafc7c94c4bdc5f984cb232b030ad",
+   "subject": "Order recorded MIDI stamps at the writer boundary and unlock before notifying the host",
+   "G11_archive": true
+  },
+  {
+   "sha": "59b5e3c41f415efe3163558eac5e729401967e6c",
+   "subject": "Retain the reader day when MTC freewheels across midnight",
+   "G11_archive": true
+  },
+  {
+   "sha": "7bd076fdee6d533f04c2aa7aa56206f152909a45",
+   "subject": "Test the retained tick-based MIDI take without requiring an audio source",
+   "G11_archive": true
+  },
+  {
+   "sha": "c3d6e0dc3237da3f8acf73456bf1386c02f5a9d2",
+   "subject": "Retain stable Clock phase and readout for gently drifting noisy sources",
+   "G11_archive": true
+  },
+  {
+   "sha": "b673ccddbf197f17230529a9d2b0459ea860abfb",
+   "subject": "Bound external-clock tempo history around recorded takes and expose the EXT transport control",
+   "G11_archive": true
+  },
+  {
+   "sha": "be050fc411f1b68f2456033b7c0a6dbaf708731e",
+   "subject": "Keep a settled one-off Clock slowdown out of continuous brake tracking",
+   "G11_archive": true
+  },
+  {
+   "sha": "0eb0b79e09e32bd73685e1d2c7f1956cabe5fcfd",
+   "subject": "Steer the unrendered score to measured Clock phase during DJ tempo changes",
+   "G11_archive": true
+  },
+  {
+   "sha": "3e6b316a74963edec32fb466f32566e203bdfb48",
+   "subject": "Validate a frozen Clock baseline before reporting a borderline step",
+   "G11_archive": true
+  },
+  {
+   "sha": "2026ac937a79e7ccdb0d57582bd0a8774a458557",
+   "subject": "Preserve both legacy calibration tables when reloading merged MIDI preferences",
+   "G11_archive": true
+  },
+  {
+   "sha": "39f4d348803d288be1a1e097ac083534f74a6d63",
+   "subject": "Cover reopening a fully migrated MIDI input and output calibration union",
+   "G11_archive": true
+  },
+  {
+   "sha": "587f43dca8fe74a435d8d04e75d43c199428687e",
+   "subject": "Freeze the pre-step period while resolving borderline Clock changes",
+   "G11_archive": true
+  },
+  {
+   "sha": "a5abacbee8b9fdfbd75b929d6e09eb1328020fa2",
+   "subject": "Pin the signed eight-percent Clock boundary with seeded timestamp jitter",
+   "G11_archive": true
+  },
+  {
+   "sha": "ab79976dd24455d881d5d26f58e1fe197c65584f",
+   "subject": "Distinguish half-time steps from sustained brakes and settle by the second beat",
+   "G11_archive": true
+  },
+  {
+   "sha": "fa3919021716d60de84b0d2c4d07d2314f5a5780",
+   "subject": "Deliver coalesced Clock attacks at their received pulse and preserve voice duration",
+   "G11_archive": true
+  },
+  {
+   "sha": "f4e92225cc8997ad067a7197ec7566c659b8058e",
+   "subject": "Cover causal USB batches immediately after the transport start pulse",
+   "G11_archive": true
+  },
+  {
+   "sha": "f4028668652c80414579b267341cd9c77b925fa7",
+   "subject": "Pin SPP loop bypass and held note releases on external Stop",
+   "G11_archive": true
+  },
+  {
+   "sha": "10d1d9c72c393ed199ea3a7c5e31f8e24e923384",
+   "subject": "Measure the brake release from the first beat back at the destination tempo",
+   "G11_archive": true
+  },
+  {
+   "sha": "42415cc3805a3c69b056a7d84ce39107dfa0a48b",
+   "subject": "Recover external Clock follow preferences independently",
+   "G11_archive": true
+  },
+  {
+   "sha": "c43c2c42b09bf71f8985237e3d7912c25e2b4af8",
+   "subject": "Follow slow MIDI Clock through a brake and distinguish cable loss",
+   "G11_archive": true
+  },
+  {
+   "sha": "ba94eef104f0c163e7d7a68c5fa6eaa480e3dfc5",
+   "subject": "Distinguish cable loss from incoming Active Sensing on other ports",
+   "G11_archive": true
+  },
+  {
+   "sha": "a8bbd57454db010ed146ea7100113779af263d30",
+   "subject": "Reproduce MTC-only bindings and an unreported output lead during chase",
+   "G11_archive": true
+  },
+  {
+   "sha": "a77d5c5f88bbb4ab96206bc73f1b993a85ae81e5",
+   "subject": "Observe a missing audio timestamp before testing the chase warning",
+   "G11_archive": true
+  },
+  {
+   "sha": "905ec97b26971adf8890be9aa78618db31d6bbee",
+   "subject": "Exercise external Clock against rendered DJ drums, slow sources and loss",
+   "G11_archive": true
+  },
+  {
+   "sha": "36eea94fee70dd0d9c94170452c19d92370df519",
+   "subject": "Recover invalid project timecode settings and MTC port preferences individually",
+   "G11_archive": true
+  },
+  {
+   "sha": "82a6afc7b4f1273b7f95f1246fb0a203256c6f04",
+   "subject": "Measure packed Clock slowdowns against causal pulse arrival",
+   "G11_archive": true
+  },
+  {
+   "sha": "372f839df4ffefb30f94500612dc01b719b73c28",
+   "subject": "Use a valid drop-frame label for the unrelated locate",
+   "G11_archive": true
+  },
+  {
+   "sha": "8418b8695206f156ba4bcc100862df8864043821",
+   "subject": "Keep the MIDI wake callback contract on its implementation",
+   "G11_archive": true
+  },
+  {
+   "sha": "386030cdab598b157db28e745763b23d1a3ae291",
+   "subject": "Frame MTC around real-time bytes and carry the chase timeline across midnight",
+   "G11_archive": true
+  },
+  {
+   "sha": "61de9c8bb9a294196aa4b0038a5a6f8a67105a15",
+   "subject": "Apply sync output bindings and phase diagnostics to MTC",
+   "G11_archive": true
+  },
+  {
+   "sha": "13d21a3d610f55e87e0cd94b421b50c5fee27a8d",
+   "subject": "Recover individual MIDI sync preferences and explain unavailable compensation",
+   "G11_archive": true
+  },
+  {
+   "sha": "ce8695d2af74c84dfc8afc271483a253bf3762fc",
+   "subject": "Bound duplicate output suffix selection by the port count",
+   "G11_archive": true
+  },
+  {
+   "sha": "ac620f7e5e079c3f8fe7492980b7e385321f94a5",
+   "subject": "Bind same-name MIDI sync calibrations to distinct outputs",
+   "G11_archive": true
+  },
+  {
+   "sha": "59185cbda9a3b980b5f6a3f3213b15c31f164d96",
+   "subject": "Gate MIDI timing warnings and bound shared-output recovery",
+   "G11_archive": true
+  },
+  {
+   "sha": "b7b7d87390fe5cfcd83b34bb8e64df77c5668c7b",
+   "subject": "Record shared output recovery and Clock follow validation locally",
+   "G11_archive": true
+  },
+  {
+   "sha": "5aa00e9cc9ea826d742874690adf7fbfc999ee33",
+   "subject": "Sync the two Clock UI test fixtures with the local report",
+   "G11_archive": true
+  },
+  {
+   "sha": "da062390ccc37ff9707d56b419e28b72deafa835",
+   "subject": "Sync verified device timing recovery with the local Clock acceptance record",
+   "G11_archive": true
+  },
+  {
+   "sha": "b2f1a0becdfce0b8eb79642de858e79dcb2f405b",
+   "subject": "Record all queued Clock deadlines and final CodeRabbit thread resolution",
+   "G11_archive": true
+  },
+  {
+   "sha": "9d291a8778277f32f92fa1847dff35e0c276c850",
+   "subject": "Record sixth CodeRabbit review and verified dispatch follow-ups",
+   "G11_archive": true
+  },
+  {
+   "sha": "858cf2de7d9914342ec63e5daf3fd9cb0b6a0582",
+   "subject": "Document clock-follow MIDI event verification after review",
+   "G11_archive": true
+  },
+  {
+   "sha": "ceedb0fbbcdf449ab6ee71b9e246713b50ee64e3",
+   "subject": "Record external-clock MIDI edit and history verification",
+   "G11_archive": true
+  },
+  {
+   "sha": "02054f6199fec58d93da0791a8f1b1bd98cc9fba",
+   "subject": "Verify split takes and calibration after third review",
+   "G11_archive": true
+  },
+  {
+   "sha": "ee16e1182a18e256fe580ce200736663a6740873",
+   "subject": "Record third review results and stacked scope",
+   "G11_archive": true
+  },
+  {
+   "sha": "de9360ccc023fc77ef3115629cf07d598d5b0d4c",
+   "subject": "Record final Windows test matrix and hosted check status",
+   "G11_archive": true
+  },
+  {
+   "sha": "0fba0360bb4431816005e210aa49b2d4f4773d59",
+   "subject": "Record external clock review fixes and Windows regression results",
+   "G11_archive": true
+  },
+  {
+   "sha": "5189be4580369c4a0bdddbc1de46dca1b236afbf",
+   "subject": "docs: verify clock-follow first-note regression against main",
+   "G11_archive": true
+  },
+  {
+   "sha": "2922b373cee4fd041030ce1b17caa7c81a3fddf4",
+   "subject": "docs: record 256-frame waveform investigation issue",
+   "G11_archive": true
+  },
+  {
+   "sha": "44931b88d495eef446a0cd03fe2096354991d024",
+   "subject": "docs: link verified public clock-follow hardware report",
+   "G11_archive": true
+  },
+  {
+   "sha": "005524610309487725e87ea8b1a4d486fef606b7",
+   "subject": "docs: record Beat Clock audio and MIDI loss-policy verification",
+   "G11_archive": true
+  },
+  {
+   "sha": "40820600f534b852ddd4e9fde3e9679bdf411835",
+   "subject": "docs: record and unblind Model 12 MAIN listening results",
+   "G11_archive": true
+  },
+  {
+   "sha": "9979741147703bf52bf81a2920c9c7ddc20bda06",
+   "subject": "docs: record Model 12 physical MAIN and USB clock-follow comparison",
+   "G11_archive": true
+  },
+  {
+   "sha": "bf233ff347cc46fd9c8738274d951bfbef4c50c3",
+   "subject": "docs: plan Model 12 physical MAIN and USB clock-follow acceptance",
+   "G11_archive": true
+  },
+  {
+   "sha": "6cfa7ca0f479d6a04dfc1188c28a81ee46441e0b",
+   "subject": "Preserve elapsed MIDI clock beats and reuse playback snapshots",
+   "G11_archive": true
+  },
+  {
+   "sha": "f0e343564d43c3e6f8ce544c59c65bc5f933d8c8",
+   "subject": "Reuse the existing Channel translation",
+   "G11_archive": false
+  },
+  {
+   "sha": "a2606b4009ffa79ed63e076694451219160809b3",
+   "subject": "fix(engine): keep exclusive_tests under a plain cfg(test) (#1535)",
+   "G11_archive": false
+  },
+  {
+   "sha": "becbe31cec3d3b91d5318a3e2ea2e32e6d6efca5",
+   "subject": "fix(engine): clippy and the movie relink test pass on Windows (#1535)",
+   "G11_archive": false
+  },
+  {
+   "sha": "f96ae73b1ca374874039d7b94dd643e09904140f",
+   "subject": "Connect Mackie Control to the shared desktop surface",
+   "G11_archive": false
+  },
+  {
+   "sha": "5e320ef9ec83bf7a725583b7b2d28f1dbe460eaf",
+   "subject": "Reopen HUI MIDI ports after heartbeat loss",
+   "G11_archive": false
+  },
+  {
+   "sha": "ef63d8f65893b77a5d664acc8d9f08068747c5f2",
+   "subject": "Handle Model 12 HUI mixing and locate controls",
+   "G11_archive": false
+  },
+  {
+   "sha": "e09681f7728b4ed5ba4e532204c933c419c28ce8",
+   "subject": "Bank and nudge HUI control across mixer tracks",
+   "G11_archive": false
+  },
+  {
+   "sha": "d81af91ad7edfe53578f7a943baee94cdd5c2981",
+   "subject": "Connect Model 12 HUI transport and channel controls",
+   "G11_archive": false
+  },
+  {
+   "sha": "b5bfecfe6f15fb0459a49af80289e3228ff4952b",
+   "subject": "Connect Model 12 HUI transport and channel controls",
+   "G11_archive": false
+  },
+  {
+   "sha": "223e823a93616fb16e9cb75417cefa8af3320713",
+   "subject": "Use hardware direct monitoring when Low Latency Monitoring is enabled",
+   "G11_archive": false
+  },
+  {
+   "sha": "4230b4a646f0210f82c2a421c923dea514958fb1",
+   "subject": "Align audio loop takes and retain partial passes past halfway",
+   "G11_archive": false
+  },
+  {
+   "sha": "79872e4778b28bf5bf39fb71e84af7537f069ec9",
+   "subject": "M12: stop recording when the ASIO audio clock fails",
+   "G11_archive": false
+  },
+  {
+   "sha": "1ac730a0d62f47fef2a0202e97bea6b83ca4623f",
+   "subject": "M12: align ASIO recording before trimming punch takes (G-01)",
+   "G11_archive": false
+  },
+  {
+   "sha": "d072ae46b780fe2a4388023db94569179f660ccb",
+   "subject": "M12: assign named hardware inputs from I/O Setup (G-01)",
+   "G11_archive": false
+  },
+  {
+   "sha": "b8bbd89bdfecaa38681048ec138b54a18ff72ffc",
+   "subject": "M12: scale hardware routing selectors to wide interfaces (G-01)",
+   "G11_archive": false
+  },
+  {
+   "sha": "e37b0eff0f5d1ec22a58b894ac3dc2b146ebf6bb",
+   "subject": "M12: route named ASIO outputs to hardware channels (G-01)",
+   "G11_archive": false
+  },
+  {
+   "sha": "09713cceb0aa431e201dc0354107ca4a08eeff01",
+   "subject": "M12: support packed 24-bit ASIO audio on TASCAM Model 12 (G-01)",
+   "G11_archive": false
+  },
+  {
+   "sha": "39718865fc52f65abfad0737cb332c146f122119",
+   "subject": "M12: freeze shared MIDI instruments to pre-fader audio",
+   "G11_archive": false
+  },
+  {
+   "sha": "859a0377b46f2a4564fc145f29072a3874d124fc",
+   "subject": "M12: apply MIDI Merge to recorded takes (G-02)",
+   "G11_archive": false
+  },
+  {
+   "sha": "84288de8dc49e242af2c5cb8b4b35950815317c7",
+   "subject": "M11: validate live MIDI recording with Merge and Replace",
+   "G11_archive": false
+  },
+  {
+   "sha": "b09ccbf1770e3affc079db8966436b2fa5f815c8",
+   "subject": "M11: show and filter MIDI track events",
+   "G11_archive": false
+  },
+  {
+   "sha": "4a5caf7cf1bca8877fccff9ff91bee4dfb843589",
+   "subject": "M11: move and copy MIDI Program Changes",
+   "G11_archive": false
+  },
+  {
+   "sha": "b68408557db71903989b9f98ee76a25413b83bad",
+   "subject": "M11: edit MIDI controller lanes with Pencil and Grabber",
+   "G11_archive": false
+  },
+  {
+   "sha": "70dc520e34c6ffb24155c441df26ce542544111c",
+   "subject": "M11: follow documented MIDI import and output assignment",
+   "G11_archive": false
+  },
+  {
+   "sha": "5e7c18f4d0ce4034107681fe1d57c2b6771ed9d7",
+   "subject": "M11: preserve MIDI routes and patches through SMF interchange",
+   "G11_archive": false
+  },
+  {
+   "sha": "ca34b9daf9a9fa0f685c91b5c0bb0530ba91168b",
+   "subject": "M11: import MIDINameDocument patch names",
+   "G11_archive": false
+  },
+  {
+   "sha": "52eca26c53c8132b16b39d475f331f5605c7e227",
+   "subject": "M11: import MIDINameDocument patch names",
+   "G11_archive": false
+  },
+  {
+   "sha": "d5279aa7ba395b9bc0f5f37c68105289cf35866a",
+   "subject": "M11: edit named MIDI Program Change events",
+   "G11_archive": false
+  },
+  {
+   "sha": "f0b75a5fe108cfb607e08806b6c87ed277ef1c21",
+   "subject": "M11: restore patch name profiles by MIDI destination",
+   "G11_archive": false
+  },
+  {
+   "sha": "21b404a3439b17f7ffc92c2baecff2e47a7f8dac",
+   "subject": "M11: import Cakewalk .ins patch names for routed MIDI tracks",
+   "G11_archive": false
+  },
+  {
+   "sha": "01b012b8732204b7d37e77b5e962585d541b8e02",
+   "subject": "M11: select, save and audition patches on routed MIDI tracks",
+   "G11_archive": false
+  },
+  {
+   "sha": "b14e7abdade1f34c2c21839a6a4abf7f0123638b",
+   "subject": "Integrate VST3 program changes with multiport MIDI routing",
+   "G11_archive": false
+  },
+  {
+   "sha": "91244c89ca98207a62c0681436b2be5288f9da9d",
+   "subject": "M11: route shared instruments by port and restore XG setup on seek",
+   "G11_archive": false
+  },
+  {
+   "sha": "7db57cce878cd5cb89812d0751b8d3ed0647d548",
+   "subject": "Keep the shared instrument live while transport is stopped",
+   "G11_archive": false
+  },
+  {
+   "sha": "d45efa3ca935e6716afb8a0230655ae7ea06b299",
+   "subject": "Integrate clip SysEx with shared MIDI routing",
+   "G11_archive": false
+  },
+  {
+   "sha": "5f987255440615cc5b4b82ad5b697a9ef483d5d3",
+   "subject": "M7: play MIDI clip SysEx through VST3 and CLAP instruments",
+   "G11_archive": false
+  }
  ]
 }

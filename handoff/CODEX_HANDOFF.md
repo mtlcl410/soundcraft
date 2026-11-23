@@ -65,3 +65,5 @@ Model 12 韌體 1.50 0103、原廠 ASIO 48 kHz / 256 samples、UM-ONE、兩段�
 - [G-11 封存索引](inventory/G11_REFS.json) 列出原工作樹位置、原 HEAD、原分支與可還原的 snapshot SHA。要取回紅測、歷史探針或合併中的實驗，在 fork 的 clone 執行 `git fetch origin wip/g11-worktree-archive`，再以 `git worktree add --detach ../g11-inspect <snapshot-SHA>` 開獨立目錄。封存分支的歷史只用於取回快照。產品開發從上表三個對應分支繼續。
 - 暫存區與工作檔不同的實驗另存 [index-states](inventory/index-states/)，含 stage 編號、Git blob 與尚未解決的衝突兩側。個別檔案以 `git cat-file blob <SHA>` 或該目錄的 blobs 讀取。原來的 stash 也可由封存分支取得，SHA 見索引，以 `git stash show -p <SHA>` 查看。嵌套的 env-main-control 以 gitlink 指向其工作樹 SHA。
 - [歷次實驗](experiments/) 保存本機量測腳本和相關報告。[原有 Git blobs](inventory/EXISTING_EXPERIMENT_BLOBS.json) 列出可按內容編號取回的重複來源。測試資料中的舊指令與發布腳本僅作歷史記錄。大型錄檔留在原機；其他專案的程式與修改保留於其原儲存庫。
+
+最終核對涵蓋 25 個專案儲存庫、235 棵既有工作樹。141 棵 G-11 工作樹目前乾淨；其中 57 棵原有未提交內容。其餘 94 棵依原狀保留，其中 31 棵仍有先前的修改。另在僅從 GitHub 抓取的獨立儲存庫確認，封存歷史可取回索引裡全部 168 個不同版本。原 G-11 共用庫的 417 筆 log 中，有 145 筆在交接前 fork 與上游公布的各 branch 歷史均找不到；109 筆在 G-11 封存內，其餘 36 筆屬其他工作。[盤點摘要](inventory/README.md) · [逐工作樹核對](inventory/AFTER.json)
