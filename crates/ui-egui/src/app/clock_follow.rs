@@ -939,6 +939,8 @@ mod tests {
 
     mod large_steps;
     mod sampler_song;
+    mod flutter_pcm;
+    mod slowdown_sweep;
 
     #[test]
     fn tempo_step_updates_future_beat_spacing_and_preserves_elapsed_bars() {
