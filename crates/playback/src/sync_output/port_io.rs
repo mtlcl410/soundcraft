@@ -77,6 +77,7 @@ impl PortIo {
                                 {
                                     let (stopped, last) = *stats.stopped_boundary.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                                     if stopped == pass && pulse > last {
+                                        eprintln!("SC_STOP_CUTOFF {} {} {} {}", crate::stop_witness::qpc(), pass, pulse, last);
                                         return None;
                                     }
                                 }
