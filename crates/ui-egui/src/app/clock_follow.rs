@@ -938,6 +938,7 @@ mod tests {
     }
 
     mod large_steps;
+    mod ramp_response;
     mod sampler_song;
 
     #[test]
