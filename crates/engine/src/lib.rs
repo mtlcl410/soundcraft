@@ -922,3 +922,7 @@ mod panic_tests {
         assert_eq!(e.last_selection, selection);
     }
 }
+
+#[cfg(test)]
+#[path = "scenario_session.rs"]
+mod scenario_session;

@@ -399,3 +399,34 @@ mod sync_session_tests {
         assert_eq!(crate::cmd::position_param(&e, "test", &json!({"at":"0:20.000"}), "at").unwrap(), Some(960_000));
     }
 }
+#[cfg(test)]
+mod scenario_session_timecode {
+    use super::*;
+    #[test]
+    fn scenario_d3_session_start_undo_redo() {
+        for follows in [false,true] {
+            let mut e = crate::demo::demo_engine();
+            let delta=e.session().sample_rate.samples(1800.);
+            e.session_mut().timecode_start=delta*2;
+            e.session_mut().edit.automation_follows_edit=follows;
+            let tr=e.session().tracks[0].id;
+            e.session_mut().add_marker("Scenario",soundcraft_model::MarkerKind::Marker,2500,2500);
+            e.session_mut().tempo.set_tempo(960,80.).unwrap();
+            e.execute("automation.set_point",&json!({"track":tr.0,"param":"volume","at":50000,"value":-6.})).unwrap();
+            let snapshot=|e:&Engine|{
+                let s=e.session();
+                let clips=s.tracks.iter().flat_map(|t| &t.playlists).flat_map(|p| &p.clips).map(|c|(c.id,c.start)).collect::<Vec<_>>();
+                let lane=s.track(tr).unwrap().lane(&soundcraft_model::AutoParam::Volume).unwrap().points.iter().map(|p|(p.at,p.value)).collect::<Vec<_>>();
+                (clips,lane,serde_json::to_value(&s.markers).unwrap(),serde_json::to_value(&s.tempo).unwrap(),s.timecode_start)
+            };
+            let before=snapshot(&e);
+            e.execute("setup.session",&json!({"start_timecode":"00:30:00:00","keep":"timecode"})).unwrap();
+            let after=snapshot(&e);
+            assert!(before.0.len()>0 && before.1.len()>0);
+            assert!(after.0.iter().zip(&before.0).all(|((a,x),(b,y))|a==b && x-y==delta));
+            assert_eq!(after.1,before.1); assert_eq!(after.2,before.2); assert_eq!(after.3,before.3);
+            assert!(e.undo()); assert_eq!(snapshot(&e),before); assert!(e.redo()); assert_eq!(snapshot(&e),after);
+            eprintln!("D-3 follows={follows} clips={} delta_samples={delta} automation_points={} marker_and_tempo_unchanged=true undo=true redo=true",before.0.len(),before.1.len());
+        }
+    }
+}

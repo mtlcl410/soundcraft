@@ -371,3 +371,108 @@ fn measure_native_worker_quarter_frame_spacing() {
         );
     }
 }
+
+#[test]
+fn scenario_a10_dual_encoder_recovers_after_midroll_invalid_timestamp() {
+    let origin=Instant::now();
+    let mut song=Session::new("reset",soundcraft_time::SampleRate::HZ_48000);
+    song.frame_rate=soundcraft_time::FrameRate::Fps25; song.timecode_start=0;
+    let mut routes=BTreeMap::new();
+    set_route(&mut routes,0,"desk".into(),Route{map:None,offset:0,compensate:true,encoder:Box::<Cursor>::default()});
+    set_route(&mut routes,1,"desk".into(),Route{map:None,offset:0,compensate:true,encoder:Box::<crate::mtc::Encoder>::default()});
+    let port=routes.get_mut("desk").unwrap();
+    let capture=Arc::default();port.link=Some(Capture(Arc::clone(&capture)));
+    let view=View::default();let stats=Stats::default();
+    let mut bad=0; let mut errs:[Vec<f64>;2]=Default::default(); let mut seen=[0usize;2]; let mut dispatch=[0f64;2];
+    for ms in 0..401u64 {
+        let now=origin+Duration::from_millis(ms);
+        if ms%10==0 {
+            let block=super::tests::block(now,(ms*48) as f64,480.,Duration::ZERO);
+            let lead=if (100..200).contains(&ms){None}else{Some(Duration::ZERO)};
+            view.lock().unwrap().push(Presentation{lead,..block});
+        }
+        let before=capture.lock().unwrap().len();
+        port.poll("desk",now,&song,&view,&stats,&mut Vec::new());
+        let rows=capture.lock().unwrap();
+        for (due,_,msg) in &rows[before..] {
+            let (k,interval)=match msg[0]{0xf8=>(0,60./120./24.),0xf1=>(1,0.01),_=>continue};
+            if (101..200).contains(&ms){bad+=1;}
+            if ms>=200 {
+                if now.saturating_duration_since(*due)>Duration::from_millis(2){eprintln!("A10 late kind={k} handoff_ms={ms} tagged_ms={:.3}",due.duration_since(origin).as_secs_f64()*1e3);} seen[k]+=1;dispatch[k]=dispatch[k].max(now.saturating_duration_since(*due).as_secs_f64()*1000.);
+                let s=due.duration_since(origin).as_secs_f64();errs[k].push((s-(s/interval).round()*interval).abs()*1000.);
+            }
+        }
+    }
+    let max=errs.map(|v|v.into_iter().fold(0f64,f64::max));
+    eprintln!("A10 invalid_for_ms=100 packets_while_unknown={bad} after_recovery={seen:?} max_due_grid_ms={max:?} max_handoff_after_due_ms={dispatch:?}");
+    assert!(seen.iter().all(|n|*n>3)&&bad==0&&max.iter().all(|e|*e<=1.)&&dispatch.iter().all(|e|*e<=1.));
+}
+#[test]
+fn scenario_a10_d4_two_encoders_and_stream_reset() {
+    use crate::sync_clock::StreamLead;
+    struct ScheduledCapture {poll_time:Arc<Mutex<Instant>>, data:Arc<Mutex<Vec<Handoff>>>}
+    impl SyncPort for ScheduledCapture {
+        fn send_at(&mut self, at:Instant, bytes:&[u8])->Result<Instant,String> {
+            let now=*self.poll_time.lock().unwrap();
+            self.data.lock().unwrap().push((at,now,bytes.to_vec()));Ok(now)
+        }
+    }
+    let base=Instant::now();
+    let out=Output::default();
+    let mut pubber=Publisher::new(out.view.clone(),out.metrics.clone());
+    let mut hardware=StreamLead::default();
+    let mut s=Session::new("pre/post",soundcraft_time::SampleRate::HZ_48000);
+    s.frame_rate=soundcraft_time::FrameRate::Fps25;s.timecode_start=0;
+    let mut routes=BTreeMap::new();
+    set_route(&mut routes,0,"loop".into(),Route{map:None,offset:0,compensate:true,encoder:Box::<Cursor>::default()});
+    set_route(&mut routes,1,"loop".into(),Route{map:None,offset:0,compensate:true,encoder:Box::<crate::mtc::Encoder>::default()});
+    let port=routes.get_mut("loop").unwrap();let data=Arc::default();let poll_time=Arc::new(Mutex::new(base));
+    port.link=Some(ScheduledCapture{poll_time:poll_time.clone(),data:Arc::clone(&data)});
+    // Selection [1, 2] seconds, 500 ms pre-roll and 250 ms post-roll.
+    let origin=24000;let end=108000;let mut waiting=0;let mut warnings=Vec::new();
+    for ms in 0..=1760 {
+        let now=base+Duration::from_millis(ms);
+        if ms%10==0 {
+            if ms==300 {hardware=StreamLead::default();}
+            let valid=ms<250 || ms>=500;
+            let timing=hardware.observe(now,valid.then_some(Duration::ZERO));let lead=timing.lead();
+            pubber.observe(timing,0.010);
+            let warning=format!("{:?}",out.timing_issue());
+            if warnings.last().is_none_or(|(_,old)|old!=&warning){warnings.push((ms,warning));}
+            let playing=ms<1750;
+            let pos=(origin+ms as i64*48).min(end);
+            let b=Presentation{generation:0,sample_rate:s.sample_rate,system_delay_samples:0,pass:if playing{1}else{2},
+                origin:if playing{origin}else{end},playing,sample:pos as f64,heard_at:now,samples_per_second:48000.,
+                limit:(pos+480).min(end) as f64,looped:None,end:Some(end),lead};
+            pubber.publish(b);
+        }
+        *poll_time.lock().unwrap()=now;
+        port.poll("loop",now,&s,&out.view,&out.stats,&mut Vec::new());
+        waiting+=usize::from(port.waiting_for_timing);
+    }
+    let data=data.lock().unwrap();
+    let first=data.iter().position(|(_,_,m)|m[0]==0xf0).unwrap();
+    let first_q=data.iter().position(|(_,_,m)|m[0]==0xf1).unwrap();
+    assert!(first<first_q);
+    assert_eq!(&data[first].2[5..9],&[0x20,0,0,12]); // 500 ms, floored to frame 12.
+    assert_eq!(&data.iter().find(|(_,_,m)|m[0]==0xf2).unwrap().2,&[0xf2,4,0]);
+    assert!(data.iter().any(|(t,_,m)|m==&[0xfc] && t.duration_since(base)==Duration::from_millis(1750)));
+    let mut offsets=[Vec::new(),Vec::new()];
+    for (deadline,handoff,m) in data.iter().filter(|(t,_,_)|t.duration_since(base)>=Duration::from_millis(600)) {
+        if let Some(i)=[0xf8,0xf1].iter().position(|b|*b==m[0]) {
+           let us=deadline.duration_since(base).as_micros() as i64;
+           let period=if i==0{1_000_000./48.}else{10000.};
+           let expected=(us as f64/period).round()*period;
+           offsets[i].push(handoff.duration_since(base).as_micros() as i64-expected.round() as i64);
+        }
+    }
+    let recovery=data.iter().filter(|(_,at,m)|[0xf8,0xf1].contains(&m[0]) && at.duration_since(base)>=Duration::from_millis(500) && at.duration_since(base)<Duration::from_millis(600)).map(|(due,at,m)|(m[0],due.duration_since(base).as_micros(),at.duration_since(base).as_micros(),at.saturating_duration_since(*due).as_micros())).collect::<Vec<_>>();
+    eprintln!("A-10 recovered_first_100ms=opcode_due_handed_late_us {recovery:?}");
+    for code in [0xf8,0xf1] {
+        let stale:Vec<_>=recovery.iter().filter(|(op,due,_,_)|*op==code && *due<500000).collect();
+        eprintln!("A-10 opcode={code:x} handed_after_reset_with_past_deadline={} worst_handoff_late_us={}",stale.len(),stale.iter().map(|m|m.3).max().unwrap_or(0));
+    }
+    let peaks=offsets.map(|x|x.into_iter().map(i64::abs).max().unwrap());
+    eprintln!("A-10/D-4 warnings_ms={warnings:?} waiting_ms={waiting} clock_mtc_max_grid_error_us={peaks:?} pre_roll=24000 post_roll_end={end} full_before_first_q={first}/{first_q}");
+    assert_eq!(waiting,200);assert!(peaks.iter().all(|v|*v<=1000));
+}

@@ -853,3 +853,19 @@ mod tests {
         assert_eq!(icons.len(), toggles.len(), "every option toggle needs its own icon");
     }
 }
+#[cfg(test)]
+pub(crate) fn scenario_click_transport_record(app: &mut SoundApp) {
+    let ctx=egui::Context::default();
+    let mut point=egui::Pos2::ZERO;
+    for pass in 0..4 {
+        let mut events=Vec::new();
+        if pass>0 {events.push(egui::Event::PointerMoved(point));}
+        if pass>=2 {events.push(egui::Event::PointerButton{pos:point,button:egui::PointerButton::Primary,pressed:pass==2,modifiers:egui::Modifiers::NONE});}
+        let input=egui::RawInput {screen_rect:Some(egui::Rect::from_min_size(egui::Pos2::ZERO,egui::vec2(500.,200.))),events,..Default::default()};
+        let mut output=ctx.run_ui(input,|ui| {
+            point=ui.next_widget_position()+egui::vec2(5.+3.*41.+19.,5.+14.);
+            transport(app,ui);
+        });
+        output.textures_delta.clear();
+    }
+}

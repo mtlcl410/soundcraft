@@ -399,3 +399,6 @@ fn jam_sync_audio_free_runs_for_ten_seconds_and_seeks_only_on_the_second_new_gro
         }
     }
 }
+
+#[path = "scenarios.rs"]
+mod scenarios;

@@ -514,3 +514,61 @@ mod tests {
         assert!(app.run("options.transport_online", json!({"value":true})).is_err());
     }
 }
+
+#[cfg(test)]
+#[path = "scenario_load.rs"]
+mod scenario_load;
+#[cfg(test)]
+mod scenario_record_guard {
+    use super::*;
+    use soundcraft_playback::midi::MidiInputs;
+    #[test]
+    fn scenario_b5_three_online_record_requests() {
+        let mut app=SoundApp::new(Default::default(),None,crate::Services::default());
+        let path=std::env::temp_dir().join(format!("mtc-b5-{}",std::process::id()));
+        std::fs::create_dir(&path).unwrap();
+        app.fallback_take_dir=Some(path.clone());
+        app.midi_inputs=Some(MidiInputs::with_port_names(vec![],vec!["Sender".into()]));
+        app.run("setup.mtc",json!({"input":"Sender","online":true})).unwrap();
+        app.service_mtc_chase();
+        for route in ["toolbar_command","keyboard_command","transport_queue"] {
+            app.ui.status.clear();
+            if route=="transport_queue" {app.engine.transport_requests.push(TransportRequest::Record);}
+            else if route=="toolbar_command" {crate::toolbar::scenario_click_transport_record(&mut app);} else {
+                let input=egui::RawInput {events:vec![egui::Event::Key{key:egui::Key::F12,physical_key:Some(egui::Key::F12),pressed:true,repeat:false,modifiers:egui::Modifiers::NONE}],..Default::default()};
+                let ctx=egui::Context::default();let mut output=ctx.run_ui(input,|ui|crate::shortcuts::handle(&mut app,ui.ctx()));output.textures_delta.clear();
+            }
+            app.service_mtc_chase(); app.handle_transport(0.);
+            let files=std::fs::read_dir(&path).unwrap().count();
+            eprintln!("B-5 route={route} online={} recording={} files={} visible={:?}",app.mtc_online,app.engine.transport.recording,files,app.ui.status);
+            assert!(app.mtc_online && !app.engine.transport.recording); assert_eq!(files,0);
+            assert!(!app.ui.status.is_empty(),"online record was silently refused on {route}");
+        }
+    }
+}
+#[test]
+fn scenario_d4_transport_pre_and_post() {
+    let mut app=SoundApp::new(Default::default(),None,crate::Services::default());
+    app.run("options.loop_playback",json!({"value":false})).unwrap();
+    app.run("options.pre_post_roll",json!({"value":true})).unwrap();
+    app.run("options.pre_roll",json!({"length":24000})).unwrap();
+    app.run("options.post_roll",json!({"length":12000})).unwrap();
+    app.run("edit.select",json!({"start":48000,"end":96000})).unwrap();
+    app.play_from_selection();
+    assert_eq!(app.sim,Some((24000,Some(108000),None)));
+    eprintln!("D-4 transport origin=24000 selection=48000..96000 stop=108000");
+}
+#[test]
+fn scenario_b4_generator_accepts_host_record() {
+    use soundcraft_playback::midi::MidiInputs;
+    use soundcraft_model::{ChannelFormat,TrackKind};
+    let mut app=SoundApp::new(Default::default(),None,crate::Services::default());
+    app.midi_inputs=Some(MidiInputs::with_port_names(vec![],vec!["simulated performance".into()]));
+    let tr=app.engine.session_mut().add_track(TrackKind::Midi,ChannelFormat::Mono,None);
+    app.engine.session_mut().track_mut(tr).unwrap().mixer.record_arm=true;
+    app.run("setup.mtc_output",json!({"port":"simulated lighting","enabled":true})).unwrap();
+    assert!(app.ui.gen_mtc && !app.mtc_online);
+    app.run("transport.record",json!({})).unwrap(); app.handle_transport(0.);
+    eprintln!("B-4 host record={} gen={} online={} status={:?}",app.engine.transport.recording,app.ui.gen_mtc,app.mtc_online,app.ui.status);
+    assert!(app.engine.transport.recording && app.ui.gen_mtc && !app.mtc_online);
+}

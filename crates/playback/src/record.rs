@@ -886,3 +886,15 @@ mod ring_tests {
         assert_eq!(out[0], [0.5, 0.0, 0.0, -0.5]);
     }
 }
+#[cfg(test)]
+impl Recorder {
+    pub(crate) fn mtc_scenario_input() -> (Recorder, impl FnMut(&[f32])) {
+        let shared=Arc::new(Shared::new(CaptureRing::new(1<<19)));
+        let copy=Arc::clone(&shared);
+        let mut owed=0;
+        (Recorder {shared,monitor:InputRing::new(2,48000),
+           #[cfg(not(target_os="freebsd"))] _stream:None,
+           device_name:"scenario input".into(),sample_rate:48000,channels:2,writer:None,seen:(0,Instant::now())},
+           move |data|{ if copy.armed.load(Ordering::Acquire){copy.capture(data,&mut owed);} })
+    }
+}
