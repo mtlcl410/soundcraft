@@ -30,9 +30,18 @@ impl SoundApp {
     }
 
     fn start_play(&mut self, from: Samples, end: Option<Samples>, looped: Option<Range>) {
+        self.start_play_with_origin(from, end, looped, None);
+    }
+
+    fn start_play_with_origin(&mut self, from: Samples, end: Option<Samples>, looped: Option<Range>, midi_origin: Option<Samples>) {
         if let Some(p) = &self.player {
-            p.update_session(self.engine.playback_session());
-            if self.mtc_chasing && end.is_none() && looped.is_none() {
+            if midi_origin.is_some() {soundcraft_playback::start_probe::mark(2);}
+            self.refresh_playback_session();
+            if let Some(origin) = midi_origin {
+                soundcraft_playback::start_probe::mark(3);
+                p.play_from_clock(origin, from);
+                soundcraft_playback::start_probe::mark(9);
+            } else if self.mtc_chasing && end.is_none() && looped.is_none() {
                 p.play_chasing_mtc(from);
             } else {
                 p.play(from, end, looped);
@@ -40,6 +49,10 @@ impl SoundApp {
         } else {
             self.sim = Some((from, end, looped));
         }
+        self.note_play_started(from, looped);
+    }
+
+    fn note_play_started(&mut self, from: Samples, looped: Option<Range>) {
         // The loop as the audio engine takes it: a range too short to loop is played once.
         self.play_loop = looped.filter(|l| soundcraft_playback::loops(*l));
         self.engine.transport.playing = true;
@@ -441,7 +454,12 @@ impl SoundApp {
                         self.play_from_selection();
                     }
                 }
-                TransportRequest::PlayFrom(at) => {
+                TransportRequest::ClockPlaybackStarted(from) => self.note_play_started(from, None),
+                TransportRequest::PlayFromClock { origin, render_from } if !self.is_playing() => {
+                    self.start_play_with_origin(render_from, None, None, Some(origin));
+                }
+                // A clock re-lock during coast resumes the rolling transport without a second attack.
+                TransportRequest::PlayFrom(at) | TransportRequest::PlayFromClock { render_from: at, .. } => {
                     if self.is_playing() {
                         // Playing on from `at` drops the end and loop of the earlier selection.
                         if let Some(p) = &self.player {

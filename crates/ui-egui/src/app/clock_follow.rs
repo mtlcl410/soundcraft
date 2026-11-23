@@ -14,6 +14,7 @@ pub(crate) struct Host {
     grid_dirty: bool,
     /// While stopped, new tempo estimates begin here so earlier score time stays fixed.
     waiting_tick: i64,
+    pending_cue: Option<i64>,
     // Fixed pulse and device timestamp at Start/Continue; later edits preserve this origin.
     anchor: Option<(i64, i64)>,
 }
@@ -80,6 +81,7 @@ impl SoundApp {
         if self.ui.clock_follow_input != source {
             self.ui.midi_sync.retain_calibrated_ports([source.as_deref(), self.ui.mtc_input_port.as_deref(), self.ui.mtc_output_port.as_deref()]);
         }
+        if offset.is_some_and(|value| value != previous) && let Some(p) = &self.player { p.cancel_clock_resume(); }
         if let (Some(offset), Some(name)) = (offset, &source) {
             if let Some(port) = self.ui.midi_sync.ports.get_mut(name) {
                 port.in_offset_samples = offset;
@@ -91,16 +93,16 @@ impl SoundApp {
             }
         }
         if self.clock_follow.enabled != enabled || self.ui.clock_follow_input != source {
-            // Finish a pending recording on the grid that captured it before releasing the route.
-            if self.clock_follow.enabled && self.is_playing() {
-                self.stop_play();
-            }
+            // Disarm the old source before checking for a start submitted between host frames.
             if let Some(m) = &self.midi_inputs {
                 m.feed().set_clock_follow(None, true, 0);
             }
+            if self.clock_follow.enabled && (self.is_playing() || self.player.as_ref().is_some_and(|p| p.is_playing())) {
+                self.stop_play();
+            }
             self.engine.playback_tempo = None;
             self.clock_follow = Host { enabled, ..Host::default() };
-            self.refresh_follow_playback();
+            self.refresh_playback_session();
         }
         self.ui.clock_follow_input = source;
         self.ui.clock_follow_stop_on_loss = stop;
@@ -128,10 +130,32 @@ impl SoundApp {
         self.clock_follow.grid_dirty = true;
     }
 
-    fn refresh_follow_playback(&self) {
+    pub(super) fn refresh_playback_session(&self) {
         if let Some(player) = &self.player {
-            player.update_session(self.engine.playback_session());
+            if let Some(grid) = &self.engine.playback_tempo {
+                player.prepare_clock_session(self.engine.session_arc(), grid);
+            } else {
+                player.update_session(self.engine.session_arc());
+            }
         }
+    }
+
+    pub(super) fn prepare_located_clock_resume(&mut self) {
+        let Some(pulse) = self.clock_follow.pending_cue.take() else { return };
+        let (Some(player), Some(inputs), Some(name), Some(grid)) =
+            (&self.player, &self.midi_inputs, &self.ui.clock_follow_input, &self.engine.playback_tempo) else { return };
+        if self.is_playing() || self.engine.transport.recording { return; }
+        let sr = self.engine.session().sample_rate;
+        let origin = grid.tick_to_samples(pulse.saturating_mul(TICKS_PER_PULSE), sr);
+        if self.position() != origin { return; }
+        let limit = soundcraft_playback::max_sync_offset_samples(sr);
+        let offset = self.ui.midi_sync.ports.get(name).map_or(0, |p| p.in_offset_samples).clamp(-limit,limit);
+        // A previous grid may still be returning from the callback after rapid locates.
+        // Prepare the exact settled grid here, before arming the next start.
+        player.prepare_clock_session(self.engine.session_arc(), grid);
+        self.clock_follow.grid_dirty = false;
+        let feed = inputs.feed();
+        player.arm_clock_resume(feed, feed.ports().assign(name), pulse, origin, offset, sr);
     }
 
     pub(crate) fn service_clock_follow(&mut self) {
@@ -160,6 +184,7 @@ impl SoundApp {
         feed.set_clock_follow(Some(id), !self.ui.clock_follow_stop_on_loss, initial_pulse);
         let limit = soundcraft_playback::max_sync_offset_samples(sr);
         let offset = self.ui.midi_sync.ports.get(name).map_or(0, |p| p.in_offset_samples).clamp(-limit, limit);
+        soundcraft_playback::start_probe::dump();
         let mut events = std::mem::take(&mut self.clock_follow.actions);
         let s = feed.clock_follow_status(&mut events);
         self.clock_follow.snapshot = s;
@@ -167,8 +192,10 @@ impl SoundApp {
             self.reset_follow_grid(initial_pulse, s.bpm);
         }
         for event in events.drain(..) {
+            self.clock_follow.pending_cue = None;
             match event {
                 Action::Locate(pulse) => {
+                    self.clock_follow.pending_cue = Some(pulse);
                     self.clock_follow.anchor = None;
                     if self.is_playing() {
                         self.stop_play();
@@ -178,7 +205,8 @@ impl SoundApp {
                     // The normal locate command updates the stopped insertion and both transport cursors.
                     let _ = self.run("transport.locate", json!({"at":at}));
                 }
-                Action::Play { pulse, at } => {
+                Action::Play { pulse, at } | Action::Started { pulse, at, .. } => {
+                    soundcraft_playback::start_probe::mark(1);
                     self.clock_follow.anchor = Some((pulse, at));
                     let tick = pulse.saturating_mul(TICKS_PER_PULSE);
                     if let (Some(bpm), Some(grid)) = (s.bpm, &mut self.engine.playback_tempo)
@@ -186,12 +214,15 @@ impl SoundApp {
                     {
                         self.clock_follow.grid_dirty |= grid.set_tempo(tick, bpm).is_ok();
                     }
+                    if let Action::Started { render_from, .. } = event {
+                        self.engine.transport_requests.push(TransportRequest::ClockPlaybackStarted(render_from));
+                        continue;
+                    }
                     let origin = self.engine.transport_tempo().tick_to_samples(tick, sr);
                     let age = sr.samples(s.now_us.saturating_sub(at).max(0) as f64 / 1e6);
                     let lead = self.player.as_ref().map_or(0, |p| sr.samples(p.midi_sync_status().reported_lead_us as f64 / 1e6));
-                    self.engine
-                        .transport_requests
-                        .push(TransportRequest::PlayFrom(origin.saturating_add(age).saturating_add(lead).saturating_sub(offset).max(0)));
+                    let render_from = origin.saturating_add(age).saturating_add(lead).saturating_sub(offset).max(0);
+                    self.engine.transport_requests.push(TransportRequest::PlayFromClock { origin, render_from });
                 }
                 Action::Stop => {
                     self.clock_follow.anchor = None;
@@ -312,7 +343,9 @@ mod tests {
         feed.receive(src, &[0xfb]);
         feed.receive(src, &[0xf8]);
         app.service_clock_follow();
-        assert!(matches!(app.engine.transport_requests.as_slice(), [TransportRequest::PlayFrom(p)] if *p>=72_120));
+        assert!(
+            matches!(app.engine.transport_requests.as_slice(), [TransportRequest::PlayFromClock { origin: 72_000, render_from }] if *render_from>=72_120)
+        );
         app.handle_transport(0.);
         feed.receive(src, &[0xfc]);
         app.service_clock_follow();
@@ -325,7 +358,9 @@ mod tests {
         feed.receive(src, &[0xfb]);
         feed.receive(src, &[0xf8]);
         app.service_clock_follow();
-        assert!(matches!(app.engine.transport_requests.as_slice(),[TransportRequest::PlayFrom(p)] if *p>=at+120));
+        assert!(
+            matches!(app.engine.transport_requests.as_slice(),[TransportRequest::PlayFromClock { origin, render_from }] if *origin==at && *render_from>=at+120)
+        );
         app.handle_transport(0.);
         assert!(app.is_playing());
         app.engine.transport.recording = true;
@@ -445,7 +480,7 @@ mod tests {
             let age = sr.samples((app.clock_follow.snapshot.now_us - stamp).max(0) as f64 / 1e6);
             let anchor = app.engine.transport_tempo().tick_to_samples(pulse * TICKS_PER_PULSE, sr);
             assert!(
-                matches!(app.engine.transport_requests.as_slice(), [TransportRequest::PlayFrom(p)] if *p == anchor + age - offset),
+                matches!(app.engine.transport_requests.as_slice(), [TransportRequest::PlayFromClock { origin, render_from }] if *origin == anchor && *render_from == anchor + age - offset),
                 "offset {offset}, reference {}, requests {:?}",
                 anchor + age,
                 app.engine.transport_requests
