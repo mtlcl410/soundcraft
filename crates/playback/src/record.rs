@@ -185,9 +185,36 @@ where
     let mut scratch = vec![0.0f32; 8192 * usize::from(config.channels).max(1)];
     let chunk = scratch.len();
     let mut owed = 0;
+    let mut serial = 0_u64;
+    let witness = std::env::var_os("SC_ASIO_WITNESS").filter(|_| config.channels == 12).map(|path| {
+        let (tx, rx) = std::sync::mpsc::sync_channel::<([u64; 4], [f32; 512])>(256);
+        let file=std::fs::File::create(path).unwrap();
+        std::thread::spawn(move || {
+            use std::io::Write;
+            let mut file=std::io::BufWriter::new(file);
+            for (meta, samples) in rx {
+                for word in meta { file.write_all(&word.to_le_bytes()).unwrap(); }
+                for value in samples { file.write_all(&value.to_le_bytes()).unwrap(); }
+                file.flush().unwrap();
+            }
+        }); tx
+    });
     device.build_input_stream(
         config,
-        move |data: &[T], _: &cpal::InputCallbackInfo| {
+        move |data: &[T], info: &cpal::InputCallbackInfo| {
+            if let Some(sender)=witness.as_ref() {
+                serial+=1;
+                let stamp=std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() as u64;
+                let t=info.timestamp();
+                let adc=t.callback.checked_duration_since(t.capture).map_or(0,|d| d.as_nanos() as u64);
+                if data.len()<=12*256 {
+                    let mut samples=[0.0f32;512];
+                    for (source,target) in data.chunks_exact(12).zip(samples.chunks_exact_mut(2)) {
+                        target[0]=f32::from_sample(source[10]);target[1]=f32::from_sample(source[11]);
+                    }
+                    let _=sender.try_send(([stamp,adc,serial,(data.len()/12) as u64],samples));
+                }
+            }
             crate::mark_audio_thread();
             sh.guarded(|| {
                 for part in data.chunks(chunk) {

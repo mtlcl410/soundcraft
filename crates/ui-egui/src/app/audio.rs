@@ -37,6 +37,9 @@ impl SoundApp {
         self.attach_midi(&player);
         player.locate(at);
         self.player = Some(player);
+        if std::env::var_os("SC_ASIO_WITNESS").is_some() && self.ui.audio.system.as_deref()==Some("ASIO") {
+            self.ensure_input();
+        }
         self.applied_mtc_output = None;
         self.service_mtc_output();
         self.applied_midi_sync = None;

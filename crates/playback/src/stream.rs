@@ -58,6 +58,21 @@ where
     let mut scratch = vec![0.0f32; 8192 * frame];
     let chunk = scratch.len();
     let (failed, guard, gone) = (Arc::clone(fault), Arc::clone(shared), Arc::clone(fault));
+    let mut serial=0_u64;
+    let witness=std::env::var_os("SC_OUTPUT_WITNESS").filter(|_| frame==10).map(|path| {
+        let (tx,rx)=std::sync::mpsc::sync_channel::<([u64;4],[f32;512])>(512);
+        let file=std::fs::File::create(path).unwrap();
+        std::thread::spawn(move || {
+            use std::io::Write;
+            let mut file=std::io::BufWriter::new(file);
+            for (meta,block) in rx {
+                for v in meta {file.write_all(&v.to_le_bytes()).unwrap();}
+                for v in block {file.write_all(&v.to_le_bytes()).unwrap();}
+                file.flush().unwrap();
+            }
+        });
+        tx
+    });
     device.build_output_stream(
         config,
         move |data: &mut [T], info: &cpal::OutputCallbackInfo| {
@@ -79,6 +94,15 @@ where
                 let _ = (frames, index);
                 let Some(s) = scratch.get_mut(..out.len()) else { return };
                 guarded_block(&failed, &guard, s, |d| state.fill(d, channels));
+                if let Some(tx)=witness.as_ref() {
+                    serial+=1;
+                    if frames<=256 {
+                       let stamp=std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos() as u64;
+                       let mut wave=[0_f32;512];
+                       for (from,to) in s.chunks_exact(10).zip(wave.chunks_exact_mut(2)) { to.copy_from_slice(&from[8..10]); }
+                       let _=tx.try_send(([stamp,0,serial,frames as u64],wave));
+                    }
+                }
                 for (o, x) in out.iter_mut().zip(s.iter()) {
                     *o = output_sample(*x);
                 }
