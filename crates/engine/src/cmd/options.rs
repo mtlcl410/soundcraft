@@ -227,6 +227,43 @@ fn session_setup(e: &mut Engine, p: &Value) -> Result<Value> {
 mod sync_session_tests {
     use super::*;
     #[test]
+    fn timecode_labels_for_session_start_and_durations_have_no_session_offset() {
+        let mut e = Engine::default();
+        for cmd in ["options.pre_roll", "options.post_roll"] {
+            let result = e.execute(cmd, &json!({"length":"timecode:00:00:05:00"})).unwrap();
+            assert_eq!(result[cmd.split('.').nth(1).unwrap()], e.session().sample_rate.samples(5.));
+        }
+        for label in ["02:00:00:00", "00:30:00:00"] {
+            let start = e.execute("setup.session", &json!({"timecode_start":format!("timecode:{label}")})).unwrap();
+            assert_eq!(start["start_timecode"], label);
+        }
+    }
+
+    #[test]
+    fn timecode_retention_shifts_following_automation_and_refuses_underflow_atomically() {
+        let mut e = crate::demo::demo_engine();
+        e.session_mut().edit.automation_follows_edit = true;
+        e.session_mut().timecode_start = e.session().sample_rate.samples(3600.);
+        let points = |e: &Engine| e.session().tracks.iter().flat_map(|t| &t.automation).flat_map(|l| &l.points).map(|p| p.at).collect::<Vec<_>>();
+        let before = points(&e);
+        assert!(!before.is_empty());
+        let delta = e.session().sample_rate.samples(1800.);
+        e.execute("setup.session", &json!({"start_timecode":"00:30:00:00","keep":"timecode"})).unwrap();
+        assert_eq!(points(&e), before.iter().map(|at| at + delta).collect::<Vec<_>>());
+        for t in &mut e.session_mut().tracks {
+            for pl in &mut t.playlists {
+                pl.clips.clear();
+            }
+        }
+        let original = e.session().clone();
+        assert!(e.execute("setup.session", &json!({"start_timecode":"23:59:59:00","keep":"timecode"})).is_err());
+        assert_eq!(e.session().to_json().unwrap(), original.to_json().unwrap());
+        e.session_mut().edit.automation_follows_edit = false;
+        e.execute("setup.session", &json!({"start_timecode":"23:59:59:00","keep":"timecode"})).unwrap();
+        assert_eq!(points(&e), before.iter().map(|at| at + delta).collect::<Vec<_>>());
+    }
+
+    #[test]
     fn external_timecode_offset_is_one_value_for_menu_and_session_setup() {
         let mut e = Engine::default();
         let set = e.execute("setup.external_timecode_offset", &json!({"timecode":"+01:00:00:00"})).unwrap();
@@ -382,6 +419,32 @@ mod sync_session_tests {
         let mut e = Engine::new(soundcraft_model::Session::default());
         e.execute("session.close", &json!({})).unwrap();
         assert_eq!(e.session().format_position(0, soundcraft_time::TimeFormat::Timecode), "01:00:00:00");
+    }
+
+    #[test]
+    fn timecode_retention_respects_automation_switch_and_keeps_both_rulers_on_undo() {
+        for follows in [false, true] {
+            let mut e = crate::demo::demo_engine();
+            e.session_mut().edit.automation_follows_edit = follows;
+            e.session_mut().timecode_start = e.session().sample_rate.samples(3600.);
+            let before = e.session().clone();
+            assert!(!before.markers.is_empty());
+            let delta = before.sample_rate.samples(1800.);
+            e.execute("setup.session", &json!({"start_timecode":"00:30:00:00","keep":"timecode"})).unwrap();
+            let after = e.session();
+            assert_eq!(json!(after.markers), json!(before.markers));
+            assert_eq!(json!(after.tempo), json!(before.tempo));
+            for (old, new) in before.tracks.iter().zip(&after.tracks) {
+                for (a, b) in old.automation.iter().flat_map(|l| &l.points).zip(new.automation.iter().flat_map(|l| &l.points)) {
+                    assert_eq!(b.at, a.at + if follows { delta } else { 0 });
+                }
+                for (a, b) in old.playlists.iter().flat_map(|p| &p.clips).zip(new.playlists.iter().flat_map(|p| &p.clips)) {
+                    assert_eq!(b.start, a.start + delta);
+                }
+            }
+            assert!(e.undo());
+            assert_eq!(e.session().to_json().unwrap(), before.to_json().unwrap());
+        }
     }
 
     #[test]

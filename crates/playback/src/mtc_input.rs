@@ -491,6 +491,14 @@ mod tests {
     }
 
     #[test]
+    fn full_frame_locate_matches_fractional_rate_session_start() {
+        let rate = FrameRate::Fps29_97;
+        let sr = SampleRate::default();
+        let p = Position::decode(0x60, 0, 0, 2).unwrap();
+        assert_eq!(p.session_sample(rate, sr, rate.samples_at_frame(2, sr), 0), 0);
+    }
+
+    #[test]
     fn arrival_delay_uses_the_selected_input_and_remains_readable_after_stop() {
         let mut reader = Reader::default();
         reader.reset(Some(1));

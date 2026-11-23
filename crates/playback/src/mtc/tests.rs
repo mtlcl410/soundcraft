@@ -41,6 +41,25 @@ fn block(at: Instant, position: i64, frames: i64, playing: bool, pass: u64) -> P
 }
 
 #[test]
+fn first_integer_sample_of_an_even_fractional_frame_emits_its_quarter_group() {
+    let mut s = session(FrameRate::Fps29_97);
+    s.timecode_start = s.frame_rate.samples_at_frame(2, s.sample_rate);
+    let now = Instant::now();
+    for at in [0, 1] {
+        let mut enc = Encoder::default();
+        let mut wire = vec![];
+        let wake = enc.update(block(now, at, 48000, true, 1), now, &s, &mut |_, m| wire.push(m.to_vec()));
+        assert_eq!(wire[0], locate(2, s.frame_rate));
+        if at == 0 {
+            assert_eq!(wire[1], quarters(2, s.frame_rate)[0]);
+        } else {
+            assert_eq!(wire.len(), 1);
+            assert!(wake.unwrap() > now + Duration::from_millis(60));
+        }
+    }
+}
+
+#[test]
 fn all_six_rates_align_eight_wire_pieces_and_session_offset_to_presentation() {
     for rate in [FrameRate::Fps23_976, FrameRate::Fps24, FrameRate::Fps25, FrameRate::Fps29_97, FrameRate::Fps29_97Drop, FrameRate::Fps30] {
         let mut s = session(rate);
