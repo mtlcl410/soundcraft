@@ -140,6 +140,40 @@ impl SoundApp {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn midi_sync_errors_after_play_update_the_status_line() {
+        let engine=soundcraft_engine::Engine::default();
+        let player=soundcraft_playback::Player::new(engine.session_arc());
+        let mut app=SoundApp::new(engine,Some(player),crate::Services::default());
+        app.engine.transport.playing=true;
+        let port="SoundCraft test unavailable sync destination";
+        app.sync_command("setup.midi_beat_clock",&json!({"enabled":true,"ports":{(port):{"enabled":true}}})).unwrap();
+        app.ui.status="Audio output requires attention".into();
+        let until=std::time::Instant::now()+std::time::Duration::from_secs(4);
+        while !app.ui.status.contains(port) && std::time::Instant::now()<until {
+            app.service_midi_sync();
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        assert!(app.ui.status.contains(port),"{}",app.ui.status);
+        assert!(app.ui.status.contains("Audio output requires attention"));
+        assert!(app.sync_command("setup.midi_sync_status",&json!({})).unwrap()["output"]["error"].as_str().unwrap().contains(port));
+    }
+
+    #[test]
+    fn unused_destinations_release_their_slots_and_calibration_can_be_removed() {
+        let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, crate::Services::default());
+        let mut ports = serde_json::Map::new();
+        for i in 0..257 {
+            ports.insert(format!("unused {i}"), json!({"enabled":false,"offset_samples":0}));
+        }
+        ports.insert("DIN".into(), json!({"enabled":true,"offset_samples":16}));
+        let result = app.sync_command("setup.midi_beat_clock",&json!({"ports":ports})).unwrap();
+        assert_eq!(result["ports"].as_object().unwrap().len(),1);
+        let result = app.sync_command("setup.midi_beat_clock",&json!({"ports":{"DIN":null}})).unwrap();
+        assert_eq!(result["ports"],json!({}));
+    }
+
     #[test]
     fn port_calibration_accepts_quarter_second_at_session_rate_and_rejects_one_sample_more() {
         let mut host = SoundApp::new(Default::default(), None, crate::Services::default());

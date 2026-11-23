@@ -367,3 +367,191 @@ fn input_wakes_reread_an_idle_timeline_without_periodic_polling() {
         assert!((50..=60).contains(&iterations), "{iterations} iterations for 50 input wakes, configured port: {has_port}");
     }
 }
+
+#[test]
+fn idle_worker_starts_the_device_when_play_publishes_after_a_long_buffer() {
+    struct Sink(Sender<Vec<u8>>);
+    impl SyncPort for Sink {
+        fn send_at(&mut self, _: Instant, bytes: &[u8]) -> Result<Instant, String> {
+            self.0.send(bytes.to_vec()).map_err(|e| e.to_string())?;
+            Ok(Instant::now())
+        }
+    }
+    for delay in [180, 600, 2500] {
+        let view = View::default();
+        let publisher = view.clone();
+        let stats = Arc::new(Stats::default());
+        let metrics = stats.clone();
+        let (tx, rx) = channel();
+        let (events, received) = channel();
+        let (open, ready) = channel();
+        let worker = std::thread::spawn(move || drive(view, Arc::new(Session::default()), rx, Default::default(), stats, |_| {
+            open.send(()).unwrap();
+            Ok((Sink(events.clone()), None))
+        }));
+        tx.send(Update::Beats(vec![("DIN".into(), 0)], true)).unwrap();
+        ready.recv_timeout(Duration::from_secs(3)).unwrap();
+        std::thread::sleep(Duration::from_millis(300));
+        tx.send(Update::Wake).unwrap();
+        std::thread::sleep(Duration::from_millis(delay));
+        let before = metrics.iterations.load(Relaxed);
+        publisher.lock().unwrap().push(block(Instant::now(), 0., 480., Duration::ZERO));
+        if delay < 2000 {
+            assert_eq!(received.recv_timeout(Duration::from_secs(1)).ok(), Some(vec![START]), "Play delayed by {delay} ms");
+            assert_eq!(received.recv_timeout(Duration::from_secs(1)).ok(), Some(vec![CLOCK]));
+        } else {
+            assert!(received.recv_timeout(Duration::from_millis(100)).is_err());
+            assert_eq!(metrics.iterations.load(Relaxed), before);
+        }
+        drop(tx);
+        worker.join().unwrap();
+    }
+}
+
+#[test]
+fn repeating_beat_settings_starts_a_worker_that_failed_to_start() {
+    let mut output = Output::default();
+    let ports = vec![("DIN".into(), 0)];
+    output.beats(ports.clone(), true);
+    assert!(output.worker.is_none());
+    output.configure(&Arc::new(Session::default()), &channel().0);
+    output.beats(ports, true);
+    assert!(output.worker.is_some());
+}
+
+
+#[test]
+fn negative_offset_is_limited_to_the_output_lead_and_reported() {
+    let base = Instant::now();
+    let session = Session::default();
+    for (offset, compensate, expected_us) in [(-4800, true, 1000), (-480, false, 0)] {
+        let lead = Duration::from_millis(20);
+        let view = View::default();
+        let mut port = active_port(offset, compensate);
+        let stats = Stats::default();
+        let mut seen = Vec::new();
+        for us in (0..=500_000).step_by(250) {
+            let now = base + Duration::from_micros(us);
+            if us % 10_000 == 0 {
+                view.lock().unwrap().push(block(now, us as f64 * 0.048, 480., lead));
+            }
+            port.poll("DIN", now, &session, &view, &stats, &mut Vec::new());
+            for (_, msg) in port.link.as_mut().unwrap().messages.drain(..) {
+                if msg == [CLOCK] { seen.push(us); }
+            }
+        }
+        assert!(seen.len() >= 24);
+        for (i, &actual) in seen.iter().enumerate() {
+            let ideal = expected_us + (i as f64 * 1e6 / 48.).round() as u64;
+            assert!(actual.abs_diff(ideal) <= 1500, "pulse {i} at {actual} us, expected {ideal}");
+        }
+        for pair in seen.windows(2) {
+            assert!((pair[1] - pair[0]).abs_diff(20833) <= 1500);
+        }
+    }
+}
+
+#[test]
+fn a_wrap_at_the_buffer_limit_waits_for_the_next_snapshot() {
+    let base = Instant::now();
+    let session = Session::default();
+    for roll in [false, true] {
+        let view = View::default();
+        let r = soundcraft_time::Range::new(0, 4800);
+        let b = Presentation {looped:Some(r), ..block(base, 4320., 480., Duration::ZERO)};
+        view.lock().unwrap().push(b);
+        let mut port = active_port(0,true);
+        let stats = Stats::default();
+        port.poll("DIN",base,&session,&view,&stats,&mut Vec::new());
+        port.link.as_mut().unwrap().messages.clear();
+        let boundary = base + Duration::from_millis(10);
+        port.poll("DIN",boundary,&session,&view,&stats,&mut Vec::new());
+        assert!(port.link.as_ref().unwrap().messages.is_empty(), "speculative loop transport");
+        view.lock().unwrap().push(Presentation {pass:2, playing:roll, ..block(boundary,0.,480.,Duration::ZERO)});
+        port.poll("DIN",boundary,&session,&view,&stats,&mut Vec::new());
+        let got: Vec<_> = port.link.unwrap().messages.into_iter().map(|(_,msg)|msg[0]).collect();
+        assert_eq!(got, if roll { vec![STOP, START, CLOCK] } else {vec![STOP]});
+    }
+}
+
+struct Messages(Vec<(Duration, Vec<u8>)>);
+impl SyncEncoder for Messages {
+    fn reset(&mut self) {}
+    fn update(&mut self, _: Presentation, now: Instant, _: &Session, send: &mut dyn FnMut(Instant, &[u8])) -> Option<Instant> {
+        for (delay, msg) in self.0.drain(..) {
+            send(now + delay, &msg);
+        }
+        None
+    }
+}
+
+#[test]
+fn future_messages_wait_in_the_port_queue_without_blocking_other_ports() {
+    let now = Instant::now();
+    let later = Duration::from_secs(2);
+    let view = View::default();
+    view.lock().unwrap().push(block(now,0.,480.,Duration::ZERO));
+    let s = Session::default();
+    let stats = Stats::default();
+    let mut port = active_port(0,false);
+    port.routes[0].as_mut().unwrap().encoder = Box::new(Messages(vec![(later,vec![0xa1]),(later,vec![0xa2])]));
+    let mut clock = active_port(0,false);
+    let mut buf = Vec::new();
+    assert_eq!(port.poll("future",now,&s,&view,&stats,&mut buf),Some(now+later));
+    assert!(port.link.as_ref().unwrap().messages.is_empty());
+    clock.poll("clock",now,&s,&view,&stats,&mut buf);
+    assert_eq!(clock.link.unwrap().messages.len(),2);
+    port.poll("future",now+later,&s,&view,&stats,&mut buf);
+    assert_eq!(port.link.unwrap().messages,[(now+later,vec![0xa1]),(now+later,vec![0xa2])]);
+}
+
+#[test]
+fn extended_sync_messages_are_delivered_and_oversized_messages_are_reported() {
+    let now = Instant::now();
+    let view = View::default();
+    view.lock().unwrap().push(block(now,0.,480.,Duration::ZERO));
+    let mut port = active_port(0,false);
+    let packet = |len| { let mut m=vec![0;len]; m[0]=0xf0; m[len-1]=0xf7; m };
+    port.routes[0].as_mut().unwrap().encoder=Box::new(Messages(vec![(Duration::ZERO,packet(13)),(Duration::ZERO,packet(17))]));
+    port.poll("DIN",now,&Session::default(),&view,&Stats::default(),&mut Vec::new());
+    assert_eq!(port.link.unwrap().messages,[(now,packet(13))]);
+    assert_eq!(port.failure.as_deref(),Some("DIN: MIDI message longer than 16 bytes dropped"));
+}
+
+#[test]
+fn a_failed_stop_on_route_removal_reports_and_reconnects() {
+    struct FailStop { first: bool, tx: Sender<(bool,Vec<u8>)> }
+    impl SyncPort for FailStop {
+        fn send_at(&mut self,_:Instant,msg:&[u8]) -> Result<Instant,String> {
+            let _ = self.tx.send((self.first,msg.to_vec()));
+            if self.first && msg == [STOP] { return Err("stop rejected".into()); }
+            Ok(Instant::now())
+        }
+    }
+    let view=View::default();
+    view.lock().unwrap().push(block(Instant::now(),0.,480.,Duration::ZERO));
+    let (tx,rx)=channel();
+    let (sent,wire)=channel();
+    let stats=Arc::new(Stats::default());
+    let metrics=stats.clone();
+    let trouble=Arc::new(Mutex::new(None));
+    let error=trouble.clone();
+    let worker=std::thread::spawn(move || {
+        let mut first=true;
+        drive(view,Arc::new(Session::default()),rx,error,metrics,move |_| {
+            Ok((FailStop{first:std::mem::take(&mut first),tx:sent.clone()},None))
+        })
+    });
+    tx.send(Update::Beats(vec![("DIN".into(),0)],true)).unwrap();
+    assert_eq!(wire.recv_timeout(Duration::from_secs(1)).unwrap().1,[START]);
+    tx.send(Update::Encoder(Some(("DIN".into(),0)),true,Box::new(Messages(vec![])))).unwrap();
+    tx.send(Update::Beats(vec![],true)).unwrap();
+    while wire.recv_timeout(Duration::from_secs(1)).unwrap().1 != [STOP] {}
+    let until=Instant::now()+Duration::from_millis(200);
+    while trouble.lock().unwrap().is_none() && Instant::now()<until {std::thread::yield_now();}
+    assert_eq!(trouble.lock().unwrap().as_deref(),Some("DIN: stop rejected"));
+    assert!(!stats.connected().contains("DIN"));
+    assert_eq!(wire.recv_timeout(Duration::from_secs(3)).unwrap(),(false,vec![STOP]));
+    drop(tx);
+    worker.join().unwrap();
+}
