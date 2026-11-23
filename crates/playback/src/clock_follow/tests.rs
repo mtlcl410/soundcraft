@@ -158,7 +158,7 @@ fn midi_clock_wakes_only_on_transport_actions() {
             worker.fetch_add(1, Ordering::Relaxed);
         }));
     }
-    feed.set_clock_follow(Some(0), true, 0);
+    feed.set_clock_follow(Some(0), true, 0, false);
     feed.receive(0, &[0xfa]);
     for pulse in 1..=200 {
         feed.set_clock(pulse * 20_833);
@@ -203,7 +203,7 @@ fn failed_prepared_send_leaves_the_start_for_the_host() {
     let (sender, receiver) = crate::channel();
     drop(receiver);
     let tx = Arc::new(sender);
-    let revision = Arc::new(());
+    let revision = Arc::new(Mutex::new(true));
     #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
     let output: Arc<Mutex<crate::sync_output::Output>> = Arc::default();
     let cue = PreparedResume {
@@ -216,11 +216,99 @@ fn failed_prepared_send_leaves_the_start_for_the_host() {
         shared: Arc::downgrade(&shared),
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
         output: Arc::downgrade(&output),
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        silent: true,
     };
     let mut r = Follower { cue: Some(cue), ..Default::default() };
     r.push(Action::Play { pulse: 0, at: 20 });
-    r.dispatch_prepared(21);
+    r.dispatch_prepared(|| 21);
     assert_eq!(r.take(), Some(Action::Play { pulse: 0, at: 20 }));
     assert!(!shared.playing.load(Ordering::Acquire));
     assert_eq!(shared.position.load(Ordering::Relaxed), 16);
+}
+
+#[test]
+fn edit_during_prepared_clock_dispatch_leaves_the_original_start_for_the_host() {
+    use std::sync::{Arc, Mutex, atomic::Ordering, mpsc::sync_channel};
+    let shared = Arc::new(crate::Shared { position: 16.into(), playing: false.into(), speed: 1000.into(), meters: Mutex::default() });
+    let (sender, receiver) = crate::channel();
+    let tx = Arc::new(sender);
+    let revision = Arc::new(Mutex::new(true));
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    let output: Arc<Mutex<crate::sync_output::Output>> = Arc::default();
+    let cue = PreparedResume {
+        revision: Arc::downgrade(&revision),
+        pulse: 0,
+        origin: 1000,
+        offset: 0,
+        sr: soundcraft_model::Session::default().sample_rate,
+        tx: Arc::downgrade(&tx),
+        shared: Arc::downgrade(&shared),
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        output: Arc::downgrade(&output),
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        silent: true,
+    };
+    let mut follow = Follower { cue: Some(cue), ..Default::default() };
+    follow.push(Action::Play { pulse: 0, at: 20 });
+    let (checking, suspend) = sync_channel(0);
+    let (edited, resume) = sync_channel(0);
+    std::thread::scope(|scope| {
+        scope.spawn(move || {
+            suspend.recv().unwrap();
+            *revision.lock().unwrap() = false;
+            drop(revision);
+            edited.send(()).unwrap();
+        });
+        // On the input thread the destination is available and the cue was observed
+        // before the edit. Resume after invalidation, while calculating the last timing offset.
+        follow.dispatch_prepared(|| {
+            checking.send(()).unwrap();
+            resume.recv().unwrap();
+            21
+        });
+    });
+    assert!(receiver.try_recv().is_err(), "the renderer must not receive a stale start");
+    assert_eq!(follow.take(), Some(Action::Play { pulse: 0, at: 20 }));
+    assert_eq!(follow.take(), None);
+    assert!(!shared.playing.load(Ordering::Acquire));
+    assert_eq!(shared.position.load(Ordering::Relaxed), 16);
+}
+
+#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+#[test]
+fn prepared_device_clock_needs_a_report_and_accepts_both_retained_and_true_zero() {
+    use std::sync::{Arc, Mutex, atomic::Ordering};
+    use std::time::{Duration, Instant};
+    let shared = Arc::new(crate::Shared { position: 16.into(), playing: false.into(), speed: 1000.into(), meters: Mutex::default() });
+    let (sender, receiver) = crate::channel();
+    let tx = Arc::new(sender);
+    let revision = Arc::new(Mutex::new(true));
+    let doc = Arc::new(soundcraft_model::Session::default());
+    let output: Arc<Mutex<crate::sync_output::Output>> = Arc::default();
+    output.lock().unwrap().configure(&doc, &tx, None);
+    let Ok(crate::Cmd::Clock(Some(mut publisher))) = receiver.try_recv() else { panic!("clock publisher missing") };
+    let cue = PreparedResume {
+        revision: Arc::downgrade(&revision),
+        pulse: 0,
+        origin: 1000,
+        offset: 0,
+        sr: doc.sample_rate,
+        tx: Arc::downgrade(&tx),
+        shared: Arc::downgrade(&shared),
+        output: Arc::downgrade(&output),
+        silent: false,
+    };
+    let mut timing = crate::sync_clock::StreamLead::default();
+    for (report, expected_lead) in [(None, None), (Some(75), Some(75)), (None, Some(75)), (Some(0), Some(0))] {
+        publisher.observe(timing.observe(Instant::now(), report.map(Duration::from_millis)), 0.01);
+        let start = expected_lead.map(|ms| 1000 + doc.sample_rate.samples(ms as f64 / 1000.));
+        assert_eq!(cue.dispatch(|| 0), start);
+        if let Some(expected) = start {
+            assert!(matches!(receiver.try_recv(), Ok(crate::Cmd::PlayClock { origin: 1000, render_from }) if render_from == expected));
+        } else {
+            assert!(receiver.try_recv().is_err());
+        }
+        shared.playing.store(false, Ordering::Relaxed);
+    }
 }

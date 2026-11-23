@@ -298,7 +298,13 @@ fn a_lost_or_stalled_device_is_reported_once() {
     assert!(!stalled(&mut seen, 6, true), "it asked again");
     ago(&mut seen);
     assert!(!stalled(&mut seen, 6, false), "stopped, so nothing to ask for");
-    assert_eq!(Fault::default().trouble(true), Some(OutputTrouble::Stalled));
+    let transient = Fault::default();
+    assert_eq!(transient.trouble(true), Some(OutputTrouble::Stalled));
+    assert_eq!(transient.trouble(true), None);
+    assert_eq!(transient.trouble(false), None);
+    assert_eq!(transient.trouble(true), Some(OutputTrouble::Stalled));
+    transient.gone.store(true, Ordering::Relaxed);
+    assert_eq!(transient.trouble(false), Some(OutputTrouble::Gone));
     let fault = Fault::default();
     fault.gone.store(true, Ordering::Relaxed);
     assert_eq!((fault.trouble(false), fault.trouble(true)), (Some(OutputTrouble::Gone), None));
@@ -682,6 +688,10 @@ fn external_clock_returns_prior_snapshot_even_with_unavailable_retirement_queue(
         };
         tx.send(Cmd::FollowGrid(7, i64::MAX, Arc::new(Session::default()), returned.clone())).unwrap();
         assert!(Arc::get_mut(&mut returned).is_none());
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        {
+            state.device_timing = Some(crate::sync_clock::DeviceTiming::new(std::time::Instant::now(), Some(std::time::Duration::ZERO), 0));
+        }
         state.fill(&mut [0f32; 128], 2);
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
         assert_eq!(timeline.lock().unwrap().read(std::time::Instant::now(), true, 0).0.unwrap().generation, 7);
@@ -2011,7 +2021,11 @@ fn clock_resume_reuses_the_prepared_session_and_observes_edits() {
     let mut doc = Arc::new(Session::default());
     let shared = Arc::new(Shared { position: 0.into(), playing: false.into(), speed: 1000.into(), meters: Mutex::default() });
     let side = Mutex::new(Side::new(doc.sample_rate.as_f64() as f32, garbage));
-    let player = Player::silent_clock_with(shared, tx, rx, doc.clone(), side, retire);
+    let mut player = Player::silent_clock_with(shared, tx, rx, doc.clone(), side, retire);
+    // Advance the callback explicitly to exercise returns on either side of Continue.
+    let (tx, queue) = channel();
+    player.tx = Arc::new(tx);
+    let mut callback = AudioState::new(queue, player.shared.clone(), doc.clone(), 48_000., channel().0);
     let mut grid = doc.tempo.clone();
     player.prepare_clock_session(doc.clone(), &grid);
     let original = player.side().grid_base.clone().unwrap();
@@ -2020,7 +2034,20 @@ fn clock_resume_reuses_the_prepared_session_and_observes_edits() {
     grid.set_tempo(0, 90.).unwrap();
     assert!(player.update_follow_grid(&grid));
     player.prepare_clock_session(doc.clone(), &grid);
-    assert!(Arc::ptr_eq(player.side().grid_base.as_ref().unwrap(), &original), "an already queued tempo grid should be reused");
+    assert_eq!(player.side().grid_base.as_ref().unwrap().tempo, grid, "an unconfirmed grid requires a full prepare");
+    let base = player.side().grid_base.clone().unwrap();
+    player.play_from_clock(0, 0);
+    callback.fill(&mut [0.; 128], 2);
+    for (tick, bpm, accepted) in [(960, 95., true), (0, 98., false)] {
+        grid.set_tempo(tick, bpm).unwrap();
+        assert!(player.update_follow_grid(&grid));
+        callback.fill(&mut [0.; 128], 2);
+        assert_eq!(callback.session.tempo == grid, accepted);
+        player.prepare_clock_session(doc.clone(), &grid);
+        assert_eq!(Arc::ptr_eq(player.side().grid_base.as_ref().unwrap(), &base), accepted);
+        callback.fill(&mut [0.; 128], 2);
+        assert_eq!(callback.session.tempo, grid);
+    }
     grid.set_tempo(0, 100.).unwrap();
     player.prepare_clock_session(doc.clone(), &grid);
     assert_eq!(player.side().grid_base.as_ref().unwrap().tempo, grid);

@@ -294,6 +294,14 @@ pub enum Gesture {
     ZoomBox { start: f32 },
 }
 
+struct UnavailableOutput {
+    name: String,
+    // A stalled callback may resume. A stream explicitly invalidated by CPAL must be reopened.
+    stalled_at_report: Option<u64>,
+    // Dismiss our idle warning on recovery only if it still occupies the status line.
+    idle_status: Option<String>,
+}
+
 pub struct SoundApp {
     pub engine: Engine,
     /// The session path as of the last frame, and whether the recent list changed since the host
@@ -309,6 +317,7 @@ pub struct SoundApp {
     /// Punch range to trim the take to (pre/post-roll recordings).
     punch: Option<Range>,
     recorder_failed: bool,
+    unavailable_output: Option<UnavailableOutput>,
     /// MIDI device input, opened on the first frame of an app that has an audio engine.
     pub midi_inputs: Option<soundcraft_playback::midi::MidiInputs>,
     clock_follow: app::clock_follow::Host,

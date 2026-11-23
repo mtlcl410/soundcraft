@@ -36,7 +36,7 @@ pub mod sync_clock;
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 mod sync_output;
 mod sync_status;
-pub use sync_status::MidiSyncStatus;
+pub use sync_status::{MidiSyncStatus, OutputLeadSource, OutputTimingIssue};
 
 /// Bound per-device compensation in time when a session changes sample rate.
 pub fn max_sync_offset_samples(sr: soundcraft_time::SampleRate) -> i64 {
@@ -85,6 +85,8 @@ pub use soundcraft_mix::{mark_audio_thread, on_audio_thread};
 
 mod callback;
 mod stream;
+#[cfg(target_os = "windows")]
+mod stream_recovery;
 
 use callback::{AudioState, Fault, Side, take_meter_snapshot};
 #[cfg(test)]
@@ -93,7 +95,7 @@ use callback::{STALL, copy_meter_snapshot};
 use callback::{guarded_block, stalled};
 #[cfg(test)]
 use stream::pick_output_config;
-use stream::{Opened, build_output, first_started, open_device, start_stream};
+use stream::{Opened, build_format, first_started, open_device, start_stream};
 
 /// Meter values for the UI: the highest peak (and gain reduction) of every block rendered since
 /// the UI last took them with [`Player::take_meters`]. The audio thread renders blocks faster than
@@ -217,7 +219,9 @@ pub struct Player {
     _stream: Option<cpal::Stream>,
     #[cfg(target_arch = "wasm32")]
     _stream: Option<cpal::Stream>,
-    // The stream must release its snapshot-return ticket before the host reclaims it.
+    #[cfg(target_os = "windows")]
+    recovery: Option<stream_recovery::Recovery>,
+    // Both streams must release their snapshot-return tickets before the host reclaims them.
     side: Mutex<Side>,
     // Hold the publication storage until the native callback has shut down.
     #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
@@ -241,7 +245,17 @@ impl Player {
     /// Open the output device `cfg` chooses (system, device, rate, buffer size), falling back to the
     /// defaults for whatever is unavailable. Never fails: without a device it runs a silent clock.
     pub fn with_config(session: Arc<Session>, cfg: &AudioConfig) -> Player {
-        let p = Player::open(Arc::clone(&session), cfg);
+        Self::open_configured(session, cfg, None)
+    }
+
+    /// Reconnect the named physical output. If it is still unavailable, use the silent
+    /// clock. An explicit device change belongs to Setup > Playback Engine.
+    pub fn reconnect_output(session: Arc<Session>, cfg: &AudioConfig, name: &str) -> Player {
+        Self::open_configured(session, cfg, Some(name))
+    }
+
+    fn open_configured(session: Arc<Session>, cfg: &AudioConfig, required_output: Option<&str>) -> Player {
+        let p = Player::open(Arc::clone(&session), cfg, required_output);
         p.side().return_old_sessions(&p.tx);
         // Hand the initial session's third-party plugins over.
         p.update_session(session);
@@ -261,6 +275,17 @@ impl Player {
         self.fault.trouble(stalled)
     }
 
+    /// Service a stopped transport's output timing recovery. The caller includes any
+    /// pending transport starts and active recording in the safety check.
+    pub fn service_output_recovery(&mut self, safe_to_switch: bool) -> bool {
+        #[cfg(target_os = "windows")]
+        if let Some(recovery) = &mut self.recovery {
+            return recovery.service(safe_to_switch, &self.shared, &mut self._stream, &mut self.fault);
+        }
+        let _ = safe_to_switch;
+        false
+    }
+
     fn side(&self) -> std::sync::MutexGuard<'_, Side> {
         self.side.lock().unwrap_or_else(PoisonError::into_inner)
     }
@@ -268,7 +293,7 @@ impl Player {
     /// Open the output device for `session`, trying the requested buffer size before the device default, then build
     /// the shared player state. If no configuration starts or the device cannot open, fall back to a silent clock at
     /// the session rate.
-    fn open(session: Arc<Session>, cfg: &AudioConfig) -> Player {
+    fn open(session: Arc<Session>, cfg: &AudioConfig, required_output: Option<&str>) -> Player {
         let shared = Arc::new(Shared {
             position: AtomicI64::new(0),
             playing: AtomicBool::new(false),
@@ -283,7 +308,7 @@ impl Player {
             side.gone_tracks(&session);
             Mutex::new(side)
         };
-        match open_device(want, want_ch, cfg) {
+        match open_device(want, want_ch, cfg, required_output) {
             Ok((device, config, format, name)) => {
                 // The chosen buffer size first; if the device refuses it, its default.
                 let mut attempts = vec![config];
@@ -294,22 +319,37 @@ impl Player {
                     attempts,
                     |config: &cpal::StreamConfig| -> Result<Opened, cpal::Error> {
                         let rate = config.sample_rate;
-                        let channels = usize::from(config.channels);
                         let (tx, rx) = channel();
                         let (gtx, grx) = channel();
                         let state = AudioState::new(rx, Arc::clone(&shared), Arc::clone(&session), f64::from(rate), gtx);
                         let fault = Arc::new(Fault::default());
-                        let stream = match format {
-                            cpal::SampleFormat::I32 => build_output::<i32>(&device, *config, state, channels, &fault, &shared),
-                            cpal::SampleFormat::I16 => build_output::<i16>(&device, *config, state, channels, &fault, &shared),
-                            _ => build_output::<f32>(&device, *config, state, channels, &fault, &shared),
-                        }?;
-                        Ok(Opened { stream, tx, grx, fault })
+                        #[cfg(target_os = "windows")]
+                        let (stream, recovery) = stream_recovery::open(&device, *config, format, state, &fault, &shared)?;
+                        #[cfg(not(target_os = "windows"))]
+                        let stream = build_format(&device, *config, format, state, &fault, &shared)?;
+                        Ok(Opened {
+                            stream,
+                            tx,
+                            grx,
+                            fault,
+                            #[cfg(target_os = "windows")]
+                            recovery,
+                        })
                     },
                     |opened| start_stream(&opened.stream),
                 );
                 match opened {
-                    Some((config, Opened { stream, tx, grx, fault })) => {
+                    Some((
+                        config,
+                        Opened {
+                            stream,
+                            tx,
+                            grx,
+                            fault,
+                            #[cfg(target_os = "windows")]
+                            recovery,
+                        },
+                    )) => {
                         let rate = config.sample_rate;
                         let channels = usize::from(config.channels);
                         let buffer = match config.buffer_size {
@@ -331,6 +371,8 @@ impl Player {
                             prepared_clock_feed: Mutex::default(),
                             side: new_side(grx),
                             _stream: Some(stream),
+                            #[cfg(target_os = "windows")]
+                            recovery,
                             device_name: name,
                             device_rate: rate,
                             device_channels: config.channels,
@@ -411,6 +453,8 @@ impl Player {
             prepared_clock_feed: Mutex::default(),
             side,
             _stream: None,
+            #[cfg(target_os = "windows")]
+            recovery: None,
             device_name: "No audio device (silent)".into(),
             device_rate: rate,
             device_channels: 0,
@@ -452,7 +496,7 @@ impl Player {
     fn publish_session(&self, s: Arc<Session>, clock_document: std::sync::Weak<Session>) {
         self.cancel_clock_resume();
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-        let generation = self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, true);
+        let generation = self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, None);
         #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
         let generation = 0;
         let (instances, gone) = {
@@ -476,9 +520,12 @@ impl Player {
     pub fn prepare_clock_session_with(&self, mut score: Arc<Session>, tempo: &soundcraft_time::TempoMap, project: impl FnOnce(&mut Session)) {
         let source = Arc::downgrade(&score);
         {
-            let side = self.side();
-            if source.ptr_eq(&side.clock_document) && side.published_tempo() == Some(tempo) {
-                return;
+            let mut side = self.side();
+            if source.ptr_eq(&side.clock_document) && Arc::get_mut(&mut side.grid_return).is_some() {
+                side.collect_garbage();
+                if side.published_session().is_some_and(|s| &s.tempo == tempo) {
+                    return;
+                }
             }
         }
         let session = Arc::make_mut(&mut score);
@@ -495,24 +542,33 @@ impl Player {
             return false;
         }
         side.collect_garbage();
-        let Some(rate) = side.grid_base.as_ref().map(|s| s.sample_rate) else { return true };
+        let Some(accepted) = side.published_session().cloned() else { return true };
         if side.retry_grid.is_some() {
             return false;
         }
         // Compute this on the host. The callback needs only an integer comparison.
-        let boundary = side
-            .published_tempo()
-            .and_then(|old| {
-                let prior = old.tempos();
-                let next = tempo.tempos();
-                let common = prior.iter().zip(next).take_while(|(a, b)| a == b).count();
-                prior.get(common).into_iter().chain(next.get(common)).map(|event| event.tick).min().map(|tick| old.tick_to_samples(tick, rate))
-            })
-            .unwrap_or(Samples::MAX);
-        let Some(s) = side.follow_snapshot(tempo) else { return false };
+        let old = &accepted.tempo;
+        let prior = old.tempos();
+        let next = tempo.tempos();
+        let common = prior.iter().zip(next).take_while(|(a, b)| a == b).count();
+        let boundary = prior
+            .get(common)
+            .into_iter()
+            .chain(next.get(common))
+            .map(|event| event.tick)
+            .min()
+            .map_or(Samples::MAX, |tick| old.tick_to_samples(tick, accepted.sample_rate));
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        let snapshot = side.follow_snapshot(tempo).or_else(|| {
+            self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).reclaim_grid_snapshots(&accepted);
+            side.follow_snapshot(tempo)
+        });
+        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+        let snapshot = side.follow_snapshot(tempo);
+        let Some(s) = snapshot else { return false };
         self.cancel_clock_resume();
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-        let generation = self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, false);
+        let generation = self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx, Some(&accepted));
         #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
         let generation = 0;
         let _ = self.tx.send(Cmd::FollowGrid(generation, boundary, s, side.grid_return.clone()));
@@ -653,6 +709,44 @@ impl Player {
             MidiSyncStatus::default()
         }
     }
+    /// Device compensation for a followed start. The silent transport has no device latency.
+    pub fn clock_follow_output_lead_us(&self) -> Option<u64> {
+        if self.silent {
+            return Some(0);
+        }
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        {
+            self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).reported_lead_us()
+        }
+        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+        {
+            Some(0)
+        }
+    }
+
+    /// Number of fresh hardware lead reports observed on this output stream.
+    pub fn reported_output_timing_count(&self) -> u64 {
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        {
+            self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).reported_timing_count()
+        }
+        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+        {
+            0
+        }
+    }
+
+    /// The latest unusable hardware timestamp, if the current stream reported one.
+    pub fn output_timing_issue(&self) -> Option<OutputTimingIssue> {
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        {
+            self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).timing_issue()
+        }
+        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+        {
+            None
+        }
+    }
     pub fn presented_position(&self) -> Samples {
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
         if self.is_playing()
@@ -704,6 +798,8 @@ impl Player {
             tx: Arc::downgrade(&self.tx),
             #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
             output: Arc::downgrade(&self.beat_clock),
+            #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+            silent: self.silent,
         };
         if feed.arm_clock_resume(port, cue) {
             *self.prepared_clock_feed.lock().unwrap_or_else(PoisonError::into_inner) = Arc::downgrade(feed);

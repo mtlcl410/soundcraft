@@ -44,12 +44,12 @@ pub struct LocatedCue {
     pub origin: i64,
     pub offset: i64,
     pub rate: soundcraft_time::SampleRate,
-    pub revision: std::sync::Weak<()>,
+    pub revision: std::sync::Weak<std::sync::Mutex<bool>>,
 }
 
 /// One-shot transport handoff. Device callbacks never prepare plugins or retain a player.
 pub(crate) struct PreparedResume {
-    pub(crate) revision: std::sync::Weak<()>,
+    pub(crate) revision: std::sync::Weak<std::sync::Mutex<bool>>,
     pub(crate) pulse: i64,
     pub(crate) origin: i64,
     pub(crate) offset: i64,
@@ -58,13 +58,13 @@ pub(crate) struct PreparedResume {
     pub(crate) tx: std::sync::Weak<super::Sender<super::Cmd>>,
     #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
     pub(crate) output: std::sync::Weak<super::Mutex<super::sync_output::Output>>,
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    pub(crate) silent: bool,
 }
 impl PreparedResume {
-    fn dispatch(&self, age_us: i64) -> Option<i64> {
+    fn dispatch(&self, age_us: impl FnOnce() -> i64) -> Option<i64> {
         use super::{Cmd, Ordering};
-        if self.revision.strong_count() == 0 {
-            return None;
-        }
+        let revision = self.revision.upgrade()?;
         let shared = self.shared.upgrade()?;
         let tx = self.tx.upgrade()?;
         if shared.playing.load(Ordering::Acquire) {
@@ -75,15 +75,22 @@ impl PreparedResume {
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
         let output = output.try_lock().ok()?;
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
-        let lead = output.reported_lead_us();
+        let lead = if self.silent { 0 } else { output.reported_lead_us()? };
         #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
         let lead = 0;
         let render_from = self
             .origin
-            .saturating_add(self.sr.samples(age_us.max(0) as f64 / 1e6))
+            .saturating_add(self.sr.samples(age_us().max(0) as f64 / 1e6))
             .saturating_add(self.sr.samples(lead as f64 / 1e6))
             .saturating_sub(self.offset)
             .max(0);
+        // The host revokes this gate before an edit can mutate the prepared document.
+        // Hold it through queueing and publishing the start. An edit that won this race
+        // leaves the original Play action for the host to prepare against its fresh session.
+        let current = revision.try_lock().ok()?;
+        if !*current {
+            return None;
+        }
         let cmd = Cmd::PlayClock { origin: self.origin, render_from };
         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
         let queued = output.send_transport(&tx, cmd);
@@ -102,6 +109,7 @@ pub(crate) struct Follower {
     pub(crate) cue: Option<PreparedResume>,
     pub(crate) source: Option<u8>,
     pub(crate) coast: bool,
+    pub(crate) waiting_for_output: bool,
     state: State,
     awaiting_clock: Option<i64>,
     pub(crate) next_pulse: i64,
@@ -127,6 +135,7 @@ impl Default for Follower {
             cue: None,
             source: None,
             coast: true,
+            waiting_for_output: false,
             state: State::Waiting,
             awaiting_clock: None,
             next_pulse: 0,
@@ -157,13 +166,14 @@ impl Follower {
         false
     }
 
-    pub(crate) fn dispatch_prepared(&mut self, now: i64) {
+    pub(crate) fn dispatch_prepared(&mut self, now: impl FnOnce() -> i64) {
         if self.count == 1
             && let Some(Action::Play { pulse, at }) = self.events[self.head]
             && let Some(cue) = self.cue.take()
             && cue.pulse == pulse
-            && let Some(render_from) = cue.dispatch(now.saturating_sub(at))
+            && let Some(render_from) = cue.dispatch(|| now().saturating_sub(at))
         {
+            self.waiting_for_output = false;
             self.events[self.head] = Some(Action::Started { pulse, at, render_from });
         }
     }
@@ -196,6 +206,10 @@ impl Follower {
         self.count -= 1;
         a
     }
+    pub(crate) fn start_pending(&self) -> bool {
+        self.awaiting_clock.is_some() || self.events.iter().flatten().any(|action| matches!(action, Action::Play { .. } | Action::Started { .. }))
+    }
+
     fn bpm(&self) -> Option<f64> {
         self.steady.period_us().or_else(|| self.short.period_us()).filter(|p| (2500. ..=500_000.).contains(p)).map(|p| 2_500_000. / p)
     }
@@ -310,7 +324,13 @@ impl Follower {
                     Some(None) => self.spp = Some(Some(byte)),
                     Some(Some(low)) => {
                         self.spp = None;
-                        if matches!(self.state, State::Waiting | State::Stopped) && self.awaiting_clock.is_none() {
+                        if self.waiting_for_output || (matches!(self.state, State::Waiting | State::Stopped) && self.awaiting_clock.is_none()) {
+                            // The clock can be locked before a device has ever presented sound.
+                            // A new stopped insertion replaces that unrendered Continue.
+                            if self.waiting_for_output {
+                                self.state = State::Stopped;
+                                self.awaiting_clock = None;
+                            }
                             self.next_pulse = (i64::from(low) | i64::from(byte) << 7) * 6;
                             self.push(Action::Locate(self.next_pulse));
                         }

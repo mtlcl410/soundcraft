@@ -164,21 +164,36 @@ enum Update {
     TransportWake(Arc<AtomicBool>, Option<(u64, bool)>),
 }
 impl Output {
-    pub(crate) fn configure(&mut self, s: &Arc<Session>, audio: &Sender<Cmd>, remap: bool) -> u64 {
+    pub(crate) fn configure(&mut self, s: &Arc<Session>, audio: &Sender<Cmd>, accepted_grid: Option<&Arc<Session>>) -> u64 {
         if self.session.is_none() {
             let _ = audio.send(Cmd::Clock(Some(Publisher::new(self.view.clone(), self.metrics.clone()))));
         }
         self.generation = self.generation.wrapping_add(1);
-        let revision = SessionRevision { generation: self.generation, doc: s.clone(), remap };
-        let active = !self.stats.connected().is_empty();
-        if self.view.lock().unwrap_or_else(std::sync::PoisonError::into_inner).register(revision, active) {
+        let revision = SessionRevision { generation: self.generation, doc: s.clone(), remap: accepted_grid.is_none() };
+        let connected = self.stats.connected();
+        let active = !connected.is_empty();
+        let mut timeline = self.view.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        if let Some(grid) = accepted_grid {
+            timeline.register_grid(revision, grid, active);
+        } else if timeline.register(revision, active) {
             self.stats.session_backlog_drops.fetch_add(1, Relaxed);
         }
+        drop(timeline);
+        drop(connected);
         self.session = Some(s.clone());
         if let Some((tx, _)) = &self.worker {
             let _ = tx.send(Update::Session);
         }
         self.generation
+    }
+
+    /// The fixed audio snapshot pool can fill while every queued buffer has
+    /// its own tempo. A host retry also reclaims maps if no MIDI worker is polling.
+    pub(crate) fn reclaim_grid_snapshots(&self, accepted: &Arc<Session>) {
+        let connected = self.stats.connected();
+        let mut timeline = self.view.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+        timeline.reclaim_grid_history(accepted, !connected.is_empty(), Instant::now());
+        timeline.discard_unpresented_maps();
     }
     fn send(&mut self, u: Update) -> bool {
         if self.worker.is_none() {
@@ -286,8 +301,8 @@ impl Output {
         }
         queued
     }
-    pub(crate) fn reported_lead_us(&self) -> u64 {
-        self.metrics.lead_us.load(Relaxed)
+    pub(crate) fn reported_lead_us(&self) -> Option<u64> {
+        self.metrics.lead().0
     }
     pub(crate) fn trouble(&self) -> Option<String> {
         self.trouble.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
@@ -296,22 +311,36 @@ impl Output {
         let now = Instant::now();
         self.view.lock().unwrap_or_else(std::sync::PoisonError::into_inner).read(now, true, 0).0.map(|b| b.sample_index_at(now))
     }
+    pub(crate) fn timing_issue(&self) -> Option<crate::OutputTimingIssue> {
+        match self.metrics.lead() {
+            (Some(lead_us), crate::OutputLeadSource::Retained) => Some(crate::OutputTimingIssue::Retained { lead_us }),
+            (None, crate::OutputLeadSource::Unknown) => Some(crate::OutputTimingIssue::Unknown),
+            _ => None,
+        }
+    }
+    pub(crate) fn reported_timing_count(&self) -> u64 {
+        self.metrics.fresh_lead_reports.load(Relaxed)
+    }
     pub(crate) fn status(&self) -> MidiSyncStatus {
         let buckets = self.stats.buckets.each_ref().map(|v| v.load(Relaxed));
         let max = self.stats.max.load(Relaxed);
-        let lead = self.reported_lead_us();
+        let (lead, lead_source) = self.metrics.lead();
         let sr = self.session.as_ref().map_or_else(soundcraft_time::SampleRate::default, |s| s.sample_rate);
         let system_delay = self.metrics.system_delay_samples.load(Relaxed);
         let timing = |name: &str, offset, compensate| {
-            let (total, limited) = delivery_offset(Duration::from_micros(lead), system_delay as usize, sr, compensate, offset);
+            let available = if compensate { lead } else { Some(0) };
+            let delay = available.map(|us| delivery_offset(Duration::from_micros(us), system_delay as usize, sr, compensate, offset));
             PortTiming {
                 connected: self.stats.connected().contains(name),
                 requested_offset_samples: offset,
                 offset_samples: effective_offset(offset, sr),
                 system_delay_samples: system_delay,
                 device_lead_us: lead,
-                advance_limited: limited,
-                effective_total_us: (total * 1e6).round() as i64,
+                lead_source,
+                beat_clock_enabled: false,
+                mtc_enabled: false,
+                advance_limited: delay.is_some_and(|(_, limited)| limited),
+                effective_total_us: delay.map(|(total, _)| (total * 1e6).round() as i64),
                 beat_clock_total_us: None,
                 mtc_total_us: None,
             }
@@ -319,7 +348,8 @@ impl Output {
         let mut ports = BTreeMap::new();
         for (name, offset) in &self.beat {
             let mut t = timing(name, *offset, self.compensated);
-            t.beat_clock_total_us = Some(t.effective_total_us);
+            t.beat_clock_enabled = true;
+            t.beat_clock_total_us = t.effective_total_us;
             ports.insert(name.clone(), t);
         }
         if let Some((name, offset, compensate)) = &self.additional {
@@ -327,7 +357,8 @@ impl Output {
             let total = t.effective_total_us;
             let limited = t.advance_limited;
             let entry = ports.entry(name.clone()).or_insert(t);
-            entry.mtc_total_us = Some(total);
+            entry.mtc_enabled = true;
+            entry.mtc_total_us = total;
             entry.advance_limited |= limited;
         }
         MidiSyncStatus {
@@ -344,6 +375,7 @@ impl Output {
             lateness_p95_us: percentile(buckets, 95, max),
             lateness_max_us: max,
             reported_lead_us: lead,
+            lead_source,
             callback_gap_max_us: self.metrics.max_gap_us.load(Relaxed),
             callback_gaps_over_two_buffers: self.metrics.late_buffers.load(Relaxed),
             lead_clamps: self.metrics.clamps.load(Relaxed),
@@ -379,6 +411,7 @@ struct Port<C> {
     routes: [Option<Route>; 2],
     future: Vec<Event>,
     cleanup: VecDeque<Vec<u8>>,
+    waiting_for_timing: bool,
     failure: Option<String>,
 }
 #[derive(Clone, Copy)]
@@ -396,6 +429,17 @@ impl Event {
     }
 }
 impl<C: Destination> Port<C> {
+    fn flush_final_cleanup(&mut self, stats: &Stats) {
+        let Some(link) = &mut self.link else { return };
+        while let Some(bytes) = self.cleanup.front() {
+            if link.submit(Instant::now(), bytes, true, stats).is_err() {
+                break;
+            }
+            self.cleanup.pop_front();
+        }
+        link.flush();
+    }
+
     fn disconnect(&mut self, name: &str, error: String, now: Instant, stats: &Stats) {
         self.failure = Some(format!("{name}: {error}"));
         stats.connected().remove(name);
@@ -408,6 +452,7 @@ impl<C: Destination> Port<C> {
     }
 
     fn poll(&mut self, name: &str, now: Instant, session: &Session, view: &View, stats: &Stats, pending: &mut Vec<Event>) -> Option<Instant> {
+        self.waiting_for_timing = false;
         let Some(port) = &mut self.link else { return Some(self.retry) };
         match port.ready(&mut self.cleanup) {
             Ok(true) => {}
@@ -443,8 +488,12 @@ impl<C: Destination> Port<C> {
         for (route_index, route) in self.routes.iter_mut().enumerate() {
             let Some(r) = route else { continue };
             let (block, future, revision, bootstrap) = {
-                let timeline = view.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let mut timeline = view.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
                 let (block, future) = timeline.read(now, r.compensate, r.offset);
+                if r.compensate && block.is_none() && future.is_none() {
+                    timeline.wait_for_timing();
+                    self.waiting_for_timing = true;
+                }
                 let changed = block
                     .and_then(|b| timeline.map(b.generation))
                     .filter(|revision| r.map.as_ref().is_none_or(|old| old.generation != revision.generation))
@@ -524,6 +573,7 @@ fn set_route<C: Destination>(map: &mut BTreeMap<String, Port<C>>, index: usize, 
         routes: [None, None],
         future: Vec::new(),
         cleanup: Default::default(),
+        waiting_for_timing: false,
         failure: None,
     });
     port.routes[index] = Some(route);
@@ -553,16 +603,19 @@ fn wait_for_update(rx: &Receiver<Update>, next: Option<Instant>, connected: bool
     } else if !wait_for_late_block {
         return rx.recv().map(Some).map_err(|_| ());
     }
-    match rx.try_recv() {
+    let receive = || match rx.try_recv() {
         Ok(update) => Ok(Some(update)),
-        Err(std::sync::mpsc::TryRecvError::Empty) => {
-            if next.is_none() {
-                std::thread::park();
-            }
-            Ok(None)
-        }
+        Err(std::sync::mpsc::TryRecvError::Empty) => Ok(None),
         Err(_) => Err(()),
+    };
+    let update = receive()?;
+    if update.is_none() && next.is_none() {
+        std::thread::park();
+        // A single notification can mean either a published block or a queued
+        // command. Consume the command before polling the timeline again.
+        return receive();
     }
+    Ok(update)
 }
 
 fn raise_delivery_priority() -> bool {
@@ -703,12 +756,13 @@ fn drive<C: Destination>(
         if connected && (now < awake || transition.is_some()) {
             soon(now + Duration::from_millis(1));
         }
-        match wait_for_update(&rx, next, connected, wait_for_late_block) {
+        let waiting_for_timing = ports.values().any(|p| p.waiting_for_timing);
+        match wait_for_update(&rx, next, connected, wait_for_late_block || waiting_for_timing) {
             Ok(next_update) => update = next_update,
             Err(()) => break,
         }
     }
-    view.lock().unwrap_or_else(std::sync::PoisonError::into_inner).late_transport_waiter = None;
+    view.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clear_waiters();
     stop_and_flush_ports(&mut ports, &stats);
 }
 
@@ -716,12 +770,7 @@ fn stop_and_flush_ports<C: Destination>(ports: &mut BTreeMap<String, Port<C>>, s
     for p in ports.values_mut() {
         clear_route(p, 0);
         clear_route(p, 1);
-        if let Some(link) = &mut p.link {
-            for bytes in p.cleanup.drain(..) {
-                let _ = link.submit(Instant::now(), &bytes, true, stats);
-            }
-            link.flush();
-        }
+        p.flush_final_cleanup(stats);
     }
     // Let healthy drivers hand off their final Stop before application exit.
     // All destinations share this deadline, including any stalled in the OS.
@@ -730,7 +779,13 @@ fn stop_and_flush_ports<C: Destination>(ports: &mut BTreeMap<String, Port<C>>, s
         let mut outstanding = false;
         for p in ports.values_mut() {
             if let Some(link) = &mut p.link {
-                outstanding |= matches!(link.ready(&mut p.cleanup), Ok(false));
+                let ready = link.ready(&mut p.cleanup);
+                if !matches!(ready, Ok(false)) && !p.cleanup.is_empty() {
+                    p.flush_final_cleanup(stats);
+                    outstanding = true;
+                } else {
+                    outstanding |= link.busy();
+                }
             }
         }
         if !outstanding {

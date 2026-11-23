@@ -15,8 +15,16 @@ pub(crate) struct Host {
     /// While stopped, new tempo estimates begin here so earlier score time stays fixed.
     waiting_tick: i64,
     pending_cue: Option<i64>,
+    /// External start waiting for the first real output timestamp, superseded by a new transport command.
+    waiting_start: Option<(i64, i64)>,
     // Fixed pulse and device timestamp at Start/Continue; later edits preserve this origin.
     anchor: Option<(i64, i64)>,
+}
+
+impl crate::UiState {
+    pub(crate) fn clock_follow_input_offset(&self) -> i64 {
+        self.clock_follow_input.as_ref().and_then(|name| self.midi_sync.ports.get(name)).map_or(0, |p| p.in_offset_samples)
+    }
 }
 
 impl SoundApp {
@@ -30,7 +38,7 @@ impl SoundApp {
         };
         let source = self.ui.clock_follow_input.as_ref();
         json!({"input":source,"enabled":self.clock_follow.enabled, "loss_policy":if self.ui.clock_follow_stop_on_loss {"stop"} else {"coast"},
-            "input_offset_samples":source.and_then(|p|self.ui.midi_sync.ports.get(p)).map_or(0, |p|p.in_offset_samples),
+            "input_offset_samples":self.ui.clock_follow_input_offset(),
             "state":state,"estimated_bpm":s.bpm,"jitter_us":s.jitter_us,"arrival_residual_us":s.phase_error_us,"phase_error_us":self.clock_follow.transport_error_us,"dropouts":s.dropouts})
     }
 
@@ -96,10 +104,18 @@ impl SoundApp {
                 self.ui.midi_sync.ports.entry(name.clone()).or_default().in_offset_samples = offset;
             }
         }
-        if self.clock_follow.enabled != enabled || self.ui.clock_follow_input != source {
+        self.transition_clock_source(enabled, source.as_deref());
+        self.ui.clock_follow_input = source;
+        self.ui.clock_follow_stop_on_loss = stop;
+        self.service_clock_follow();
+        Ok(self.clock_follow_state())
+    }
+
+    pub(crate) fn transition_clock_source(&mut self, enabled: bool, source: Option<&str>) {
+        if self.clock_follow.enabled != enabled || self.ui.clock_follow_input.as_deref() != source {
             // Disarm the old source before checking for a start submitted between host frames.
             if let Some(m) = &self.midi_inputs {
-                m.feed().set_clock_follow(None, true, 0);
+                m.feed().set_clock_follow(None, true, 0, false);
             }
             if self.clock_follow.enabled && (self.is_playing() || self.player.as_ref().is_some_and(|p| p.is_playing())) {
                 self.stop_play();
@@ -108,10 +124,6 @@ impl SoundApp {
             self.clock_follow = Host { enabled, ..Host::default() };
             self.refresh_playback_session();
         }
-        self.ui.clock_follow_input = source;
-        self.ui.clock_follow_stop_on_loss = stop;
-        self.service_clock_follow();
-        Ok(self.clock_follow_state())
     }
 
     fn clock_master_uses(&self, name: &str) -> bool {
@@ -160,7 +172,7 @@ impl SoundApp {
             return;
         }
         let limit = soundcraft_playback::max_sync_offset_samples(sr);
-        let offset = self.ui.midi_sync.ports.get(name).map_or(0, |p| p.in_offset_samples).clamp(-limit, limit);
+        let offset = self.ui.clock_follow_input_offset().clamp(-limit, limit);
         // A previous grid may still be returning from the callback after rapid locates.
         // Prepare the exact settled grid here, before arming the next start.
         player.prepare_clock_session_with(self.engine.session_arc(), grid, |doc| self.engine.project_clock_takes(doc));
@@ -170,13 +182,22 @@ impl SoundApp {
         player.arm_clock_resume(feed, feed.ports().assign(name), location);
     }
 
+    pub(super) fn clock_start_pending(&self) -> bool {
+        self.clock_follow.enabled
+            && (self.clock_follow.waiting_start.is_some() || self.midi_inputs.as_ref().is_some_and(|m| m.feed().clock_start_pending()))
+    }
+
     pub(crate) fn service_clock_follow(&mut self) {
+        self.service_clock_follow_with_timing(|app| app.player.as_ref().map_or(Some(0), |p| p.clock_follow_output_lead_us()));
+    }
+
+    fn service_clock_follow_with_timing(&mut self, lead_us: impl Fn(&Self) -> Option<u64>) {
         if !self.clock_follow.enabled {
             return;
         }
         if self.engine.transport_requests.iter().any(|r| matches!(r, TransportRequest::ResetSession)) {
             if let Some(inputs) = &self.midi_inputs {
-                inputs.feed().set_clock_follow(None, true, 0);
+                inputs.feed().set_clock_follow(None, true, 0, false);
             }
             self.clock_follow = Host::default();
             self.engine.clear_follow_grid();
@@ -193,11 +214,23 @@ impl SoundApp {
         // A first Continue without an SPP resumes at the insertion where follow was enabled.
         let sr = self.engine.session().sample_rate;
         let initial_pulse = self.engine.transport_tempo().samples_to_ticks(self.position(), sr) / TICKS_PER_PULSE;
-        feed.set_clock_follow(Some(id), !self.ui.clock_follow_stop_on_loss, initial_pulse);
+        let lead = lead_us(self);
+        let waiting_for_output =
+            lead.is_none() && !self.engine.transport.recording && !self.is_playing() && !self.player.as_ref().is_some_and(|p| p.is_playing());
+        feed.set_clock_follow(Some(id), !self.ui.clock_follow_stop_on_loss, initial_pulse, waiting_for_output);
         let limit = soundcraft_playback::max_sync_offset_samples(sr);
-        let offset = self.ui.midi_sync.ports.get(name).map_or(0, |p| p.in_offset_samples).clamp(-limit, limit);
+        let offset = self.ui.clock_follow_input_offset().clamp(-limit, limit);
         let mut events = std::mem::take(&mut self.clock_follow.actions);
         let s = feed.clock_follow_status(&mut events);
+        let waiting = self.clock_follow.waiting_start.take();
+        if events.is_empty()
+            && let Some((pulse, at)) = waiting
+            && !self.is_playing()
+            && !self.engine.transport.recording
+            && self.engine.transport_requests.iter().all(|r| matches!(r, TransportRequest::AllNotesOff))
+        {
+            events.push(Action::Play { pulse, at });
+        }
         self.clock_follow.snapshot = s;
         if self.engine.playback_tempo.is_none() {
             self.reset_follow_grid(initial_pulse, s.bpm);
@@ -208,6 +241,7 @@ impl SoundApp {
         }
         for event in events.drain(..) {
             self.clock_follow.pending_cue = None;
+            self.clock_follow.waiting_start = None;
             match event {
                 Action::Locate(pulse) => {
                     self.clock_follow.pending_cue = Some(pulse);
@@ -240,12 +274,18 @@ impl SoundApp {
                     }
                     let origin = self.engine.transport_tempo().tick_to_samples(tick, sr);
                     let age = sr.samples(s.now_us.saturating_sub(at).max(0) as f64 / 1e6);
-                    let lead = self.player.as_ref().map_or(0, |p| sr.samples(p.midi_sync_status().reported_lead_us as f64 / 1e6));
+                    let Some(lead) = lead else {
+                        self.clock_follow.waiting_start = Some((pulse, at));
+                        self.clock_follow.anchor = None;
+                        continue;
+                    };
+                    let lead = sr.samples(lead as f64 / 1e6);
                     let render_from = origin.saturating_add(age).saturating_add(lead).saturating_sub(offset).max(0);
                     self.engine.transport_requests.push(TransportRequest::PlayFromClock { origin, render_from });
                 }
                 Action::Stop => {
                     self.clock_follow.anchor = None;
+                    self.engine.transport_requests.retain(|r| !matches!(r, TransportRequest::PlayFromClock { .. }));
                     self.engine.transport_requests.push(TransportRequest::Stop);
                 }
             }
@@ -360,10 +400,115 @@ mod tests {
     use super::*;
     use soundcraft_playback::midi::MidiInputs;
 
+    // These transport tests exercise real command queues on a silent device, independent
+    // of the workstation's audio driver and its timing-report warmup.
+    fn simulated_player(engine: &soundcraft_engine::Engine) -> soundcraft_playback::Player {
+        soundcraft_playback::Player::reconnect_output(engine.session_arc(), &Default::default(), "SoundCraft absent Clock test device")
+    }
+
+    #[test]
+    fn cold_clock_follow_continues_only_the_current_start_on_the_first_valid_report() {
+        for interrupt in ["none", "wire stop", "wire locate", "local stop", "local locate", "local play", "local record"] {
+            let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
+            app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
+            let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
+            let port = feed.ports().assign("DIN");
+            app.run("setup.midi_clock_follow", json!({"input":"DIN","enabled":true})).unwrap();
+            app.service_clock_follow_with_timing(|_| None);
+            feed.receive(port, &[0xf2, 64, 0]);
+            app.service_clock_follow_with_timing(|_| None);
+            app.handle_transport(0.);
+            feed.receive(port, &[0xfb, 0xf8]);
+            app.service_clock_follow_with_timing(|_| None);
+            assert!(app.engine.transport_requests.is_empty(), "no offset may be inferred from a missing render timestamp");
+            match interrupt {
+                "wire stop" => feed.receive(port, &[0xfc]),
+                "wire locate" => feed.receive(port, &[0xf2, 32, 0]),
+                "local stop" => app.engine.transport_requests.push(TransportRequest::Stop),
+                "local locate" => app.engine.transport_requests.push(TransportRequest::Locate(12_000)),
+                "local play" => app.engine.transport_requests.push(TransportRequest::Play),
+                "local record" => app.engine.transport_requests.push(TransportRequest::Record),
+                _ => {}
+            }
+            let local = app.engine.transport_requests.clone();
+            app.service_clock_follow_with_timing(|_| Some(75_000));
+            if !local.is_empty() {
+                assert_eq!(app.engine.transport_requests, local, "leave the local transport request unchanged");
+            }
+            if interrupt == "none" {
+                let lead = app.engine.session().sample_rate.samples(0.075);
+                assert!(
+                    matches!(app.engine.transport_requests.as_slice(), [TransportRequest::PlayFromClock {origin: 384_000, render_from}] if *render_from>=384_000+lead)
+                );
+            } else {
+                assert!(
+                    app.engine.transport_requests.iter().all(|r| !matches!(r, TransportRequest::PlayFromClock { .. })),
+                    "{interrupt} must cancel the old onset"
+                );
+            }
+            app.engine.transport_requests.clear();
+            app.service_clock_follow_with_timing(|_| Some(0));
+            assert!(app.engine.transport_requests.is_empty(), "recovery must never replay an onset");
+            if interrupt == "wire locate" {
+                feed.receive(port, &[0xfb, 0xf8]);
+                app.service_clock_follow_with_timing(|_| Some(0));
+                assert!(matches!(app.engine.transport_requests.as_slice(), [TransportRequest::PlayFromClock { origin: 192_000, .. }]));
+            }
+        }
+    }
+
+    #[test]
+    fn clock_start_blocks_output_recovery_from_continue_until_acknowledged_or_stopped() {
+        let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
+        app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
+        let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
+        let port = feed.ports().assign("DIN");
+        app.run("setup.midi_clock_follow", json!({"input":"DIN","enabled":true})).unwrap();
+        app.service_clock_follow_with_timing(|_| None);
+        app.unavailable_output = Some(crate::UnavailableOutput { name: "offline".into(), stalled_at_report: None, idle_status: None });
+        feed.receive(port, &[0xf2, 32, 0]);
+        assert!(!app.clock_start_pending(), "a stopped location can wait on a healthy replacement stream");
+        app.service_clock_follow_with_timing(|_| None);
+        app.handle_transport(0.);
+        feed.receive(port, &[0xfb]);
+        assert!(app.clock_start_pending(), "the host has not seen Continue yet");
+        assert!(!app.timing_reconnect_allowed());
+        feed.receive(port, &[0xf8]);
+        assert!(app.clock_start_pending(), "first pulse before the host frame");
+        app.service_clock_follow_with_timing(|_| None);
+        assert!(app.clock_start_pending(), "waiting for timing after the first pulse");
+        assert!(!app.timing_reconnect_allowed());
+        feed.receive(port, &[0xfc]);
+        app.service_clock_follow_with_timing(|_| None);
+        app.handle_transport(0.);
+        assert!(!app.clock_start_pending(), "Stop releases the switch");
+        assert!(app.timing_reconnect_allowed());
+        feed.receive(port, &[0xfb]);
+        app.run("setup.midi_clock_follow", json!({"enabled":false})).unwrap();
+        assert!(!app.clock_start_pending());
+    }
+
+    #[test]
+    fn cold_start_superseded_between_host_frames_never_queues_its_first_note() {
+        for command in [&[0xfc][..], &[0xf2, 32, 0]] {
+            let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
+            app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
+            let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
+            let port = feed.ports().assign("DIN");
+            app.run("setup.midi_clock_follow", json!({"input":"DIN","enabled":true})).unwrap();
+            app.service_clock_follow_with_timing(|_| None);
+            feed.receive(port, &[0xfb, 0xf8]);
+            feed.receive(port, command);
+            app.service_clock_follow_with_timing(|_| Some(0));
+            assert!(app.engine.transport_requests.iter().all(|r| !matches!(r, TransportRequest::PlayFromClock { .. })));
+            assert!(app.clock_follow.waiting_start.is_none());
+        }
+    }
+
     #[test]
     fn located_continue_reaches_the_player_before_the_next_host_frame() {
         let engine = soundcraft_engine::Engine::default();
-        let player = soundcraft_playback::Player::new(engine.session_arc());
+        let player = simulated_player(&engine);
         let mut app = SoundApp::new(engine, Some(player), crate::Services::default());
         app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
         let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
@@ -390,7 +535,11 @@ mod tests {
         ctx.run_ui(Default::default(), |_| app.logic(&ctx)).textures_delta.clear();
         feed.receive(port, &[0xf2, 65, 0]);
         ctx.run_ui(Default::default(), |_| app.logic(&ctx)).textures_delta.clear();
+        // The input may already own a temporary strong reference to the old gate.
+        // A real edit must revoke that gate before it publishes any changed document.
+        let observed = app.engine.prepared_revision().upgrade().unwrap();
         app.run("track.new", json!({"kind":"midi"})).unwrap(); // edit between host frames; no session refresh
+        assert!(!*observed.lock().unwrap());
         feed.receive(port, &[0xfb]);
         feed.receive(port, &[0xf8]);
         assert!(!app.player.as_ref().unwrap().is_playing());
@@ -411,6 +560,42 @@ mod tests {
     }
 
     #[test]
+    fn ui_calibration_patch_cancels_only_a_cue_with_a_changed_input_offset() {
+        for (before, after) in [(0, -480), (-480, 480), (480, 0), (240, 240)] {
+            let engine = soundcraft_engine::Engine::default();
+            let player = simulated_player(&engine);
+            let mut app = SoundApp::new(engine, Some(player), crate::Services::default());
+            app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
+            let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
+            let port = feed.ports().assign("DIN");
+            app.run("setup.midi_clock_follow", json!({"input":"DIN","enabled":true,"input_offset_samples":before})).unwrap();
+            feed.set_clock(1_000_000);
+            feed.receive(port, &[0xf2, 64, 0]);
+            let ctx = egui::Context::default();
+            ctx.run_ui(Default::default(), |_| app.logic(&ctx)).textures_delta.clear();
+            let mut ports = json!({"other":{"in_offset_samples":120}});
+            if after != 0 {
+                ports["DIN"] = json!({"in_offset_samples":after,"out_offset_samples":60});
+            }
+            app.run("ui.set", json!({"midi_sync":{"ports":ports}})).unwrap();
+            feed.receive(port, &[0xfb, 0xf8]);
+            let player = app.player.as_ref().unwrap();
+            assert_eq!(player.is_playing(), before == after, "prepared dispatch after {before} -> {after}");
+            if before != after {
+                // Check the host's new sample position without variable driver-reported lead.
+                drop(app.player.take());
+                app.service_clock_follow();
+                assert!(
+                    matches!(app.engine.transport_requests.as_slice(), [TransportRequest::PlayFromClock {origin, render_from}]
+                    if *origin == 384_000 && *render_from == *origin - after),
+                    "requests: {:?}",
+                    app.engine.transport_requests
+                );
+            }
+        }
+    }
+
+    #[test]
     fn ui_patch_cannot_feed_beat_clock_back_into_the_source() {
         let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
         app.run("setup.midi_clock_follow", json!({"input":"DIN","enabled":true})).unwrap();
@@ -423,9 +608,32 @@ mod tests {
     }
 
     #[test]
+    fn ui_patch_clearing_the_clock_source_disarms_a_prepared_resume() {
+        let engine = soundcraft_engine::Engine::default();
+        let player = simulated_player(&engine);
+        let mut app = SoundApp::new(engine, Some(player), crate::Services::default());
+        app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
+        let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
+        let port = feed.ports().assign("DIN");
+        app.run("setup.midi_clock_follow", json!({"input":"DIN","enabled":true})).unwrap();
+        feed.receive(port, &[0xf2, 64, 0]);
+        let ctx = egui::Context::default();
+        ctx.run_ui(Default::default(), |_| app.logic(&ctx)).textures_delta.clear();
+        assert!(app.run("ui.set", json!({"clock_follow_input":" "})).is_err());
+        assert_eq!(app.ui.clock_follow_input.as_deref(), Some("DIN"));
+        app.run("ui.set", json!({"clock_follow_input":null})).unwrap();
+        assert!(!app.clock_follow.enabled);
+        assert!(app.engine.playback_tempo.is_none());
+        feed.receive(port, &[0xfb]);
+        feed.receive(port, &[0xf8]);
+        assert!(!app.player.as_ref().unwrap().is_playing());
+        app.run("ui.set", json!({"clock_follow_input":null})).unwrap();
+    }
+
+    #[test]
     fn replacement_player_handles_a_start_already_delivered_to_the_old_player() {
         let engine = soundcraft_engine::Engine::default();
-        let player = soundcraft_playback::Player::new(engine.session_arc());
+        let player = simulated_player(&engine);
         let mut app = SoundApp::new(engine, Some(player), crate::Services::default());
         app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
         let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
@@ -436,7 +644,10 @@ mod tests {
         ctx.run_ui(Default::default(), |_| app.logic(&ctx)).textures_delta.clear();
         feed.receive(port, &[0xfb, 0xf8]);
         assert!(app.player.as_ref().unwrap().is_playing());
+        app.unavailable_output = Some(crate::UnavailableOutput { name: "offline".into(), stalled_at_report: None, idle_status: None });
         app.reconnect_audio();
+        assert!(app.player.as_ref().unwrap().is_playing());
+        app.player = Some(simulated_player(&app.engine));
         assert!(!app.player.as_ref().unwrap().is_playing());
         ctx.run_ui(Default::default(), |_| app.logic(&ctx)).textures_delta.clear();
         assert!(app.player.as_ref().unwrap().is_playing());
@@ -447,7 +658,7 @@ mod tests {
     #[test]
     fn new_start_before_host_frame_cancels_the_acknowledgement_of_the_previous_roll() {
         let engine = soundcraft_engine::Engine::default();
-        let player = soundcraft_playback::Player::new(engine.session_arc());
+        let player = simulated_player(&engine);
         let mut app = SoundApp::new(engine, Some(player), crate::Services::default());
         app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
         let feed = app.midi_inputs.as_ref().unwrap().feed().clone();

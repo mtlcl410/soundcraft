@@ -349,6 +349,11 @@ impl MidiFeed {
     pub(crate) fn mtc_online(&self) -> bool {
         self.mtc_online.load(Ordering::Acquire)
     }
+    /// True while quarter frames are arriving or the reader is rolling/freewheeling.
+    /// A concurrent input transition also defers device recovery until the next UI poll.
+    pub fn mtc_transport_active(&self) -> bool {
+        self.mtc.try_lock().map_or(true, |reader| reader.transport_in_motion(self.now()))
+    }
     // A contended MIDI callback leaves the audio transport untouched for one block.
     pub(crate) fn tracking_mtc(&self) -> Option<(crate::mtc_input::Tracking, i64)> {
         let mut reader = self.mtc.try_lock().ok()?;
@@ -368,7 +373,7 @@ impl MidiFeed {
         self.mtc_lock_generation.load(Ordering::Acquire) == lock
     }
 
-    pub fn set_clock_follow(&self, port: Option<u8>, coast: bool, initial_pulse: i64) {
+    pub fn set_clock_follow(&self, port: Option<u8>, coast: bool, initial_pulse: i64, waiting_for_output: bool) {
         let mut input = self.clock_follow.lock().unwrap_or_else(PoisonError::into_inner);
         if input.source != port {
             *input = Default::default();
@@ -377,6 +382,12 @@ impl MidiFeed {
             self.clock_source.store(port.map_or(usize::MAX, usize::from), Ordering::Release);
         }
         input.coast = coast;
+        input.waiting_for_output = waiting_for_output;
+    }
+
+    /// Includes a Start/Continue received between host frames and its as-yet unacknowledged first pulse.
+    pub fn clock_start_pending(&self) -> bool {
+        self.clock_follow.lock().unwrap_or_else(PoisonError::into_inner).start_pending()
     }
 
     /// Called on the host, never the device audio thread. At most 32 transport transitions can wait.
@@ -405,7 +416,7 @@ impl MidiFeed {
         if input.source == Some(port) && open.is_none_or(|g| g.load(Ordering::Acquire)) {
             let action = input.receive(bytes, at);
             if action {
-                input.dispatch_prepared(self.now());
+                input.dispatch_prepared(|| self.now());
             }
             drop(input);
             if action {
