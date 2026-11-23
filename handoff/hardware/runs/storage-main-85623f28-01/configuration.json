@@ -1,0 +1,16 @@
+{
+  "config": {
+    "buffer_size": 256,
+    "input": "Model Mixer ASIO",
+    "output": "Model Mixer ASIO",
+    "sample_rate": 48000,
+    "system": "ASIO"
+  },
+  "device": {
+    "buffer_size": null,
+    "channels": 0,
+    "name": "No audio device (silent)",
+    "sample_rate": 48000,
+    "silent": true
+  }
+}

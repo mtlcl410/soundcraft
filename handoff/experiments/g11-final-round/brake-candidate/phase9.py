@@ -1,0 +1,2 @@
+from pathlib import Path
+p=Path('../brake-candidate/crates/playback/src/clock_follow.rs');s=p.read_text();s=s.replace('&& (at.saturating_sub(last) as f64 - period).abs() > (5.*self.steady.jitter_us()).max(0.012*period).max(30.)','&& ((at.saturating_sub(last) as f64 - period).abs() > (5.*self.steady.jitter_us()).max(0.012*period).max(30.) || self.steady.jitter_us()<1000. && self.steady.predict_us(self.fit_index+1).is_some_and(|next|at.abs_diff(next) as f64 >(3.0*self.steady.jitter_us()).max(350.)))');p.write_text(s)

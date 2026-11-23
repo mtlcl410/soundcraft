@@ -1,0 +1,9 @@
+### MTC generation and chase (#1663)
+
+The 25 fps simulated sender lost output timing from 100 to 200 ms. Before correction, it handed off a quarter-frame 100 ms late. After recovery, a single full-frame at 200 ms located to frame 5; the next complete group arrived at 240, 250, 260, 270, 280, 290, 300 and 310 ms. Piece 0 arrived on its deadline. An independent 20–50 ms gap exercised the same recovery near transport start. The generator/slave audio callback regression also passed its 48-sample limit at 48 kHz.
+
+On earlier Windows hardware builds, Model 12 USB MIDI → DIN OUT → Roland UM-ONE captured the expected wire codes at all six configured rates. A stopped 29.97 drop-frame locate crossed into minute one at frame 02 and into minute ten at frame 00. Pull-down pairs share wire codes, so long synthetic vectors covered their fractional progression. A 30 fps Model 12 master running into the matching reader yielded no warnings, relocations or losses across 1,338 samples over five minutes. Against a 29.97 non-drop session, the first sustained-speed warning appeared at 10.121 s.
+
+None stopped and reacquired on cable return. With Frames (8), the last observation before expiry was 7/8 and the observed grace period was 248 ms, with a brief additional loss during reacquisition. Jam Sync remained running through a 14.567 s interruption. The recorder also wrote SD audio while transmitting timecode. Ten end-to-end takes placed the scheduled 5 s onset between +13.896 and +56.771 ms, spread 42.875 ms. Nine had paired DIN and computer traces. After three USB STORAGE cycles the digital playback tap recovered to +3.321, +3.183 and +3.181 ms, compared with +3.810 ms before entering STORAGE. The digital-tap result does not establish repeatable SD onset timing. The 100 ms scheduling gap was simulated; there was no new hardware run for packaging.
+
+[Original recovery evidence](https://github.com/storytold/soundcraft/pull/1663#issuecomment-7070844245)

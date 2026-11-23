@@ -1,0 +1,35 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling soundcraft-dsp v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-cue-spacing\crates\dsp)
+   Compiling soundcraft-model v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-cue-spacing\crates\model)
+   Compiling soundcraft-midi v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-cue-spacing\crates\midi)
+   Compiling soundcraft-time v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-cue-spacing\crates\time)
+   Compiling soundcraft-vst3-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-cue-spacing\crates\vst3-host)
+   Compiling soundcraft-clap-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-cue-spacing\crates\clap-host)
+   Compiling soundcraft-au-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-cue-spacing\crates\au-host)
+   Compiling soundcraft-mix v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-cue-spacing\crates\mix)
+   Compiling soundcraft-playback v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-cue-spacing\crates\playback)
+    Finished `test` profile [optimized + debuginfo] target(s) in 2m 40s
+     Running unittests src\lib.rs (E:\soundcraft\compatibility-audit\g11-follow-target\debug\build\soundcraft-playback/02c6748131393de9\out\soundcraft_playback-02c6748131393de9.exe)
+
+running 1 test
+minimum inter-packet spacing: Clock 5700 us; MTC 100 us
+
+thread 'mtc::tests::slightly_late_first_presentation_never_bunches_clock_or_quarter_frames' (22148) panicked at crates\playback\src\mtc\tests.rs:65:5:
+assertion failed: min_clock >= 19_000 && min_qf >= 8_100
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test mtc::tests::slightly_late_first_presentation_never_bunches_clock_or_quarter_frames ... FAILED
+
+failures:
+
+failures:
+    mtc::tests::slightly_late_first_presentation_never_bunches_clock_or_quarter_frames
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 280 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p soundcraft-playback --lib`

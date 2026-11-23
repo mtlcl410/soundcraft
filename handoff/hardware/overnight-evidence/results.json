@@ -1,0 +1,105 @@
+{
+  "bench_median_ns": {
+    "fit1": {
+      "true": 761.149,
+      "false": 747.914
+    },
+    "fit4": {
+      "true": 766.563,
+      "false": 1804.148
+    },
+    "fit16": {
+      "true": 774.991,
+      "false": 6018.488
+    },
+    "atom": {
+      "true": 2.586,
+      "false": 13.807
+    },
+    "p95": {
+      "true": 28.969,
+      "false": 132.223
+    }
+  },
+  "rx_first": {
+    "ms": [
+      6.9881,
+      217.4686,
+      218.8073
+    ],
+    "spread_ms": 211.8192
+  },
+  "tx_first": {
+    "ms": [
+      -13.1364,
+      197.454,
+      197.7634
+    ],
+    "spread_ms": 210.8998
+  },
+  "rx_after_preroll": {
+    "ms": [
+      7.0211,
+      6.2395,
+      5.5734
+    ],
+    "spread_ms": 1.4477
+  },
+  "tx_after_preroll": {
+    "ms": [
+      -13.1452,
+      -13.8191,
+      -14.475
+    ],
+    "spread_ms": 1.3298
+  },
+  "archived_replay": {
+    "roll1": {
+      "matched": 16,
+      "partial": 0,
+      "located_minus_rolling_us": 0
+    },
+    "roll2": {
+      "matched": 16,
+      "partial": 0,
+      "located_minus_rolling_us": 0
+    },
+    "roll3": {
+      "matched": 16,
+      "partial": 0,
+      "located_minus_rolling_us": 0
+    }
+  },
+  "new_din_replay": {
+    "UM-ONE0": {
+      "matched": 16,
+      "partial": 0,
+      "located_minus_rolling_us": 0
+    },
+    "UM-ONE1": {
+      "matched": 16,
+      "partial": 0,
+      "located_minus_rolling_us": 0
+    },
+    "UM-ONE2": {
+      "matched": 16,
+      "partial": 0,
+      "located_minus_rolling_us": 0
+    },
+    "Model12MIDI0": {
+      "matched": 16,
+      "partial": 0,
+      "located_minus_rolling_us": 0
+    },
+    "Model12MIDI1": {
+      "matched": 16,
+      "partial": 0,
+      "located_minus_rolling_us": 0
+    },
+    "Model12MIDI2": {
+      "matched": 16,
+      "partial": 0,
+      "located_minus_rolling_us": 0
+    }
+  }
+}

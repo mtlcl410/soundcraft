@@ -1,0 +1,2022 @@
+[
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-clock-stress/flutter_pcm.rs",
+  "git_blob": "f34c9485a323a638cc11502697b90d6eaa752b2e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/AGENTS.md",
+  "git_blob": "39ad40fc3536094bcf4567f48c313ef70eda7c55"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/ATTRIBUTION.md",
+  "git_blob": "3844107bad15d31c7bc5e76d98c7f1ae21b6a113"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/CLAUDE.md",
+  "git_blob": "43c994c2d3617f947bcb5adf1933e21dabe46bb5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/README.md",
+  "git_blob": "05e51da1143ff4797b67e2abd5552d9c1505e088"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/ROADMAP.md",
+  "git_blob": "ba98f4be9bb898318fd456886f08cfcd2d30f9d4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/build.rs",
+  "git_blob": "4df35b947bc8584a7e0ea53f897a000b4117e391"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/src/config.rs",
+  "git_blob": "b1a1c4fb0403c246d1a97c0634cd989e38e98870"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/src/control_server.rs",
+  "git_blob": "ef684493500d1afb76ff4c49f59cbab911ee70cb"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/src/env.rs",
+  "git_blob": "bee06b304079f0300763843ee8a1b7fae3ed1601"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/src/graphics.rs",
+  "git_blob": "2a932a6765901cdcf7e131de967abc739662d58c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/src/launch_args.rs",
+  "git_blob": "65c4af1cd0f1ff4178e31225ee349c6703106cca"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/src/logging.rs",
+  "git_blob": "a040dd08fcef63debe82529fb3fc418a47f4cb48"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/src/main.rs",
+  "git_blob": "46410a04080f49dc07dc80e5e25fc6076e237441"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/src/native_menu.rs",
+  "git_blob": "b3075168adb3911618c13cfe0a9e34a4371907ae"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/src/switch.rs",
+  "git_blob": "91cacb2377c99600c60095f2e35ad089e49b9f7c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/src/logging/tests.rs",
+  "git_blob": "1103ba68a4e9f149233b2ae8a2cf044b3a9412f0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft/tests/launch_flags.rs",
+  "git_blob": "ec3ef7b2b96494b94cd9d53f45c8c08ba292a0d5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/examples/man-and-completions.rs",
+  "git_blob": "396a62ecec1e535c586330ebf2a21e3214b5f9ab"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/app.rs",
+  "git_blob": "328071897a77768264c63c85ace0eb3795677cda"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/args.rs",
+  "git_blob": "07d453b32ef65b1e9fae239719b06cdb5d823cc8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/catalog.rs",
+  "git_blob": "8d15fe8d2dfe15e9ef1e506e2eebadeed1a8932c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/convert.rs",
+  "git_blob": "9f1a798769f3a52a6329a5b30556c50b5ca507db"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/error.rs",
+  "git_blob": "1d62652bbdfee084a66d42c8a497c95577cdd5ae"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/info.rs",
+  "git_blob": "90e1fcd3f3a94ea513ab6f480045fca1cf11dabc"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/lib.rs",
+  "git_blob": "f72c42a8e53c0eaea1a15c62b7b6ac4a322fe89f"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/logger.rs",
+  "git_blob": "317b44a0f66d756abc6eac5e9983ba621334e9e4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/main.rs",
+  "git_blob": "e29c38f49f4adc849f52791f88bd0716176fee62"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/mcp.rs",
+  "git_blob": "874c85ec70fcbe74410118fa871658b4da9306bd"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/output.rs",
+  "git_blob": "f63842221d3b987eb69a8ec00240b10cc22b26b3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/src/session.rs",
+  "git_blob": "3f09cf64bc3c9ba94cf3d4a7676ea3f0fa7132f8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/tests/common.rs",
+  "git_blob": "446b6caaaf1203e658beb01764bb5f1f286fe433"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/tests/convert.rs",
+  "git_blob": "ae8a30db1b951dee061690678f0c18f84465b7db"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/tests/options.rs",
+  "git_blob": "d8d1c9e562e0a7c974fcdeb20b6d18af049901de"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/tests/it/behaviour.rs",
+  "git_blob": "6fc1dd1ab820604c81b3e926f954adbf4547b27c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/tests/it/cli.rs",
+  "git_blob": "5869f4f6a0a2a69dc326c17e59d3ee18df70234c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/tests/it/closed_stdout.rs",
+  "git_blob": "8eaf59feda27200fa5369aa4fb6710b84e52064b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/tests/it/main.rs",
+  "git_blob": "9f9d78997c8041d7a7805305e832e8b189e41c56"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/tests/it/man_and_completions.rs",
+  "git_blob": "8ed422f0a3240e96b4ef27d5a53a79149f2041e7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/tests/it/run.rs",
+  "git_blob": "2239e89428df335560734f702fcc5c4dcf208d78"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-cli/tests/it/script_status.rs",
+  "git_blob": "d5276021f07e24ef04bb964696b6268bf0cf8ed1"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-web/src/main.rs",
+  "git_blob": "6e52278de7e36012358736a99884149964517bba"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/apps/soundcraft-web/src/web.rs",
+  "git_blob": "d7208883ee4d59a5ba777f77f3f3840b990ead61"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/assets/app-icon/README.md",
+  "git_blob": "196473c9cd8a164e87bfddb217632477b907d254"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/au-host/src/ffi.rs",
+  "git_blob": "47698a5fa745f37163fcb2d284f5c033e51f1d94"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/au-host/src/lib.rs",
+  "git_blob": "cbb569fb3435f88de340008bab24c19469cbbc7e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/au-host/src/plugin.rs",
+  "git_blob": "cc61fbfb2a07e908e130397bab283ed6fc1964c7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/au-host/src/registry.rs",
+  "git_blob": "fae31379844fd39ec503be9fe4c1035cdd75c570"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/au-host/tests/it/main.rs",
+  "git_blob": "a45054763787a9e00736aff830eecaea4c648403"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/au-host/tests/it/system_units.rs",
+  "git_blob": "3d16749ece89c0a8ce3ec5d0361def22b3b9429d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/automation/src/args.rs",
+  "git_blob": "3822bff5e27731f2983587264cee33aed9e1be3c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/automation/src/lib.rs",
+  "git_blob": "757ae9bd4fda00c91fea68ed0e9b9eca3c571354"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/automation/src/mcp.rs",
+  "git_blob": "5bfc8b26271b74f0f1b42c1b741598c22f815a01"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/automation/tests/it/agent_tasks.rs",
+  "git_blob": "6736868f35ad7da7508aa2a61e99c029e321e8e4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/automation/tests/it/automation_roots.rs",
+  "git_blob": "10a745d4acc83e8e862b367ff2d8dfeb71f98143"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/automation/tests/it/main.rs",
+  "git_blob": "fc738242fdd6128ac39ade493c1c47390a857fdf"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/ffi.rs",
+  "git_blob": "a821bbb3ba6ce0130b730708784fa1b17fa808ea"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/lib.rs",
+  "git_blob": "2b89be1f71568ecd51c7e43de8633cb05ec580ef"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/plugin.rs",
+  "git_blob": "1bd0d9eadf0acea97ea4487e5288933d6a1c75a0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/registry.rs",
+  "git_blob": "89169e57602fcbce87c7d86c6310a24853d1c534"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/scan.rs",
+  "git_blob": "9edec8f5597516c7d9f46cda8d097cde13706e0e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/ffi/bundle.rs",
+  "git_blob": "641af37e712efd2f5cf0c633c0f3a2c14552c399"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/ffi/events.rs",
+  "git_blob": "d3bb04fefa931890fc9a560ee96aca7611790ab3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/ffi/gui.rs",
+  "git_blob": "03a843641c9949c8aedcc770fe347514fde8c66b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/ffi/host.rs",
+  "git_blob": "e94cd8a85c4e36c566a304b101b9c775f16865ee"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/ffi/instance.rs",
+  "git_blob": "3ecd3a95efc86f90e92180f68b32d431dda3e3b9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/ffi/run_loop.rs",
+  "git_blob": "b15686e11359337ae28e77b8658ce2df968f56e9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/ffi/hostwin/other.rs",
+  "git_blob": "d57b155de6955f67438446dae6c469bd0da8859e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/ffi/hostwin/windows.rs",
+  "git_blob": "814fc381d0a10263e0bf534861dac35ae4039ec3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/src/ffi/hostwin/x11.rs",
+  "git_blob": "d0acf3727f413685cf0a27cddf561da7460b88cf"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/tests/editor_main_thread.rs",
+  "git_blob": "8ddf3d8ce4de77d5db472655cda949a0e21eb65d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/tests/common/mod.rs",
+  "git_blob": "8590ef70992fda4c6ec2f08d0c64c917edf11c9c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/tests/fixture/src/lib.rs",
+  "git_blob": "31700b66688a5020e839b48e4c92f516e36aea03"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/tests/it/fixture_e2e.rs",
+  "git_blob": "b748fc26703c589f6df0a63b1d75f78108b0e876"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/clap-host/tests/it/main.rs",
+  "git_blob": "ce9567465d2cc7d6794f028645afa0d93e8d1be8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/examples/plugin_bench.rs",
+  "git_blob": "b6d1279162527ccd45966ba8571b9ecb6e91e435"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/biquad.rs",
+  "git_blob": "bc0c7db7ee4b039c222b2ffdc00459b576a74072"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/lib.rs",
+  "git_blob": "3c073ec0f267bde593358013820910770969623f"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/meter.rs",
+  "git_blob": "f5d15d535e10f6ac2f6fc4cd845fbc226543560d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/offline.rs",
+  "git_blob": "3f69112a706e64267a716f8b280a713417561641"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/osc.rs",
+  "git_blob": "d8be0b4cf53b9a994b779ed1443f33f0e1b06177"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/pan.rs",
+  "git_blob": "4cd6870ec103470c8127f036a36a681b4814fd9e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/params.rs",
+  "git_blob": "12b8522b397e4e7aac00ac66a3a21d0d51fc206c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/pitch_detect.rs",
+  "git_blob": "b1b2f0adda4a13f230e78304a3aa2ba32bc0599a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins.rs",
+  "git_blob": "5bba9c9d3a9b7c3ee53ef98828fe73ce9607549b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/spectrum.rs",
+  "git_blob": "2317f03e5c5af35807aaa86186ea4278bed77fd6"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/util.rs",
+  "git_blob": "d20b1afb8739eec2a39c085558bb70dcce4f4081"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/auto_pan.rs",
+  "git_blob": "54f1f0eb257ccb01a444b4eedc9fc0866c4e6216"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/drums.rs",
+  "git_blob": "0dd36e7b7350506bf905dc95489b6803ba6a1051"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/dynamics.rs",
+  "git_blob": "1b8751dc18c3254b3de1e6aa55e70ff2c88ea634"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/eq.rs",
+  "git_blob": "fd948d4f05b90aa3f106c395cf36720d687dfa04"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/freq_shifter.rs",
+  "git_blob": "5ce7c1d51b16d10e3768cda91c6d9058b6214ce8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/harmonic.rs",
+  "git_blob": "8b8ff4b9002ee8453035f851c3e9a64533e08e57"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/modulation.rs",
+  "git_blob": "80d48cc16f70b5c5460b01cd1744d240138d0487"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/pitch.rs",
+  "git_blob": "c9524b2da475712a1b75dc561b8c931253c2e503"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/reverb.rs",
+  "git_blob": "da0b83f5cf31487c8361ae4b3c3c337ac840ea71"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/sampler.rs",
+  "git_blob": "e9ba013b2115aee756721e6589d9cace435a2112"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/strip.rs",
+  "git_blob": "daf8eddf24d80d0edb9ffe01ee716611fb08d20e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/synth.rs",
+  "git_blob": "4dd1447d2f7f763e222554cd6e3953694e973af3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/utility.rs",
+  "git_blob": "80d394e91335ab0d8ce2bf7899dba9500825346f"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/src/plugins/sampler/tests.rs",
+  "git_blob": "e0479d0107cd7da98261d15ea3cd952f930645c4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/tests/it/auto_pan.rs",
+  "git_blob": "d615301ef08c40f22b55447d63a02a85b39eb602"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/tests/it/fuzz.rs",
+  "git_blob": "561e195b1bd3d2ebe29060ed35d0f11e5202e0be"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/tests/it/main.rs",
+  "git_blob": "51a452bb6817c7b6ff72156463f90c29f99d4ef4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/tests/it/offline_meters.rs",
+  "git_blob": "bfd8c65eb4853321c7557197da64ad29afdfdfea"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/tests/it/offline_normalize.rs",
+  "git_blob": "6ed4797365359cb5230a7c0b4974505ca0dc2783"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/tests/it/plugins.rs",
+  "git_blob": "94d8d3297bf5c450cef152f9d6e533b60d9a1580"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/tests/it/speed_ramp.rs",
+  "git_blob": "a62661cddc2e38c2e5fe133454d3381650f27f97"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/dsp/tests/it/transients.rs",
+  "git_blob": "893a04867262c4384b1955e62d194b6654e41f4f"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/examples/bounce_bench.rs",
+  "git_blob": "8174f82def974add3a4827331fcc69b49529cbbd"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/aaf.rs",
+  "git_blob": "5432ebd110245a9252d46d562749eaceb797a899"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/autosave.rs",
+  "git_blob": "82def8be5916807d959a9cff9b17b0b756b35e78"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/catalog.rs",
+  "git_blob": "37e99e4e8608b44a7114b2f00dc73f1dcc0cc912"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/catalog_more.rs",
+  "git_blob": "7d096709a4f21c6c608f68b17f45d469e7f8504d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/clip_group_file.rs",
+  "git_blob": "7e0052b4d931afe495735029eaf4bab48ec00392"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd.rs",
+  "git_blob": "fd16064534a0a57ec8d545e4dd714adb42461002"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/demo.rs",
+  "git_blob": "db1d776adb616276653e4f0e56c058e18d94ac9e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/dirty.rs",
+  "git_blob": "d4d9de3f1df1862872a77fa6ac53760049159b55"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/edit.rs",
+  "git_blob": "8df0d49c00947f1606ebfa681fa1788f23d659af"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/feature_names.rs",
+  "git_blob": "5fb79526bd822dc19b4add50f97dfe33fd3960a8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/file_access.rs",
+  "git_blob": "73e92c666d2baa2e39c99732bf8582d50d616bb5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/inspect.rs",
+  "git_blob": "6869c1e8f69f7581c8f83ab1bcfe830fb2584006"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/io.rs",
+  "git_blob": "87e02cf85e48d424961467cf9f867af351947469"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/lib.rs",
+  "git_blob": "3cc02f8aff146bc7b9ae2c602b35703fdc1ddb24"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/score.rs",
+  "git_blob": "35bacd0b7c96a2a3a9fe6c86b9a50e61fcdacb41"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/aaf.rs",
+  "git_blob": "e758d38bc233cb0841d8360880d867b5cdc0f680"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/audiosuite.rs",
+  "git_blob": "bfc7687fcc12be123dcdb9e55365c3b27f2b7fdb"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/audio_midi.rs",
+  "git_blob": "21b6995d23dc8aa077c42b04856d18d9a1928341"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/auto_rename.rs",
+  "git_blob": "5bad8597caef0a570886d094d7a9b82ffaccf631"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/clap.rs",
+  "git_blob": "4dfade07b74135f822646bf254b416632709fd51"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/clip.rs",
+  "git_blob": "c39b87e923d94991bad007c33d92c57df450eb5d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/clip_list.rs",
+  "git_blob": "b63e3cb344604de6f3f09b2b5f735e44e992821b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/clip_more.rs",
+  "git_blob": "e62e2cc00367f2df0a07e45b3649ec992d07d0e7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/edit.rs",
+  "git_blob": "a0a471c48c997f09bb7e69b51a9549e40d72aa6f"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/edit_more.rs",
+  "git_blob": "d918c9b46c0403d8d44633d4e938725b4ea68c55"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/event.rs",
+  "git_blob": "842b1331177b721d85160794854d04fdae52c29e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/event_more.rs",
+  "git_blob": "3d7848cddc4be593ef8ce6ca7413377ae096e347"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/file.rs",
+  "git_blob": "72c6de755366ebca8908b2ab684f0feea05c460d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/health.rs",
+  "git_blob": "f8ee6984ce949acc3db55b8d1ae4aa1bde538f12"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/instrument.rs",
+  "git_blob": "2a71ba50cdfcf4266ad8f28fe4b01d0af0b04e43"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/midi.rs",
+  "git_blob": "bb251afbf598a44ae131df1615de339495eca7a3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/mix.rs",
+  "git_blob": "899c042e7b02417486b46153253b22b57645830c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/more_util.rs",
+  "git_blob": "1a0ac738b17217e82465bef0705258e81c9af59e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/options.rs",
+  "git_blob": "3855ef60cf9adecc3df6e8f0a82918a04fb91dde"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/plugin_state.rs",
+  "git_blob": "db58009164ced6d9bd0e09310a21a24986e56a57"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/query.rs",
+  "git_blob": "3aefa8526779fb781da4795b5c537138e01b2782"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/sampler.rs",
+  "git_blob": "349e053003bb2938bcfccb2dcc4cc65ee5d3e7de"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/setup_more.rs",
+  "git_blob": "7c706d76e81b4091147ef3d0d9bf6fe5ea2f161b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/strip_silence.rs",
+  "git_blob": "4fbc51c179ef6fb35a712292a6212da87e35d305"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/surround.rs",
+  "git_blob": "8b098b40c81a2f25531c3ad45dfcc0e8a302cb85"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/tab.rs",
+  "git_blob": "f06caed8bbde9495a82ca7181fcd158c5e0ffefb"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/track.rs",
+  "git_blob": "24dfd7fd7735389cdc6ec166fa45e2463725a08e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/track_more.rs",
+  "git_blob": "c7b9ddb8a5f253150e1f94c05bea6d42084a2a17"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/transport.rs",
+  "git_blob": "741233acbb08334859258530244c19e9a1f77abd"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/video.rs",
+  "git_blob": "1c117eb971557c309b7d23091e23d6b506470927"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/view.rs",
+  "git_blob": "c64f9387c935aa1abdc6528d9fcca4e7388fd69b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/view_more.rs",
+  "git_blob": "1eae739724d3ff459ec6e9cd11ea1d55655d3c17"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/vst3.rs",
+  "git_blob": "338c466c145976d9ce9f2d8f0b15207ac01baeff"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/zoom_toggle.rs",
+  "git_blob": "2735133d95e4c9eb22daba0ca3e13655facf94bd"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/file/tests.rs",
+  "git_blob": "49f3e053a19942c3c694b22f7211855d232de6a4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/cmd/mix/tests.rs",
+  "git_blob": "1ced71dda6136211d7c440821040bedbfa94ae59"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/edit/tests.rs",
+  "git_blob": "0bee38935e7767b10cf74803fa833e9caeb56744"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/io/bundle.rs",
+  "git_blob": "566a77c80998986e16a61ae011fabf660b35025c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/io/import.rs",
+  "git_blob": "0b801ee31fd21ab377fc183d8987fe0f66198e25"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/io/midi.rs",
+  "git_blob": "d30426658f96271e558bd94e1ca16221a588d6c4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/io/midi_take.rs",
+  "git_blob": "a9d95eb7729ef9945af2bd92841383877ee73361"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/io/record.rs",
+  "git_blob": "d9c6e3a52ff878d2470ab10fd479ad27d346ef59"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/io/render.rs",
+  "git_blob": "d38e1d277adb2d2e8bc42ebcd77a36472457506a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/io/session.rs",
+  "git_blob": "69cf427e72f79b7ba05e86eac53b7871efa10eb7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/io/strip.rs",
+  "git_blob": "4892c94a242f419d6fd9f4d142fbc41c3a7b50ba"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/src/io/midi_take/projection.rs",
+  "git_blob": "cbd0f4db0ba233d443339ab38c1f8069b177fdd1"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/aaf_import.rs",
+  "git_blob": "1b39b60a987fb9ea7c8f1ce558e9d710f38a9537"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/bounce.rs",
+  "git_blob": "6dda53d5b01666ddcd3b5215d1f0bb06fe1ea5cc"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/clap_e2e.rs",
+  "git_blob": "7086c01682e58eb872eab07c5e856c2609b34554"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/commit_multichannel.rs",
+  "git_blob": "d592afd8e1992153c9e6b0828ed89041e4635db5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/consolidate_selection.rs",
+  "git_blob": "db5e93844c5395ac9c4f6477ada31c0f2aaf35cf"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/current_feet_frames_position.rs",
+  "git_blob": "467c49b2682539ad4b5459c8ab8747ede67681c4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/edit_modes.rs",
+  "git_blob": "57c6e80d4aac11b75324dea762cb6f83b3d433af"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/fader_merge_full_history.rs",
+  "git_blob": "c465653562058fab61bd01aec0d46815c28889e5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/hostile_params.rs",
+  "git_blob": "5aa6d39dc21922d487d356d0e43ba8fcf5b44d6c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/hostile_sessions.rs",
+  "git_blob": "06b785ee57abc0ebde0797d63e97b9527cf6c16a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/long_renders.rs",
+  "git_blob": "bb0a6d922c526007297e0dc175eccb3971363c63"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/main.rs",
+  "git_blob": "2c8ffa96443f32fc7e4ff82cbbbd00c03da7bf68"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/midi_offset.rs",
+  "git_blob": "9953d08dccf2fbf8ead57966877bf103c88985c0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/min_secs_with_timecode_counter.rs",
+  "git_blob": "7eb96d283d8d87544dfe9a7dc4e2cb3756a29105"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/mix_required_params.rs",
+  "git_blob": "f11e2f318f7e45b0cf1d98de3bd025766607e146"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/new_track_rows.rs",
+  "git_blob": "1a80b8d683e12c8c7e5a28deb547a489f7ab9978"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/processing_keeps_crossfades.rs",
+  "git_blob": "9ad26fb1c9e9a343607f6a8b471f9d4658e6d974"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/random_edits.rs",
+  "git_blob": "8d90ccf1841b7511274c2a2f89f932394e24c309"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/recording.rs",
+  "git_blob": "fc754fc98f9cf47fa279231b9f3bb14ef99ec579"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/session_transport.rs",
+  "git_blob": "73048e172c8119da7216515d29faeb3051a1c4b3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/split_into_mono.rs",
+  "git_blob": "80f4440ee2e98252d7cece90d870fc891b5a294b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/time_key_signatures.rs",
+  "git_blob": "8b1d58601ae0eb5d8d624f02ee3f589b76b60135"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/track_name_collisions.rs",
+  "git_blob": "cff5b27750ba75624f4af17f18201c9143bf3568"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/engine/tests/it/trim_to_selection.rs",
+  "git_blob": "c6066a0cf4758e588d848b61fcf93ee5b2baa2f7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/interchange/README.md",
+  "git_blob": "0b6642563385cbf9ccaabd9f8fc1d9fa84f81e58"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/interchange/src/aaf.rs",
+  "git_blob": "c300e5804b407241ca55b3a20b9d3c52d488d74b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/interchange/src/lib.rs",
+  "git_blob": "2d96fabd3b49a84b5d0d76f826c76a5a3fa48048"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/midi/src/lib.rs",
+  "git_blob": "aff14495092eeca635e5653cef0b5b84c1e8fdf0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/midi/src/names.rs",
+  "git_blob": "b8acef6580032a4324e2320a73432f6dc03d3efc"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/midi/src/ops.rs",
+  "git_blob": "e6da99591f9e4b91e3f7f2717b4de06fd247618a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/midi/src/rng.rs",
+  "git_blob": "d473378405df8db41f50751b0385e5b4e0fcc7d8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/midi/tests/it/main.rs",
+  "git_blob": "c11e1bdefe784e21f52016dd9d69d71733f54331"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/midi/tests/it/ops.rs",
+  "git_blob": "d38812b93148d60bf1211f0d6973398ec3b17173"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/examples/render_bench.rs",
+  "git_blob": "de8ab95812755e8f649c2b1c60297135874dca51"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/automation.rs",
+  "git_blob": "59fcc29a8897d7e874d2cc9a95c06797695175da"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/click.rs",
+  "git_blob": "9a7386ce6076a605a549418cd86fb612cd2824b4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/clips.rs",
+  "git_blob": "6c9fbf15360a90ef264b1b4e41eaa0c8b85fc23c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/instances.rs",
+  "git_blob": "fdf67d86aa08fc51f364d17668e11f7979cc9000"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/lib.rs",
+  "git_blob": "5da8bfdd620282fef5ca6a3886ae29e08f1ff1f0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/live_midi.rs",
+  "git_blob": "a20df83d4bda007ee205a2bfe058aab24e12dd99"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/meter.rs",
+  "git_blob": "221cee89366a79377ea230d9eec5aeefbd2d3d92"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/midi.rs",
+  "git_blob": "b09edcdec9becf324631fbc305dc96a838beb6c2"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/midi_clip_bounds.rs",
+  "git_blob": "cbe9135da6b13c84e0b2bac0f450e2affad073c0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/offline.rs",
+  "git_blob": "85add656b93221fa95922b0e311473c049780177"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/pan.rs",
+  "git_blob": "cb8047a71c1c832318aa4a9f8a5dce28b13e3ef7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/routing.rs",
+  "git_blob": "92c1cea2b88803a931fc23e0f707a111460e0778"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/strip.rs",
+  "git_blob": "b3fd312bd779bcc1d1cb39bd6715f14707fb1b97"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/tests.rs",
+  "git_blob": "da9da65d0cdcf73d1c390f5c522bb3cac4ffcdae"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/src/threads.rs",
+  "git_blob": "b9f05f61add0280af728a02a256cdf78f39afed4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/tests/it/aux_routing_order.rs",
+  "git_blob": "5cc5360d1ce6a138e00219b8f084f85a96caf0ce"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/tests/it/bus_aux_interval.rs",
+  "git_blob": "a8b469476376ae6135c8419466ecb0279af653fe"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/tests/it/main.rs",
+  "git_blob": "de468bfe084911018b3fcb88d47c444a6224bb9f"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/tests/it/master_insert_latency.rs",
+  "git_blob": "4ee9d549e2316d29c5728ae0a7f0ca9755272a28"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/mix/tests/it/strip_mute_automation.rs",
+  "git_blob": "40ea38a985caac60621011b9ece0711df2dcbcb5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/model/src/lib.rs",
+  "git_blob": "6f52adf988f9ed877cb914b9669fd2bb3fa86f71"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/model/src/midi_beat_clock.rs",
+  "git_blob": "e12a86cf1685932f19539476811fd1fe7000fafe"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/model/src/midi_input.rs",
+  "git_blob": "22a469ee684d77e9de2a727281a32da9f9ba2b2d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/examples/midi_keys.rs",
+  "git_blob": "8e5c8873cae9a2fdf3d248b69ed783c60e1f3b25"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/beat_clock.rs",
+  "git_blob": "b02855a67b2bd2d5b32c420885866f04ebfeac42"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/callback.rs",
+  "git_blob": "a79657805e1924f7fd41ed67a4cc280b5a910029"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/clock_follow.rs",
+  "git_blob": "099fa0aec90236334035bfb824540afe1feabf75"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/devices.rs",
+  "git_blob": "e098c6d8875f80f823592d5e4cacee5bcc9f8506"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/lib.rs",
+  "git_blob": "11c8b8ef644cb40cc7c83a98327d2be7bf959788"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/midi.rs",
+  "git_blob": "3383579df5ed28b09ff0465f0671f3b563614b3f"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/mtc.rs",
+  "git_blob": "49ec5ac7a0fa15533e8b4314a004dcfa1310ba06"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/mtc_input.rs",
+  "git_blob": "b71dba5411dec99427207a54afc5c545aa98b1e8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/mtc_sync_output_tests.rs",
+  "git_blob": "e4dae606278c1ca7badf107290f776319b3a4fd6"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/record.rs",
+  "git_blob": "68f0ee8a523fa1db7f910ce3e9c90aee30d1ddf0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/stream.rs",
+  "git_blob": "7ffcf52fa0a1d84681ee1a775f05c428a0201296"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/stream_recovery.rs",
+  "git_blob": "3b807135434c281469cf51fabedb11c686e4a2f9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/sync_clock.rs",
+  "git_blob": "0a34408c289b1cfb13c620c4a8c3696c5a15d5a7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/sync_output.rs",
+  "git_blob": "fa7667cbb695d8e201f118ec2ad74246d6ae9162"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/sync_output_tests.rs",
+  "git_blob": "516ca16a5b26dca42c798ceaaa2a30fbc4017efc"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/sync_status.rs",
+  "git_blob": "f5f5c9d08d745ba7f692af88b930ceacd134084c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/tests.rs",
+  "git_blob": "b2ff069b248ebccc9505a7f52adc088853aa093c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/beat_clock/recovery.rs",
+  "git_blob": "889e5923784b805ed794a5661cb1fbd477a27f91"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/clock_follow/render_lead.rs",
+  "git_blob": "356ac82f582251f99f471fff8a328f84b3303d4e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/clock_follow/tests.rs",
+  "git_blob": "91a7a86ef957c79e2dee936947c9af5601560374"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/mtc/tests.rs",
+  "git_blob": "0d5a5faea90eaef224ea8be068699217dfeb82a0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/playback/src/sync_output/port_io.rs",
+  "git_blob": "f5f013b82c327d5e1f1357f0cee5dcae3d6cc75f"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/time/src/lib.rs",
+  "git_blob": "7b641b98d76e06aa0862ac18ccdbdc1db12b0d3d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/time/tests/it/main.rs",
+  "git_blob": "a43e92bf021a8b4f81fffa7f048bb6ad46272f52"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/time/tests/it/meter_grid_contract.rs",
+  "git_blob": "5d22432488e4c04548ed8d984b325ccf5934077c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/time/tests/it/min_secs_exact_ms.rs",
+  "git_blob": "738a4bf4fbeb4357860f18e1394219c310bd2621"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/build.rs",
+  "git_blob": "3116b01db3825c9f0d2af8989a49f76bf69c0f12"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/examples/parity_missing.rs",
+  "git_blob": "4b1008353f206084e676bdfe006470bb10516df7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/examples/ui_shot.rs",
+  "git_blob": "8afbe683ccddc7ec9c0a39473af4cc3f1bdb3cc6"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/locales/pt-BR/mod.rs",
+  "git_blob": "d74e638ec13f7338ba38ffce6956180e26330f18"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/aaf_import.rs",
+  "git_blob": "2b7306056981227736a54ee682a75b9296966488"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app.rs",
+  "git_blob": "39b7bad7190c875003a44282629cd312f16a102d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/appearance.rs",
+  "git_blob": "da917bfe2ba0744445fba70f7f354ff723f681a6"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/bounce.rs",
+  "git_blob": "04e75ecf503fac51531475d1c875e34630a31fc1"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/control.rs",
+  "git_blob": "fa180245db35697144e97f6c2ee71669803e43ea"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/credits.rs",
+  "git_blob": "9feb73a37a2a07b35692185aa3ce7610dcf604a9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/dialogs.rs",
+  "git_blob": "7639accf223a70b048d06de7a4f3caf622f59179"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/docking.rs",
+  "git_blob": "705d61a1bb417a4956c9f3260faf8f2100cd2570"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window.rs",
+  "git_blob": "fad289fed150d2336089661f7d24456dc919dac4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/fonts.rs",
+  "git_blob": "514c10a11823ff8f384229a19bf8c37c2a79d12f"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/icons.rs",
+  "git_blob": "4dc06c595cb57674347c80b5d42cd9c96b244293"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/import.rs",
+  "git_blob": "ef24268208863c1f448ece7c40a682fc999f3523"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/lib.rs",
+  "git_blob": "d54f7779e36334889b793ad4150bcec39472f31d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/localization.rs",
+  "git_blob": "8b29bd664710c5ddc716bb08e252af45187ca5ed"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/menus.rs",
+  "git_blob": "8365a3458d5bee9e31b7bf36f695741205c9baa3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/midi_sync.rs",
+  "git_blob": "f88f1011c1e5dd56e852a2cb5f85c8302ffb284b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/mix_window.rs",
+  "git_blob": "d176764957cd9db9e5e5c939d26913abf8a3f1b2"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/palette.rs",
+  "git_blob": "b4331dc9b2c235055e08d1042413ab21ee57aa89"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels.rs",
+  "git_blob": "bf5cf4590c788452eefb3f8e08cb6086491ff43c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/preferences.rs",
+  "git_blob": "e2376f341fe89ae9c3b2c331f8357f1accb3ebef"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/services.rs",
+  "git_blob": "1b5469e4a351f79b3ce49b50e15ea2fd119a4f30"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/shortcuts.rs",
+  "git_blob": "a0098b145e90f4812d37b315612eb5758db3376b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/state.rs",
+  "git_blob": "fc7259b41799f5fac64b55d91ce7fee4df40b177"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/tests.rs",
+  "git_blob": "8efe9437409363967f0daefd0deafcaf3020a601"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/theme.rs",
+  "git_blob": "6091447227662289ceabf10c2ed99ea38d96e6e1"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/toolbar.rs",
+  "git_blob": "94709ae28bf02b3085ce0bdbc9402f117004bdd6"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/updates_ui.rs",
+  "git_blob": "7e7fa4620322eb84c31a95d73ddbc5ce8abd27e3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/video_track.rs",
+  "git_blob": "7b818edcd12f1157bc9331e7406d232509bd8118"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/waveform.rs",
+  "git_blob": "620662e2eb03a96a0c95a1311c64587e4572ca90"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/widgets.rs",
+  "git_blob": "cef5c5727c0c1a11c464269aafb3d8565f95caa9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/audio.rs",
+  "git_blob": "00d407077a64f489b87bd06f6d4251b742b358b6"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/commands.rs",
+  "git_blob": "a52b37c02889cbb43381d8fd90394e39b58be805"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/control.rs",
+  "git_blob": "7ebfdc39c4e24da06058582dd9b487715aa48418"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/files.rs",
+  "git_blob": "161fcfe37eb88d74ca8a389946a6737f11eade8c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/input.rs",
+  "git_blob": "2827aad337dcd7522347b5a8cc677e2259bb55a3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/midi.rs",
+  "git_blob": "a15dbbcbafa46aedec6a32b0cb99de64a0568086"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/mtc.rs",
+  "git_blob": "a849a9f5a85f4638174bf332f987aaf096a4b386"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/mtc_output.rs",
+  "git_blob": "a91546c5aaa5cfc591aa043279b816bd79fba856"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/playback.rs",
+  "git_blob": "785889fcd73abeb399b12697b0b3ed9a3efdcfd2"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/plugins.rs",
+  "git_blob": "d7f8ac17627af5b5e3e38a631fe6090274bd6705"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/clock_follow/tests/coast_relock.rs",
+  "git_blob": "c042f28f79f2b4ac06373737d2407b563f1464bb"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/clock_follow/tests/large_steps.rs",
+  "git_blob": "b89fea4edf74f00c1987c3fcfdf6042e5afba92f"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/clock_follow/tests/packet_steps.rs",
+  "git_blob": "d6dae9f85958469f72ced6a8d6bbea5c8e116138"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/clock_follow/tests/ramp_response.rs",
+  "git_blob": "b59210a1c027d56195d0b4ba48c5437518ce91c1"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/clock_follow/tests/recording.rs",
+  "git_blob": "0cb89376104fe4fdc50de5f10c557ec9ed50ac14"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/clock_follow/tests/sampler_song.rs",
+  "git_blob": "ca3990dd5a8140c7b7d6f0a382f5ab63467a22ff"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/app/clock_follow/tests/slowdown_sweep.rs",
+  "git_blob": "e0de60c436c54cc813a348c3169a635fd6c14f37"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/control/tests.rs",
+  "git_blob": "e12545ff127bdb30c297b76f0f51160618078d0d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/dialogs/audiosuite.rs",
+  "git_blob": "1771b3de74dd8e8b33614c980e2976f767e39213"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/dialogs/files.rs",
+  "git_blob": "1e56fa5444b8cdc8a0e2dc04ea9d3a6128e2db89"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/dialogs/midi_beat_clock.rs",
+  "git_blob": "2488d34478901a6440031bf1a9011f2f79d73485"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/dialogs/new_tracks.rs",
+  "git_blob": "80865a7b183654843133f827b8f6e11ba175a991"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/dialogs/ops_windows.rs",
+  "git_blob": "430eac2e4bd08511967ae79ce95db204966b1259"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/dialogs/recent.rs",
+  "git_blob": "221880f7d207e8169f0c8fb867e107366568b25b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/dialogs/recovery.rs",
+  "git_blob": "6b8782a2553936d595f7992be89d50b4a63b4cf7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/dialogs/session_setup.rs",
+  "git_blob": "710672ef70df14cfcf6116717224c1bac183fecd"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/dialogs/spot.rs",
+  "git_blob": "0a2a4ce6a6b7e148845306a574b58be625f3f998"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/dialogs/strip_silence.rs",
+  "git_blob": "2b78bfa6b386fce299145a6ff108cb93fac377e2"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/automation.rs",
+  "git_blob": "d31279829d6e1fc80c0c661121faa870fa5740fd"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/clips.rs",
+  "git_blob": "6fe384a04c709c7946b7dc8cd13e90bd5d45cd9b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/drag.rs",
+  "git_blob": "0a31dd6f621e31d3ab4b2a1190e7061e33b27e2b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/header.rs",
+  "git_blob": "b6f8f1cab362057436d84cd062d3dcb45379f636"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/input.rs",
+  "git_blob": "11beec41d63fcd081631ffa48847c9be154840cf"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/layout.rs",
+  "git_blob": "4af86e354844452874d39489782ffa5fb287348e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/overlay.rs",
+  "git_blob": "f519042ba9e02eb8591a3bf3093fed970f892035"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/rulers.rs",
+  "git_blob": "f9fef872ba2b3ef989ba3201d821301734abe13b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/scroll.rs",
+  "git_blob": "ba0b9b7285c90bb49ecbddff72742b81f57ce9d9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/tests.rs",
+  "git_blob": "4a2ac4d1ce0c41889835cc3ce0dc17da89b2c29a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/tracks.rs",
+  "git_blob": "1f9813fd1cc9e2dce4f67149fbab841d1cabcde5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/edit_window/universe.rs",
+  "git_blob": "fa73e0ed23045bcfc61b307495bb1311b1e7b6a2"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/mix_window/output.rs",
+  "git_blob": "afeda61321039a82bec0a0ef346801f9d97586ad"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/mix_window/plugin_menu.rs",
+  "git_blob": "a37d9f4c07d9d05a0c42a2f309ff4aa66e6f8a5a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/mix_window/routing.rs",
+  "git_blob": "a45f676d506d88ac2b911aef0fa343511a51e6b4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/mix_window/sends.rs",
+  "git_blob": "8383b4ab42b064fc17a49b366cd6232792b6aac0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/mix_window/slots.rs",
+  "git_blob": "b1f73f7636b1e810e864522d1238cbf00ac39974"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/about.rs",
+  "git_blob": "118f0147d0970b582c1c002b0b8c9efe6f13da1d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/clips.rs",
+  "git_blob": "6cfc33d77ac6400b8a50d335ea5f04f931e5bc02"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/extra_windows.rs",
+  "git_blob": "b4119bb0c36014c549c07b9cda2059238841f91d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/history.rs",
+  "git_blob": "8d8c9e5fbe637929dd64f75ee226901106cdbd72"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/memory.rs",
+  "git_blob": "52fc671a5d97151ddeda7a4f338f1dff5e1c3548"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/midi_editor.rs",
+  "git_blob": "df87c72d27cdeaf1fe9d7b3d74998c974efda963"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/plugins.rs",
+  "git_blob": "6eae707b8cf6864f61bd573e3d8ab2881f179ce7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/sampler_window.rs",
+  "git_blob": "b3c4eece0f822c855d3c808c54e86590003f3b1d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/score_editor.rs",
+  "git_blob": "cc1c945e446f16dbbaa85b483ba25781db99dbd5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/tracks.rs",
+  "git_blob": "7a1820e448b3697c190b4b08eb44821846d07dc6"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/transport.rs",
+  "git_blob": "1950c339bac2895b5d254f0ed2f01172a145d8cf"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/video_window.rs",
+  "git_blob": "4e50087242066b1926c7aee6ac7e552b67153c78"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/src/panels/windows.rs",
+  "git_blob": "72e7db32f4672c622e16e2fa193f2b50c283f0e3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/delete_key.rs",
+  "git_blob": "247a1317468cca51361b9819f235992a0686bc72"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/edit_io_readout.rs",
+  "git_blob": "fe7b1068dc4241be195185f8f963132f373889a8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/flatpak_updates.rs",
+  "git_blob": "ca25c5e2a36c0cfdf93b801c9aed51ac70eefcd2"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/grid_lines.rs",
+  "git_blob": "6b0301d455093077c980ec424605f31f345c7d24"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/mix_instrument_contrast.rs",
+  "git_blob": "2bb6cd9281af0a049912478dbea5e1d25cc3db60"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/mix_strip_layout.rs",
+  "git_blob": "3f1b0bb306a4560b6ca20690a6367e7f2a288e47"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/recovery.rs",
+  "git_blob": "5c295c808c51dc9d3e2965ef5da81d5b14cfad29"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/theme_docking.rs",
+  "git_blob": "54495c22a8a4dc080f239fe7b615c495520fc141"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/appearance.rs",
+  "git_blob": "87145a855cf46f1c321c69c22ff2bc68a3ba7944"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/audio_device.rs",
+  "git_blob": "7294b3e9276e7ab87c6261eaafc01629b296c250"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/auto_rename.rs",
+  "git_blob": "3dfd675cb86527e505fe9e3c6ea1c65e1c3890fb"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/bounce.rs",
+  "git_blob": "9675b214df745d8a400bc12c5c42235737cf9101"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/bounce_dialog.rs",
+  "git_blob": "df95281d2600fcd7d784c4d7e789a17040ca19ef"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/clip_gain_fader.rs",
+  "git_blob": "2d456b3ee4b2821bd775b3fb8f8f929016b1f51b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/clip_looping.rs",
+  "git_blob": "310859e3c06d59582ddffbbcb2af546525e6b96a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/clip_menu.rs",
+  "git_blob": "bfac15b619a54d328f04a7deecad932b0f0cc870"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/commands_filter.rs",
+  "git_blob": "c0486f4657c79866844358b468ece81fb719ae43"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/command_reachability.rs",
+  "git_blob": "62d96c18fcb8fec495260c180683c425fd81ee52"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/docking_columns.rs",
+  "git_blob": "94faffcca040c1f8038199ce8e2a0c4a8a41ad7c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/docking_workflows.rs",
+  "git_blob": "4d97a1b2711f82e1a88b75465edd370a1695683e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/edit_menu.rs",
+  "git_blob": "8fdbb526905364ea55371855c513adfa4bb7fa05"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/edit_modes.rs",
+  "git_blob": "0309590559c48ae6524e0a89afdf96e1db741b9b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/edit_window_headers.rs",
+  "git_blob": "e1f73546f501fde23b9f044488520160ad0c8b7a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/focused_dialog_buttons.rs",
+  "git_blob": "bff4ffb199ebab2839a0eb76d65855a4b62784b0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/group_dialog.rs",
+  "git_blob": "bd17ede93bfa7c369a89a10f7dd141ea41bc5645"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/hide_floating.rs",
+  "git_blob": "7e9c2bd3c4fd67d951a6061f2816ce81d33cbc13"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/idle.rs",
+  "git_blob": "fcdc6f43afe95e32eb6efc001338ecdcd7fd2b2d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/import_browse.rs",
+  "git_blob": "03299b7c5c1067e470efeadd523b3301821227b9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/key_families.rs",
+  "git_blob": "b3d728ba004524fca058e79ad3ad7e73c490eaa9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/long_menu_scroll.rs",
+  "git_blob": "48aaf32d6eeb8c6fa0b203829d77274dac7a9f7d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/main.rs",
+  "git_blob": "bb3548616fcfea55a135533d6c2f3832eca7e499"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/marker_rename.rs",
+  "git_blob": "10ec422adbd460028037fa4c769e86b839a76b84"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/menu_search.rs",
+  "git_blob": "854b69efd732d888c02dc0f533199e0f34a49b65"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/midi_double_click.rs",
+  "git_blob": "7ed6317615b86521ac182a6fe81516fa546e18bd"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/midi_editor_keys.rs",
+  "git_blob": "78906d0e5640e173ec0dbdc7189b3554b18913a9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/midi_front_visibility.rs",
+  "git_blob": "9fa1c739e527c72f016bb150a0fa587b0d214873"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/midi_inputs.rs",
+  "git_blob": "984bef7a2f1bb7166a72aa7827d17b66c77bd7fc"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/midi_panel.rs",
+  "git_blob": "7fbb61d8f4c03437ebfb28655ffba42e292055f3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/midi_quantize.rs",
+  "git_blob": "de9b0b33777eaae2f5096f12254330d505f068e9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/mix_narrow_headers.rs",
+  "git_blob": "6e248c02fb7bd9eb57a3b274fed4a4d8a34b8912"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/mix_separate.rs",
+  "git_blob": "ad883b96b3ae2e5a6cdee5e23f769b53d0eff474"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/new_midi_clip.rs",
+  "git_blob": "dae4bdbf68c2f1ae3643499b1fee42c4be7500d6"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/new_tracks.rs",
+  "git_blob": "53cdffaf3f98efba81a8ec6a50a40749f5d2812c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/open_on_insert.rs",
+  "git_blob": "ec62835e3517319a41754d8b9e835d238f35d559"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/plugin_default_reset.rs",
+  "git_blob": "df6326e78786927c4d02037006dcfbaef4ecf265"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/plugin_fine_sliders.rs",
+  "git_blob": "0ff092442a6c6d1ed442746fed2c6691c300e2ea"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/plugin_window.rs",
+  "git_blob": "553b6a8ee6961736a9faa8e0282b5d00eb29f47b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/pro_tools_keys.rs",
+  "git_blob": "3276a7159117ed6344d38eff8e20d6e952717e5d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/record_hint.rs",
+  "git_blob": "afcd11a03b9a64155973aaa664959ac056b34c6c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/rename_dialog.rs",
+  "git_blob": "7b10b73b66eab64a2fce2120dc75876ecbdaf182"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/rtp_window.rs",
+  "git_blob": "cd62eb539478a486ace1564cab8deba379aefc3e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/sampler_window.rs",
+  "git_blob": "7762bc0697bb587eed86d3e4c3e84638a7209e44"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/save_as_replace.rs",
+  "git_blob": "717e2a6f49e92acadd04247ff70abe68ca7c81d2"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/save_changes.rs",
+  "git_blob": "c189391b869dd1bc1e8a8829f74c43fa141b539b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/scroll_into_view.rs",
+  "git_blob": "2a81735778e96b78c7e72f4761838a480ea1dcc1"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/send_window.rs",
+  "git_blob": "30a2d7bd9e4a2c1aa818e818f97dac4b2464c3ba"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/shared_controls.rs",
+  "git_blob": "acee071cb11544db8178bb382bf3aa2be77ac06a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/shortcuts.rs",
+  "git_blob": "426717e02ff801d1a39e5ba0b995a8b0ad9be024"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/side_lists_access.rs",
+  "git_blob": "c44bc4ecda650f6466d3a70c41b7fa2122e3e633"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/side_lists_text.rs",
+  "git_blob": "a99929a852df1f42c14910962b40fbaf8178ecda"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/strip_silence_dialog.rs",
+  "git_blob": "dbc1083e33148172140db8be2acce3e456ff83f6"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/strip_silence_rectangles.rs",
+  "git_blob": "a76445ec6e1f50bbdaf1bea19cdf96fd11ed80b3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/strip_silence_rename.rs",
+  "git_blob": "9f20c33d9702c1e582a4adf9fe4becad102b2e9a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/strip_silence_sliders.rs",
+  "git_blob": "42e5d31679bcb7fbe3c57f358ab3a67268e22a00"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/sub_counter.rs",
+  "git_blob": "80c3f0a5336f6097ef29a5680346e1b782811ef9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/toolbar_scroll.rs",
+  "git_blob": "e71f5f140f344f3cfee33be33b5d138f97185b72"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/toolbar_tempo.rs",
+  "git_blob": "67ad3f53c6e8d1ec66b9416932e218c2b2ea6187"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/trackpad.rs",
+  "git_blob": "fcbea19f25d958256c55c6d468dabb07d52a94e4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/tracks_scroll_bar.rs",
+  "git_blob": "523fb63a25d35a3b7de5e91c0b1a373746bbcb8e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/track_height.rs",
+  "git_blob": "027dad9373c23dc1102ee99181499faa47579056"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/track_list.rs",
+  "git_blob": "b0407b29235cd0133889ecfcd0eed6047c798a07"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/track_name_menu.rs",
+  "git_blob": "4a695ee2ec7ea03e3493ff9111fb70a490fac9a8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/track_preset_state.rs",
+  "git_blob": "048f6f288d6fc4a67755604cb4deab648545d878"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/waveform.rs",
+  "git_blob": "489ba0fc3474712702c84717b567a5c30a007d36"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/window_shortcuts.rs",
+  "git_blob": "11e591e937a421d96b8070192dca086dc92d0beb"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/ui-egui/tests/it/zoom_toggle.rs",
+  "git_blob": "2011c81289ebd0fe5102dbbbb2b040eb525914bc"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/video/examples/test_movie.rs",
+  "git_blob": "189961adefa015ac126cef785cb9d342e393a1c8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/video/src/convert.rs",
+  "git_blob": "6907329f7143cb01717bcd105e49867c4a361159"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/video/src/lib.rs",
+  "git_blob": "387edaa10fc5b67c3588fc1507ca51bdcc84eea0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/video/src/movie.rs",
+  "git_blob": "b71b88fda64e6d41d6efe4f36e550f8015c1ec24"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/video/src/synth.rs",
+  "git_blob": "753ed794824a41ecd05c7a1d4541c6014c5e56d8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/video/src/tests.rs",
+  "git_blob": "ba1e3f97283f73b7a937089ff12db1762a2ff2d4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/ffi.rs",
+  "git_blob": "0ec31dc6f24f027d50a78542e3bd8a0dfa4903d4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/lib.rs",
+  "git_blob": "eae6e6babc66c99ba3017a9e1b0b26889acc1bcb"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/plugin.rs",
+  "git_blob": "2999c1ab7b413a323a13af7e4a7b6cbe879b838c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/registry.rs",
+  "git_blob": "629b8f3e89ba8c9bae95a53c1f4729ba3d098640"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/scan.rs",
+  "git_blob": "4504b351151afb65f1913bea4bb2ddf75426e570"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/ffi/editor.rs",
+  "git_blob": "72c3b1edd3a1d4c6335af4375f014b22760cf3cf"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/ffi/host.rs",
+  "git_blob": "5157e6b2f0660dac0a0df6051270a281310e90c5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/ffi/instance.rs",
+  "git_blob": "4bbad925bf14ed775b9c567f2d06b2ecfdcc2c1d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/ffi/module.rs",
+  "git_blob": "988a24fd382cef649c5cf0da73f34a0062c129c9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/ffi/process.rs",
+  "git_blob": "bd0e1edda16b9c500b2ffdcc176a16d307629edf"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/ffi/run_loop.rs",
+  "git_blob": "9e23affe9f6438d25e978a600acbc22ca84dbf9b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/ffi/window/macos.rs",
+  "git_blob": "a5e7d066be927425cde38effdf1e3599aa53e610"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/ffi/window/other.rs",
+  "git_blob": "9917673726736dba56cf3f190b5d3fda04fe869c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/ffi/window/windows.rs",
+  "git_blob": "37d5f4d3c6c3c9a946d3577adbe8ad76b9b13ed7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/src/ffi/window/x11.rs",
+  "git_blob": "82e0eccdb7f597bdf9f38fcba1f8c8a4510f6a6a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/tests/editor_main_thread.rs",
+  "git_blob": "5335ccb7f177e72eba9697d228c74a1f64281d65"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/tests/module_exit.rs",
+  "git_blob": "8f3ed74d68527950d666c5004cef0c4b39d5289e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/tests/module_exit_live_instance.rs",
+  "git_blob": "72e77d1b0a162b63b9be0ca88fe371a514727211"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/tests/module_exit_shutdown.rs",
+  "git_blob": "ea384f732fa7a454feeefaebfdccd7a58f4d769a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/tests/module_exit_worker_thread.rs",
+  "git_blob": "9cafb4e9ec6a89f15febd470a7cf78ae2ec59d9d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/tests/common/mod.rs",
+  "git_blob": "32ce9177ddfaaa12cb184373daab3c4290ec1a8e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/tests/fixture/src/lib.rs",
+  "git_blob": "9d9323cb3016ba050bf39713b6eae20bc2bb7faf"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/crates/vst3-host/tests/it/fixture_e2e.rs",
+  "git_blob": "075f02b12b4099509cdccd59049f57302581d818"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/architecture.md",
+  "git_blob": "f9ab6cc59a1cf8bf97b19a04d6b74bc4eb7730c7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/aux-routing-order.md",
+  "git_blob": "3c93eddd695b93b85fd554fe80de6d7170aadba4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/cli.md",
+  "git_blob": "360427f8c6fd33bb110bcb2585001ad217ad8c58"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/commit-multichannel.md",
+  "git_blob": "c206b43474c162d3319cebbca8f0137f5d0b7a37"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/contributors.md",
+  "git_blob": "591b9f546d355585d8c2bdec9cbee05b5ae0e288"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/control-protocol.md",
+  "git_blob": "c384706b967add6f01c73a6cbc9bcb19928b496b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/egui-037-migration-plan.md",
+  "git_blob": "d0b789de7834777bc3be119cfe59a6181116430f"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/feature-naming.md",
+  "git_blob": "2bbcfc7f8f500c788d5d9942e750ac374ca076e8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/file-format-parity.md",
+  "git_blob": "7a1c6f6ff61e34a7dcc3b5a6c5da46455de7bb3d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/gaps.md",
+  "git_blob": "c1c713b87113b6447180f7ef2150635183b5f8fa"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/hardware-parity.md",
+  "git_blob": "7de47c592302e53396c4318550884db4bb14a24b"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/localization-parity.md",
+  "git_blob": "7b846d0b2f3e5d4d0b1731340b7baef2e1d323a7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/mcp.md",
+  "git_blob": "26d367fd5325c68799c781d190b51fba5d7b2fe8"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/midi-input.md",
+  "git_blob": "93484eaa09b46eca0b6d2803f5eeb24a59795f13"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/parity-checklist.md",
+  "git_blob": "de89a1c5969068a798b1e893ad3d76100a6fcb43"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/plugin-parity.md",
+  "git_blob": "daf39e474bde241e14e450c2e6c4d3970ff008f0"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/releasing.md",
+  "git_blob": "0fdc35025b1f58395462cd4510ce055250bad082"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/roadmap.md",
+  "git_blob": "d24d2b71e3a2243b7958def92b1fdac725184013"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/strip-mute-automation.md",
+  "git_blob": "59907b9e11825604d91bb31edd321604f78656a4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/target-app-parity.md",
+  "git_blob": "8cb3f9901a5969c43921f0a998bc06a086150bb1"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/docs/ui-parity.md",
+  "git_blob": "bcc01b2ebf0d800469966bd432fad473b05e03d5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/packaging/macos/dmg/generate.py",
+  "git_blob": "f731e4948f6e40fa681c8e9e78795b5188cf6fec"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/packaging/macos/dmg/README.md",
+  "git_blob": "0cacbb743ce5400edbb7e2ededb8ee5717ae5849"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/packaging/web/README.md",
+  "git_blob": "22ab4dad304c341e8130f835ae3d9218f36ce804"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/packaging/windows/check-install-policy.ps1",
+  "git_blob": "cc9416e9c98b4f9ae8817742dade0e36c9697c0d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/packaging/windows/INSTALLATION.md",
+  "git_blob": "982a5b4202fb7305d48130a429461dc98be7f802"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/packaging/windows/package.ps1",
+  "git_blob": "ea253250a320feb073c8af31b26793c7bd74662d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/packaging/windows/sign.ps1",
+  "git_blob": "40d2692e1aab9e6da0ba1b591f88d37e6fb1145a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/packaging/windows/test-install-policy.ps1",
+  "git_blob": "d455d19d16a31d05e9277cd7e5a03bd2d538e9c5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/xtask/src/ico.rs",
+  "git_blob": "616232a5c3df9e0a719e264ccea313f551822599"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/xtask/src/main.rs",
+  "git_blob": "d98b3e9269d4ba1594d20f2371d20e68abddcc87"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-dj-audit/burst/source/xtask/src/version.rs",
+  "git_blob": "510b060f44289787c75313d95640f994d1ebfcc5"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-final-round/dj_tempo_ci.rs",
+  "git_blob": "de9313b4b89cefaba04fcbc632fad2ac6cbb22bf"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-final-round/brake-candidate/edge-final.rs",
+  "git_blob": "a337d2bcafcf150d32891267e45ca5107ce59c54"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-final-round/brake-candidate/crates/playback/src/clock_follow.rs",
+  "git_blob": "9d612e8a398abe25ea9df1673c9b50053cc5856c"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-final-round/brake-candidate/crates/playback/src/clock_follow/tests.rs",
+  "git_blob": "9bedadd88bab115d380cab8f0ca3013f86bddde3"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-final-round/brake-candidate/crates/ui-egui/src/app/clock_follow.rs",
+  "git_blob": "404fad6ec9b9677fd403da3c875f4a244895a0fa"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-final-round/packed-probe/green-packet-steps.rs",
+  "git_blob": "34136b5457a7419c96a988387fd5a79d787a5ef4"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-final-round/upper-resolved/crates/playback/src/beat_clock.rs",
+  "git_blob": "48ff7c688b0357109211554cdfd4621ba0179113"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-final-round/upper-resolved/crates/playback/src/sync_clock.rs",
+  "git_blob": "240d91ade5ff5c6ce71e6777314b58a5b262e851"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-final-round/upper-resolved/crates/playback/src/sync_output.rs",
+  "git_blob": "68f475088731652b716ba5d99d36ecaffe567dcc"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-final-round/upper-resolved/crates/playback/src/sync_output_tests.rs",
+  "git_blob": "515e18f22ad67bbd41e1f044ca36e24b0a6c9caf"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-hardware/clock-follow-mocks/before-merge-lib.rs",
+  "git_blob": "e9cb0028bef13000df7692a97b1a34831910b1b2"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-hardware/clock-follow-mocks/before-merge-midi.rs",
+  "git_blob": "5723bf9c20985da4a6323f35452a02dfed272707"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-hardware/clock-follow-mocks/clock_follow.rs",
+  "git_blob": "f610b5c15d191f0a69fd3bcb02ffee803f0cc9a2"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-hardware/r3-mtc-overlay/crates/engine/src/cmd.rs",
+  "git_blob": "a6983738e49ea65f58f79e63727b594cc06a359a"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-hardware/r3-mtc-overlay/crates/engine/src/demo.rs",
+  "git_blob": "db1d776adb616276653e4f0e56c058e18d94ac9e"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-hardware/r3-mtc-overlay/crates/engine/src/lib.rs",
+  "git_blob": "c6eae49d79d2fd0c43138d77d00c0f1e19bda9ce"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-hardware/r3-mtc-overlay/crates/engine/src/cmd/file.rs",
+  "git_blob": "72c6de755366ebca8908b2ab684f0feea05c460d"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-hardware/r3-mtc-overlay/crates/ui-egui/locales/pt-BR/mod.rs",
+  "git_blob": "fc0d085670f0730de58fa8e03b18c33c9ce70370"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-hardware/r3-mtc-overlay/crates/ui-egui/src/lib.rs",
+  "git_blob": "13ef234688c699172bfb7fac26689488e24d5af9"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-hardware/r3-mtc-overlay/crates/ui-egui/src/dialogs/midi_beat_clock.rs",
+  "git_blob": "b206a10f70c5a1f1b754369065fc14a32f4d11e7"
+ },
+ {
+  "path": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/runs/h4a-home-prep/full_take_probe.rs",
+  "git_blob": "c4a9cd2821fffed71617c69313e311083754a095"
+ }
+]

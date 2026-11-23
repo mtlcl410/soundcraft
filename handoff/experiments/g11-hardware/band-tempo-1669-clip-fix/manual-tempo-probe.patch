@@ -1,0 +1,51 @@
+diff --git a/crates/engine/src/cmd/event.rs b/crates/engine/src/cmd/event.rs
+index 6bdcea3..5abb9c0 100644
+--- a/crates/engine/src/cmd/event.rs
++++ b/crates/engine/src/cmd/event.rs
+@@ -598,4 +598,46 @@ mod tests {
+         assert_eq!(tempo.tempo_at_tick(t1), after, "the old tempo resumes at the end");
+         assert_eq!(after, 140.0);
+     }
++
++    #[test]
++    fn tempo_edit_keeps_all_eight_backbeats_and_is_undoable() {
++        use soundcraft_midi::{Note, Sequence};
++        use soundcraft_model::{ChannelFormat, Clip, Insert, TrackKind};
++        let mut e = crate::Engine::default();
++        let doc = e.session_mut();
++        let track = doc.add_track(TrackKind::Instrument, ChannelFormat::Stereo, None);
++        let id = doc.new_clip_id();
++        let quarter = soundcraft_time::TICKS_PER_QUARTER;
++        let beats: Vec<_> = (17..32).step_by(2).collect();
++        let notes = beats
++            .iter()
++            .map(|beat| Note { start: beat * quarter, length: quarter / 4, channel: 0, pitch: 60, velocity: 100, release_velocity: 64 })
++            .collect();
++        let end = doc.tempo.tick_to_samples(32 * quarter, doc.sample_rate);
++        let track = doc.track_mut(track).unwrap();
++        track.ticks_timebase = true;
++        track.instrument = Some(Insert::new("subtractive_synth"));
++        track.playlist_mut().unwrap().clips.push(Clip::midi(id, "eight bars", 0, end, Sequence { notes, ctrls: vec![] }));
++        for bpm in [120., 100.] {
++            e.execute("event.tempo", &json!({"bpm": bpm})).unwrap();
++            let play = e.session();
++            let audible: Vec<_> = beats
++                .iter()
++                .copied()
++                .filter(|beat| {
++                    let mut mix = soundcraft_mix::MixEngine::new(play.sample_rate.as_f64() as f32, 512);
++                    mix.sync(play);
++                    let mut out = [vec![0.; 512], vec![0.; 512]];
++                    mix.render(play, play.tempo.tick_to_samples(beat * quarter, play.sample_rate), 512, &mut out);
++                    out[0].iter().any(|x| x.abs() > 0.0001)
++                })
++                .collect();
++            assert_eq!(audible, beats, "rendered backbeats at {bpm} BPM");
++            assert_eq!(play.find_clip(id).unwrap().1.end(), play.tempo.tick_to_samples(32 * quarter, play.sample_rate));
++        }
++        assert!(e.undo());
++        assert_eq!(e.session().find_clip(id).unwrap().1.end(), end);
++        assert!(e.redo());
++        assert_eq!(e.session().find_clip(id).unwrap().1.end(), e.session().tempo.tick_to_samples(32 * quarter, e.session().sample_rate));
++    }
+ }

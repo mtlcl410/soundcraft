@@ -1,0 +1,107 @@
+[
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/after.json",
+    "bytes": 2261,
+    "sha256": "80f4c4c2fa3f1c47b37f9cffb0d4f3b8c8f05c19d4b5f44ab26656f77ef1cb15"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/bridge-ready",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/bridge-stop",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/clock.json",
+    "bytes": 252,
+    "sha256": "f25648247f6ed49568366e757dc8d703a5e61f220dc978ffa97a34f0c70677dd"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/control.json",
+    "bytes": 115,
+    "sha256": "74f5895a6972278d37e8cf2aae4965bf48da07de85315aceb9c4301b6c124821"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/create.json",
+    "bytes": 381,
+    "sha256": "6df3516615574d0b4319f25cf0a872ecbdd1f50b22840e6097c38b3025fe0dbd"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/device-end.json",
+    "bytes": 86,
+    "sha256": "c5eac00d0f938d256586c23f2e0602e3ad12be7c3593b4890f8cf9e891fe58f0"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/device-start.json",
+    "bytes": 86,
+    "sha256": "c5eac00d0f938d256586c23f2e0602e3ad12be7c3593b4890f8cf9e891fe58f0"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/driver/epoch-0.bin",
+    "bytes": 2820969432,
+    "sha256": "0dc5234a178fa33adefe1ce7c697db4082acfd33eaac0c3b5d88589e90c618e7"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/egress.csv",
+    "bytes": 24711006,
+    "sha256": "40875d64865e937a9f77896a626092daf3054fde7be82f0fa5d43a56cae3d327"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/environment-during.jsonl",
+    "bytes": 810955,
+    "sha256": "43ad39b6103fe46d997fd02f7c8b0530eacfcc0011fc5e0cfe44998dee47bd47"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/environment-end.json",
+    "bytes": 755,
+    "sha256": "429b89560a7c23844a1c2ec513bf3af9d7af5823856fd468d2a25bc32ba634ab"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/follow.json",
+    "bytes": 257,
+    "sha256": "27b85fa890c309398370fbe67529e5566e87258fe2515f29eb1d1fae7f31eff5"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/ingress.csv",
+    "bytes": 6566449,
+    "sha256": "b50e14a1f254b0f277f1c94c73aaf31015ca1dc8e271da427a6fd154c4ecc2a2"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/mtc-out.json",
+    "bytes": 111,
+    "sha256": "01fce5982408aaaee2d821d1253641be3502989181db8d00b63b0e52e872fc54"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/ports.json",
+    "bytes": 120,
+    "sha256": "eb698e0e962bb21a6f7fcf01a5a18583f6039fe86493bbef59db9a7666ee367d"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/relay.csv",
+    "bytes": 16934533,
+    "sha256": "615bab3d801c0255efecd50327cdeba013e35cadbc596bd52498aaa7dfacbebe"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/remove.json",
+    "bytes": 23,
+    "sha256": "b42bb557986c0d684bcdd579d617e627bae7b84898d5f15fea978f446fd9eed2"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/session-setup.json",
+    "bytes": 265,
+    "sha256": "4a82aaa7c079dd291edc29f548759148e6971fcad165c6d7b57fc0823938031b"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/source.csv",
+    "bytes": 11750420,
+    "sha256": "5cc56947ffd32a8917c47609f941f5c54ca9352cd0bcc3d154133a3c0ac20eed"
+  },
+  {
+    "file": "E:/soundcraft/compatibility-audit/g11-hw-acceptance/overnight-evidence/stop-ordinal-4ed607bf-two-hours/state.jsonl",
+    "bytes": 13147988,
+    "sha256": "eb09c962edc9e62bfbb34f4fc991a107242b0e5e1fb463e022bf5c7b0314a640"
+  }
+]

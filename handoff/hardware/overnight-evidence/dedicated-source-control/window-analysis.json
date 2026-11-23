@@ -1,0 +1,139 @@
+{
+  "seconds": 96,
+  "strict_pass": false,
+  "expected_clock": 4608,
+  "clock": 4603,
+  "expected_qf": 11520,
+  "qf": 11515,
+  "qf_discontinuities": 0,
+  "observed_dropouts": 0,
+  "counted_window_pulses": 2253,
+  "first_output_closest_ingress_index": 6,
+  "phase_head_ms": {
+    "p50": 3.7847,
+    "p99": 5.0777,
+    "minimum": 1.2291,
+    "maximum": 5.9228
+  },
+  "phase_tail_ms": {
+    "p50": 1.3432,
+    "p99": 2.9406,
+    "minimum": -0.2297,
+    "maximum": 5.3609
+  },
+  "drift_median_ms": -2.4415,
+  "private_bytes_first_window_median": 515831808.0,
+  "private_bytes_last_window_median": 515678208.0,
+  "private_bytes_delta": -153600.0,
+  "max_egress_observer_queue": 0,
+  "relay_delay_ms": {
+    "median": 0.1164,
+    "p99": 0.147493,
+    "maximum": 0.1896
+  },
+  "counts_match": false,
+  "observer_queue_windows": {
+    "head": {
+      "p50": 0.0,
+      "p99": 0,
+      "minimum": 0,
+      "maximum": 0
+    },
+    "tail": {
+      "p50": 0.0,
+      "p99": 0,
+      "minimum": 0,
+      "maximum": 0
+    }
+  },
+  "queue_scope": "Egress observer depth sampled once per status poll. Internal scheduler queue growth is not directly instrumented.",
+  "physical_gap_distributions": {
+    "sender": {
+      "p50_ms": 20.8846,
+      "p99_ms": 21.2298,
+      "max_ms": 21.3826,
+      "over_150ms": 0,
+      "index_of_largest": 91
+    },
+    "din": {
+      "p50_ms": 20.8797,
+      "p99_ms": 21.2699,
+      "max_ms": 21.4729,
+      "over_150ms": 0,
+      "index_of_largest": 3315
+    },
+    "software_ingress": {
+      "p50_ms": 20.8767,
+      "p99_ms": 21.2727,
+      "max_ms": 21.5161,
+      "over_150ms": 0,
+      "index_of_largest": 3959
+    },
+    "return_clock": {
+      "p50_ms": 20.861849999999997,
+      "p99_ms": 22.5461,
+      "max_ms": 24.5755,
+      "over_150ms": 0,
+      "index_of_largest": 4387
+    },
+    "return_qf": {
+      "p50_ms": 8.3416,
+      "p99_ms": 9.3521,
+      "max_ms": 13.0605,
+      "over_150ms": 0,
+      "index_of_largest": 10976
+    }
+  },
+  "reference_max_dispatch_late_ms": 0.7281,
+  "largest_source_gap_by_stage": [
+    {
+      "ordinal": 91,
+      "sender_ms": 21.3826,
+      "din_ms": 21.3861,
+      "ingress_ms": 21.373
+    },
+    {
+      "ordinal": 476,
+      "sender_ms": 21.3693,
+      "din_ms": 21.3899,
+      "ingress_ms": 21.3936
+    },
+    {
+      "ordinal": 3722,
+      "sender_ms": 21.3692,
+      "din_ms": 21.2728,
+      "ingress_ms": 21.252
+    },
+    {
+      "ordinal": 3694,
+      "sender_ms": 21.3486,
+      "din_ms": 21.3584,
+      "ingress_ms": 21.3595
+    },
+    {
+      "ordinal": 55,
+      "sender_ms": 21.3424,
+      "din_ms": 21.2975,
+      "ingress_ms": 21.2847
+    },
+    {
+      "ordinal": 2818,
+      "sender_ms": 21.3349,
+      "din_ms": 21.3477,
+      "ingress_ms": 21.3324
+    },
+    {
+      "ordinal": 3650,
+      "sender_ms": 21.3255,
+      "din_ms": 21.3383,
+      "ingress_ms": 21.3348
+    },
+    {
+      "ordinal": 3598,
+      "sender_ms": 21.3179,
+      "din_ms": 21.3556,
+      "ingress_ms": 21.3586
+    }
+  ],
+  "ordinal_drift_interpretable": false
+}

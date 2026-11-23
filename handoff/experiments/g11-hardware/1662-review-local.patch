@@ -1,0 +1,1025 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index a8efa28..2fcd2e7 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -71,7 +71,8 @@ craft-video = { version = "0.1.0", git = "https://github.com/storytold/craft-lib
+ # types with craft-media, so both stay on one rev.
+ # Standard MIDI Files and the note/controller model, shared with the other craft apps.
+ craft-midi = { version = "0.1.0", git = "https://github.com/storytold/craft-libs", rev = "45a8e16669e70dadb780dfbc759c882dd5b7ea1c", features = ["serde"] }
+-craft-midi-sync = { package = "craft-midi", git = "https://github.com/storytold/craft-libs", rev = "08da5e1486ee640de1d2cccd8fe8dd32b1d3b62c" }
++# The existing craft-midi pin predates the sync encoders; unify on the next workspace dependency update.
++craft-midi-sync = { package = "craft-midi", version = "0.1.0", git = "https://github.com/storytold/craft-libs", rev = "08da5e1486ee640de1d2cccd8fe8dd32b1d3b62c" }
+ craft-audio = { version = "0.1.0", git = "https://github.com/storytold/craft-libs", rev = "45a8e16669e70dadb780dfbc759c882dd5b7ea1c", features = ["decode", "lossless-encode", "peaks", "serde"] }
+ craft-time = { version = "0.1.0", git = "https://github.com/storytold/craft-libs", rev = "45a8e16669e70dadb780dfbc759c882dd5b7ea1c" }
+ craft-scraft-format = { version = "0.1.0", git = "https://github.com/storytold/craft-libs", rev = "45a8e16669e70dadb780dfbc759c882dd5b7ea1c" }
+diff --git a/ROADMAP.md b/ROADMAP.md
+index 42d16f0..f9e4db0 100644
+--- a/ROADMAP.md
++++ b/ROADMAP.md
+@@ -2,7 +2,7 @@
+ 
+ **Stage: pre-alpha** · next: alpha, ~5% and ~110–180 h away (the alpha gate's three failing workflows)
+ 
+-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-18 · **Change:** minor (strict external-WAV AAF import and MIDI input in the progress log; previously trivial: Frequency Shifter plugin, Command-click target priority and cursor, Command-click automation points, plugin editors on Linux/X11, Cancel Zoom Toggle, side panels in dock columns, Auto Pan stereo balance, Alt-click returns a plugin parameter to its default, Clip List Auto Rename, Strip Silence rectangles, Strip Silence Rename, Strip Silence Extract and Separate, Clip Looping dialog, AudioSuite Vari-Fi speed ramps, Auto Pan plugin, Subharmonic plugin, Ring Modulator plugin, Float32 file headroom) · **Target:** Avid Pro Tools Ultimate 2026.4.1
++> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-20 · **Change:** minor (G-11 MIDI Beat Clock output; strict external-WAV AAF import and MIDI input in the progress log; previously trivial: Frequency Shifter plugin, Command-click target priority and cursor, Command-click automation points, plugin editors on Linux/X11, Cancel Zoom Toggle, side panels in dock columns, Auto Pan stereo balance, Alt-click returns a plugin parameter to its default, Clip List Auto Rename, Strip Silence rectangles, Strip Silence Rename, Strip Silence Extract and Separate, Clip Looping dialog, AudioSuite Vari-Fi speed ramps, Auto Pan plugin, Subharmonic plugin, Ring Modulator plugin, Float32 file headroom) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+ 
+ SoundCraft is a clean-room, pure-Rust digital audio workstation that aims at full parity with
+ Avid Pro Tools, and then beyond it: faster, open, scriptable and agent-controllable. This page is
+@@ -124,6 +124,8 @@ mutated and truncated movies. Field reports from the first public week are track
+ 
+ ## Progress log
+ 
++- **2026-11-20 (G-11)** Native MIDI Beat Clock output follows the session tempo. The Windows hardware check covers Start, SPP, Continue and Stop. MTC generation and chase are tracked in #1663.
++
+ - **2026-11-18 (MIDI input):** MIDI input devices: keyboards play record-enabled and input-monitored MIDI and instrument tracks live and are recorded into MIDI clips, with a device and channel choice per track. The device switches are in the MIDI inputs section of Setup › Playback Engine (Setup › MIDI › MIDI Input Devices opens the same window) and are kept in the app preferences, per computer, not in the session. Controllers, pitch bend and aftertouch reach the instrument live; a pitch held on two devices or channels sounds until both release it; a full input queue releases the notes of its device and marks the take incomplete. On Linux, live play was checked with a hardware keyboard (Akai MPK mini 3) and recording with a virtual one; macOS and Windows are type-checked only, and there is no MIDI input on FreeBSD or the web. Guide: `docs/midi-input.md`. No readiness percentage change until that is measured.
+ - **2026-11-14:** AAF import supports a strict CompositionMob SourceClip/Filler subset with external mono/stereo PCM WAV media, editable clips and handles, relink and absolute or relative timecode mapping. The reader shares cached object properties, caps retained property data at 128 MiB and rejects duplicate local references before expansion. AAF export, OMF and `.ptx` remain missing. No readiness percentage change.
+ - **2026-11-09:** A built-in Frequency Shifter (`freq_shifter`) moves every frequency in the signal by the same number of hertz, from 0.01 Hz to 5 kHz: up, down, both ways at once, or down on the left and up on the right of a stereo track. The unwanted sideband stays at least 100 dB down from 20 Hz to 20 Hz below Nyquist at 44.1 to 96 kHz. Feedback sends the output round again for a trail of further shifts, Mix blends in the dry signal, and every change glides without a click. No readiness percentage change.
+@@ -188,6 +190,7 @@ mutated and truncated movies. Field reports from the first public week are track
+ 
+ | Date | Change | Summary |
+ |---|---|---|
++| 2026-11-20 | minor | G-11: native MIDI Beat Clock output; MTC generation and chase remain tracked separately in #1663. |
+ | 2026-11-14 | minor | Strict external-WAV AAF import with bounded property caching; remaining interchange work and readiness estimates unchanged |
+ | 2026-11-09 | trivial | Progress log: Frequency Shifter plugin; readiness estimates unchanged |
+ | 2026-11-08 | trivial | Command-click breakpoint/control priority and insertion affordance; active-tool drags retained; readiness estimates unchanged |
+diff --git a/crates/engine/src/cmd/setup_more.rs b/crates/engine/src/cmd/setup_more.rs
+index b71539d..254ad9c 100644
+--- a/crates/engine/src/cmd/setup_more.rs
++++ b/crates/engine/src/cmd/setup_more.rs
+@@ -110,7 +110,9 @@ pub fn specs() -> Vec<CommandSpec> {
+             }
+             store_value(&mut s.edit, p, "offset", "midi.beat_clock.offset", -1e7, 1e7);
+             if let Some(d) = str_param(p, "destination") {
+-                set_text(&mut s.edit, "midi.beat_clock.destination", Some(d));
++                const PREFIX: &str = "midi.beat_clock.destination=";
++                s.edit.flags.retain(|f| !f.starts_with(PREFIX));
++                if !d.is_empty() { s.edit.flags.insert(format!("{PREFIX}{d}")); }
+             }
+             Ok(json!({"enabled": s.edit.flag("midi.beat_clock"), "offset": s.edit.value("midi.beat_clock.offset", 0.0), "destination": text(&s.edit, "midi.beat_clock.destination")}))
+         }),
+diff --git a/crates/playback/src/beat_clock.rs b/crates/playback/src/beat_clock.rs
+index 71ccdc3..e1d18d1 100644
+--- a/crates/playback/src/beat_clock.rs
++++ b/crates/playback/src/beat_clock.rs
+@@ -1,28 +1,28 @@
+ //! External beat clock follows the audio transport. MIDI I/O never runs on its callback.
+-use super::{Session, Shared};
++use super::{Cmd, Session};
+ use craft_midi_sync::sync::{CLOCK, CLOCKS_PER_QUARTER, CONTINUE, MAX_POSITION, START, STOP, song_position};
+ use midir::{MidiOutput, MidiOutputConnection};
+ use soundcraft_model::MidiBeatClock;
+ use soundcraft_time::{SampleRate, TICKS_PER_QUARTER, TempoMap};
+-use std::sync::Arc;
+-use std::sync::atomic::Ordering;
+-use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
+-use std::time::Duration;
++use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, TryRecvError, channel};
++use std::sync::{Arc, Mutex};
++use std::time::{Duration, Instant};
+ 
+ const TICKS_PER_CLOCK: i64 = TICKS_PER_QUARTER / CLOCKS_PER_QUARTER as i64;
+ 
+ #[derive(Default)]
+ pub(super) struct Output {
++    trouble: Arc<Mutex<Option<String>>>,
+     worker: Option<(String, Sender<Update>, std::thread::JoinHandle<()>)>,
+ }
+ 
+ enum Update {
+     Session(Arc<Session>),
+-    Transport(i64, bool),
++    Wake,
+ }
+ 
+ impl Output {
+-    pub(super) fn configure(&mut self, session: &Arc<Session>, transport: &Arc<Shared>) {
++    pub(super) fn configure(&mut self, session: &Arc<Session>, audio: &Sender<Cmd>) {
+         let config = MidiBeatClock::from_session(session);
+         let destination = config.destination.filter(|_| config.enabled);
+         if let Some((name, tx, _)) = &self.worker
+@@ -31,25 +31,40 @@ impl Output {
+         {
+             return;
+         }
++        if self.worker.is_some() {
++            let _ = audio.send(Cmd::Clock(None));
++        }
+         self.close();
++        self.set_trouble(None);
+         if let Some(destination) = destination {
+             let port = destination.to_owned();
+-            let transport = Arc::clone(transport);
++            let view = Arc::new(Mutex::new(None));
++            let _ = audio.send(Cmd::Clock(Some(Publisher::new(Arc::clone(&view)))));
++            let trouble = Arc::clone(&self.trouble);
+             let session = Arc::clone(session);
+             let (tx, rx) = channel();
+-            match std::thread::Builder::new().name("MIDI Beat Clock".into()).spawn(move || run(&port, transport, session, rx)) {
++            match std::thread::Builder::new().name("MIDI Beat Clock".into()).spawn(move || run(&port, view, session, rx, trouble)) {
+                 Ok(handle) => self.worker = Some((destination.to_owned(), tx, handle)),
+-                Err(e) => log::warn!("MIDI Beat Clock: {e}"),
++                Err(e) => {
++                    let _ = audio.send(Cmd::Clock(None));
++                    self.set_trouble(Some(e.to_string()));
++                }
+             }
+         }
+     }
+ 
+-    pub(super) fn transport(&self, at: i64, playing: bool) {
++    pub(super) fn wake(&self) {
+         if let Some((_, tx, _)) = &self.worker {
+-            let _ = tx.send(Update::Transport(at, playing));
++            let _ = tx.send(Update::Wake);
+         }
+     }
+ 
++    pub(super) fn trouble(&self) -> Option<String> {
++        self.trouble.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
++    }
++    fn set_trouble(&self, value: Option<String>) {
++        report(&self.trouble, value);
++    }
+     fn close(&mut self) {
+         if let Some((_, tx, worker)) = self.worker.take() {
+             drop(tx);
+@@ -74,54 +89,81 @@ pub(super) fn output_names() -> Result<Vec<String>, String> {
+ 
+ fn open(name: &str) -> Result<MidiOutputConnection, String> {
+     let out = MidiOutput::new("SoundCraft Beat Clock").map_err(|e| e.to_string())?;
+-    let port =
+-        out.ports().into_iter().find(|p| out.port_name(p).is_ok_and(|n| n == name)).ok_or_else(|| format!("MIDI output {name} unavailable"))?;
++    let mut matches = out.ports().into_iter().filter(|p| out.port_name(p).is_ok_and(|n| n == name));
++    let port = matches.next().ok_or_else(|| format!("MIDI output {name} unavailable"))?;
++    if matches.next().is_some() {
++        return Err(format!("Multiple MIDI outputs named {name}"));
++    }
+     out.connect(&port, "beat clock").map_err(|e| e.to_string())
+ }
+ 
+ #[derive(Default)]
+ struct Cursor {
++    pass: Option<u64>,
+     next_pulse: i64,
+     last_position: Option<i64>,
+     delayed_start: bool,
++    out_of_range: bool,
+ }
+ 
+ impl Cursor {
++    fn follow(&mut self, block: Block, at: i64, offset: i64, remap: bool, session: &Session, mut send: impl FnMut(&[u8])) {
++        let changed = self.pass.replace(block.pass) != Some(block.pass);
++        let (tempo, rate) = (&session.tempo, session.sample_rate);
++        let origin = block.origin.saturating_sub(offset);
++        // A worker attached or reopened well into a pass must start at the
++        // current musical position. Replaying the old origin would send two locates.
++        let timely_origin =
++            changed && block.playing && tempo.samples_to_ticks_f(at, rate) - tempo.samples_to_ticks_f(origin, rate) < TICKS_PER_CLOCK as f64;
++        if timely_origin {
++            self.advance(true, origin, true, tempo, rate, &mut send);
++        }
++        self.advance(block.playing, at, (remap || changed) && !timely_origin, tempo, rate, send);
++    }
++
+     fn advance(&mut self, playing: bool, at: i64, locate: bool, tempo: &TempoMap, rate: SampleRate, mut send: impl FnMut(&[u8])) {
+-        if !playing {
+-            self.delayed_start = false;
++        if !playing || at < 0 {
++            self.delayed_start = playing;
++            self.out_of_range = false;
+             if self.last_position.take().is_some() {
+                 send(&[STOP]);
+             }
+             return;
+         }
+-        if at < 0 {
++        let estimated = (tempo.samples_to_ticks_f(at, rate) / TICKS_PER_CLOCK as f64).floor() as i64;
++        let deadline = |pulse: i64| tempo.tick_to_samples(pulse.saturating_mul(TICKS_PER_CLOCK), rate);
++        // tick_to_samples rounds to the nearest representable sample. Use the same
++        // boundary both to schedule and to decide which side of a pulse we are on.
++        let pulse = if deadline(estimated) > at {
++            estimated.saturating_sub(1)
++        } else if deadline(estimated.saturating_add(1)) <= at {
++            estimated.saturating_add(1)
++        } else {
++            estimated
++        };
++        let from_zero = std::mem::take(&mut self.delayed_start) && !locate && pulse == 0;
++        // Once an F8 deadline has been missed by a complete pulse, re-position rather
++        // than sending a burst of stale clocks that would speed up external instruments.
++        if self.last_position.is_none() || locate || self.last_position.is_some_and(|old| at < old) || pulse.saturating_sub(self.next_pulse) >= 1 {
+             if self.last_position.take().is_some() {
+                 send(&[STOP]);
+             }
+-            self.delayed_start = true;
+-            return;
+-        }
+-        if std::mem::take(&mut self.delayed_start) {
+-            send(&[START]);
+-            self.next_pulse = 0;
+-            self.last_position = Some(0);
+-        }
+-        let tick = tempo.samples_to_ticks(at, rate).max(0);
+-        let pulse = tick / TICKS_PER_CLOCK;
+-        if self.last_position.is_none() || locate || self.last_position.is_some_and(|old| at < old) || pulse.saturating_sub(self.next_pulse) > 24 {
+-            if self.last_position.is_some() {
+-                send(&[STOP]);
+-            }
+-            if tick == 0 {
++            if at == 0 || from_zero {
+                 send(&[START]);
++                self.next_pulse = 0;
+             } else {
+-                let sixteenths = (tick / (TICKS_PER_QUARTER / 4)).min(i64::from(MAX_POSITION));
+-                send(&song_position(sixteenths as u16));
++                let base = pulse / 6;
++                let sixteenth = base + i64::from(at > deadline(base * 6));
++                if sixteenth > i64::from(MAX_POSITION) {
++                    self.out_of_range = true;
++                    return;
++                }
++                send(&song_position(sixteenth as u16));
+                 send(&[CONTINUE]);
++                self.next_pulse = sixteenth * 6;
+             }
+-            self.next_pulse = pulse + i64::from(tick % TICKS_PER_CLOCK != 0);
+         }
++        self.out_of_range = false;
+         while self.next_pulse <= pulse {
+             send(&[CLOCK]);
+             self.next_pulse += 1;
+@@ -130,98 +172,365 @@ impl Cursor {
+     }
+ }
+ 
+-// Audio devices advance the published playhead a block at a time. Interpolate only up to
+-// one observed block, so a large buffer does not send several clocks in the same burst
+-// and an audio-device stall cannot leave the external sequencer running on its own.
+-struct BlockClock {
++// Only the audio thread publishes a block, after applying transport commands.
++// It never waits for the clock worker: a contended publication is retried on the
++// next callback, carrying the same pass and exact origin.
++type View = Arc<Mutex<Option<Block>>>;
++
++#[derive(Clone, Copy)]
++struct Block {
++    pass: u64,
++    origin: i64,
++    playing: bool,
+     position: i64,
+-    block: i64,
+-    observed: std::time::Instant,
+-    emitted: i64,
++    limit: i64,
++    samples_per_second: f64,
++    looped: Option<super::Range>,
++    end: Option<i64>,
++    when: Instant,
+ }
+ 
+-impl BlockClock {
+-    fn new(position: i64, now: std::time::Instant) -> Self {
+-        Self { position, block: 0, observed: now, emitted: position }
++impl Block {
++    // A loop or a bounded pass can end inside a device buffer. Project only
++    // the samples in that buffer, preserving the callback's generation at the next block.
++    fn current(mut self, now: Instant) -> Self {
++        self.position = self.at(now);
++        if self.playing {
++            if let Some(range) = self.looped {
++                if self.position >= range.end {
++                    let past = self.position.saturating_sub(range.end);
++                    let wraps = 1 + past / range.len();
++                    self.pass = self.pass.wrapping_add(wraps as u64);
++                    self.origin = range.start;
++                    self.position = range.start + past % range.len();
++                    self.limit = self.limit.saturating_sub(wraps.saturating_mul(range.len()));
++                }
++            } else if self.end.is_some_and(|end| self.position >= end) {
++                self.playing = false;
++            }
++        }
++        self
+     }
++    fn at(self, now: Instant) -> i64 {
++        let elapsed = now.saturating_duration_since(self.when).as_secs_f64();
++        self.position.saturating_add((elapsed * self.samples_per_second) as i64).min(self.limit)
++    }
++}
++
++pub(super) struct Publisher {
++    view: View,
++    pass: u64,
++    origin: Option<i64>,
++}
++impl Publisher {
++    fn new(view: View) -> Self {
++        Self { view, pass: 0, origin: None }
++    }
++    pub(super) fn locate(&mut self, at: i64) {
++        self.pass = self.pass.wrapping_add(1);
++        self.origin = Some(at);
++    }
++    pub(super) fn publish(
++        &mut self,
++        playing: bool,
++        position: i64,
++        limit: i64,
++        samples_per_second: f64,
++        looped: Option<super::Range>,
++        end: Option<i64>,
++    ) {
++        let origin = *self.origin.get_or_insert(position);
++        if let Ok(mut view) = self.view.try_lock() {
++            *view = Some(Block { pass: self.pass, origin, playing, position, limit, samples_per_second, looped, end, when: Instant::now() });
++        }
++    }
++}
+ 
+-    fn sample(&mut self, position: i64, hz: u32, speed: u32, now: std::time::Instant) -> i64 {
+-        if position < self.position {
+-            *self = Self::new(position, now);
+-        } else if position > self.position {
+-            self.block = position.saturating_sub(self.position).min(i64::from(hz) / 10);
+-            self.observed = now;
+-            self.position = position;
++fn report(status: &Mutex<Option<String>>, value: Option<String>) {
++    let mut old = status.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
++    if *old != value {
++        if let Some(message) = &value {
++            log::warn!("MIDI Beat Clock: {message}");
+         }
+-        let extrapolated = (now.saturating_duration_since(self.observed).as_secs_f64() * f64::from(hz) * f64::from(speed) / 1000.0) as i64;
+-        self.emitted = self.emitted.max(position.saturating_add(extrapolated.min(self.block)));
+-        self.emitted
++        *old = value;
+     }
+ }
+ 
+-fn run(port: &str, transport: Arc<Shared>, mut session: Arc<Session>, rx: Receiver<Update>) {
++fn remapped(old: &Session, new: &Session, at: i64) -> bool {
++    old.tempo.samples_to_ticks_f(at, old.sample_rate) != new.tempo.samples_to_ticks_f(at, new.sample_rate)
++}
++
++fn run(port: &str, view: View, session: Arc<Session>, rx: Receiver<Update>, trouble: Arc<Mutex<Option<String>>>) {
++    drive(view, session, rx, trouble, || open(port), |out, bytes| out.send(bytes).map_err(|e| format!("{port}: {e}")));
++}
++
++fn drive<C>(
++    view: View,
++    mut session: Arc<Session>,
++    rx: Receiver<Update>,
++    trouble: Arc<Mutex<Option<String>>>,
++    mut connect: impl FnMut() -> Result<C, String>,
++    mut send: impl FnMut(&mut C, &[u8]) -> Result<(), String>,
++) {
+     let mut cursor = Cursor::default();
+     let mut offset = MidiBeatClock::from_session(&session).offset;
+-    let mut pending = None;
+-    let mut sampler = BlockClock::new(transport.position.load(Ordering::Relaxed), std::time::Instant::now());
+-    let mut rolling = transport.playing.load(Ordering::Acquire);
+     let mut link = None;
+-    let mut retry = std::time::Instant::now();
++    let mut retry = Instant::now();
++    let mut awake_until = retry;
++    let mut remap = false;
++    let mut latest = None;
++    let mut update = None;
+     loop {
+-        let now = std::time::Instant::now();
++        let now = Instant::now();
++        if let Ok(guard) = view.try_lock() {
++            latest = *guard;
++        }
++        let block = latest.map(|b: Block| b.current(now));
++        if let Some(message) = update.take() {
++            match message {
++                Update::Session(s) => {
++                    let new_offset = MidiBeatClock::from_session(&s).offset;
++                    if let Some(b) = block {
++                        let at = b.position.saturating_sub(offset);
++                        remap |= offset != new_offset || remapped(&session, &s, at);
++                    }
++                    offset = new_offset;
++                    session = s;
++                }
++                Update::Wake => awake_until = now + Duration::from_millis(150),
++            }
++        }
+         if link.is_none() && now >= retry {
+-            match open(port) {
++            match connect() {
+                 Ok(out) => {
+                     link = Some(out);
+                     cursor = Cursor::default();
++                    remap = true;
++                    report(&trouble, None);
+                 }
+-                Err(e) => log::debug!("MIDI Beat Clock: {e}"),
++                Err(e) => report(&trouble, Some(e)),
+             }
+             retry = now + Duration::from_secs(1);
+         }
+-        let (position, playing, locate) = if let Some((at, play)) = pending.take() {
+-            rolling = play;
+-            sampler = BlockClock::new(at, now);
+-            (at, play, true)
+-        } else {
+-            rolling &= transport.playing.load(Ordering::Acquire);
+-            (
+-                sampler.sample(transport.position.load(Ordering::Relaxed), session.sample_rate.hz(), transport.speed.load(Ordering::Relaxed), now),
+-                rolling,
+-                false,
+-            )
+-        };
+-        if let Some(out) = &mut link {
+-            let at = position.saturating_sub(offset);
+-            let mut failed = false;
+-            cursor.advance(playing, at, locate, &session.tempo, session.sample_rate, |bytes| failed |= out.send(bytes).is_err());
+-            if failed {
++        let mut delay = Duration::from_millis(100);
++        if let (Some(block), Some(out)) = (block, &mut link) {
++            let at = block.position.saturating_sub(offset);
++            let mut error = None;
++            let was_out = cursor.out_of_range;
++            cursor.follow(block, at, offset, remap, &session, |bytes| {
++                if error.is_none() {
++                    error = send(out, bytes).err();
++                }
++            });
++            remap = false;
++            if let Some(error) = error {
++                report(&trouble, Some(error));
+                 link = None;
+                 retry = now + Duration::from_secs(1);
++            } else if was_out != cursor.out_of_range {
++                report(&trouble, cursor.out_of_range.then(|| "Position exceeds the MIDI Song Position Pointer range.".into()));
+             }
++            if block.playing {
++                let due =
++                    if at < 0 { 0 } else { session.tempo.tick_to_samples(cursor.next_pulse.saturating_mul(TICKS_PER_CLOCK), session.sample_rate) };
++                let seconds = due.saturating_sub(at) as f64 / block.samples_per_second;
++                // Rust's native sleep uses a high-resolution waitable timer on Windows.
++                // Bound transport reaction time and avoid spinning on a stalled device.
++                delay = Duration::from_secs_f64(seconds.clamp(0.0005, 0.010));
++                if at >= block.limit.saturating_sub(offset) || cursor.out_of_range {
++                    delay = Duration::from_millis(3);
++                }
++            }
++        }
++        if now < awake_until {
++            delay = delay.min(Duration::from_millis(2));
+         }
+-        match rx.recv_timeout(Duration::from_millis(if playing { 1 } else { 100 })) {
+-            Ok(Update::Session(s)) => {
+-                offset = MidiBeatClock::from_session(&s).offset;
+-                session = s;
++        if delay < Duration::from_millis(100) {
++            std::thread::sleep(delay.saturating_sub(now.elapsed()));
++            match rx.try_recv() {
++                Ok(message) => update = Some(message),
++                Err(TryRecvError::Empty) => continue,
++                Err(TryRecvError::Disconnected) => break,
+             }
+-            Ok(Update::Transport(at, play)) => pending = Some((at, play)),
+-            Err(RecvTimeoutError::Timeout) => {}
+-            Err(RecvTimeoutError::Disconnected) => {
+-                if cursor.last_position.is_some()
+-                    && let Some(mut out) = link
+-                {
+-                    let _ = out.send(&[STOP]);
+-                }
+-                return;
++        } else {
++            match rx.recv_timeout(delay) {
++                Ok(message) => update = Some(message),
++                Err(RecvTimeoutError::Timeout) => continue,
++                Err(RecvTimeoutError::Disconnected) => break,
+             }
+         }
+     }
++    if cursor.last_position.is_some()
++        && let Some(mut out) = link
++    {
++        let _ = send(&mut out, &[STOP]);
++    }
+ }
+ 
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++    fn messages(cursor: &mut Cursor, at: i64, locate: bool) -> Vec<Vec<u8>> {
++        let mut result = Vec::new();
++        cursor.advance(true, at, locate, &TempoMap::default(), SampleRate::new(48_000).unwrap(), |m| result.push(m.to_vec()));
++        result
++    }
++
++    #[test]
++    fn receiver_plays_the_pulse_identified_by_spp_at_the_correct_sample() {
++        for (start, grid) in [(23_999, 24_000), (24_000, 24_000), (24_001, 30_000), (24_500, 30_000), (27_000, 30_000)] {
++            let mut cursor = Cursor::default();
++            let bytes = messages(&mut cursor, start, true);
++            assert_eq!(bytes[0], song_position((grid / 6000) as u16));
++            assert_eq!(bytes[1], [CONTINUE]);
++            assert_eq!(bytes.len(), if start == grid { 3 } else { 2 });
++            for at in start + 1..=grid + 1_000 {
++                let bytes = messages(&mut cursor, at, false);
++                if at == grid || at == grid + 1000 {
++                    assert_eq!(bytes, [vec![CLOCK]]);
++                } else {
++                    assert!(bytes.is_empty());
++                }
++            }
++            let wrap = messages(&mut cursor, 24_500, false);
++            assert_eq!(wrap, [vec![STOP], song_position(5).to_vec(), vec![CONTINUE]]);
++        }
++    }
++
++    #[test]
++    fn out_of_range_relocation_stops_once_and_recovers_back_in_range() {
++        let last = i64::from(MAX_POSITION) * 6000;
++        let mut cursor = Cursor::default();
++        assert_eq!(messages(&mut cursor, last, true)[0], song_position(MAX_POSITION));
++        assert_eq!(messages(&mut cursor, last + 1000, false), [vec![CLOCK]]);
++        assert_eq!(messages(&mut cursor, last + 1, true), [vec![STOP]]);
++        assert!(cursor.out_of_range);
++        assert!(messages(&mut cursor, last + 9000, false).is_empty());
++        assert_eq!(messages(&mut cursor, 0, true), [vec![START], vec![CLOCK]]);
++        assert!(!cursor.out_of_range);
++    }
++
++    #[test]
++    fn editing_elapsed_beats_resyncs_once_and_a_future_tempo_change_does_not() {
++        let fast = Session::default();
++        let mut slow = fast.clone();
++        slow.tempo.set_tempo(0, 60.).unwrap();
++        let rate = fast.sample_rate;
++        let at = i64::from(rate.hz()) * 2;
++        let mut cursor = Cursor::default();
++        cursor.advance(true, at, true, &fast.tempo, rate, |_| {});
++        assert!(remapped(&fast, &slow, at));
++        let mut bytes = Vec::new();
++        cursor.advance(true, at, remapped(&fast, &slow, at), &slow.tempo, rate, |m| bytes.push(m.to_vec()));
++        assert_eq!(bytes, [vec![STOP], song_position(8).to_vec(), vec![CONTINUE], vec![CLOCK]]);
++        let mut future = slow.clone();
++        future.tempo.set_tempo(10 * TICKS_PER_QUARTER, 90.).unwrap();
++        assert!(!remapped(&slow, &future, at));
++        cursor.advance(true, at, false, &future.tempo, rate, |_| panic!("duplicate message"));
++    }
++
++    #[test]
++    fn in_flight_audio_and_contended_publication_do_not_undo_play_or_locate() {
++        let shared = Arc::new(super::super::Shared { position: 0.into(), playing: false.into(), speed: 1000.into(), meters: Mutex::default() });
++        let session = Arc::new(Session::default());
++        let (tx, rx) = channel();
++        let mut audio = super::super::callback::AudioState::new(rx, Arc::clone(&shared), session.clone(), 48_000., channel().0);
++        let view = Arc::new(Mutex::new(None));
++        tx.send(Cmd::Clock(Some(Publisher::new(view.clone())))).unwrap();
++        let mut out = [0.; 256];
++        audio.fill(&mut out, 2);
++        let mut cursor = Cursor::default();
++        let mut poll = || {
++            let b = view.lock().unwrap().unwrap();
++            let mut bytes = Vec::new();
++            cursor.follow(b, b.position, 0, false, &session, |m| bytes.push(m.to_vec()));
++            bytes
++        };
++        tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
++        assert!(poll().is_empty());
++        audio.fill(&mut out, 2);
++        assert_eq!(poll(), [vec![START], vec![CLOCK]]);
++        shared.position.store(27_000, std::sync::atomic::Ordering::Relaxed);
++        shared.playing.store(false, std::sync::atomic::Ordering::Relaxed);
++        assert!(poll().is_empty());
++        tx.send(Cmd::Locate(27_000)).unwrap();
++        let guard = view.lock().unwrap();
++        audio.fill(&mut out, 2);
++        drop(guard);
++        assert!(poll().is_empty());
++        audio.fill(&mut out, 2);
++        assert_eq!(poll(), [vec![STOP], song_position(5).to_vec(), vec![CONTINUE]]);
++        assert!(poll().is_empty());
++    }
++
++    #[test]
++    fn wrap_inside_block_matches_generation_of_next_callback() {
++        let start = Instant::now();
++        let block = Block {
++            pass: 3,
++            origin: 0,
++            playing: true,
++            position: 29_900,
++            limit: 30_380,
++            samples_per_second: 48_000.,
++            looped: Some(super::super::Range::new(24_500, 30_000)),
++            end: None,
++            when: start,
++        };
++        let wrapped = block.current(start + Duration::from_millis(5));
++        assert_eq!((wrapped.pass, wrapped.origin, wrapped.position), (4, 24_500, 24_640));
++        let session = Session::default();
++        let mut cursor = Cursor::default();
++        let mut bytes = Vec::new();
++        cursor.follow(wrapped, wrapped.position, 0, false, &session, |m| bytes.push(m.to_vec()));
++        assert_eq!(bytes, [song_position(5).to_vec(), vec![CONTINUE]]);
++        cursor.follow(Block { position: 24_880, ..wrapped }, 24_880, 0, false, &session, |_| panic!("repeated locate"));
++        let ended = Block { looped: None, end: Some(30_000), ..block }.current(start + Duration::from_millis(5));
++        assert!(!ended.playing);
++    }
++
++    #[test]
++    fn failed_send_is_reported_and_reopen_clears_the_error() {
++        let view = View::default();
++        let mut publisher = Publisher::new(view.clone());
++        publisher.publish(true, 0, 0, 48_000., None, None);
++        let trouble = Arc::new(Mutex::new(None));
++        let (tx, rx) = channel();
++        let (observed, events) = channel();
++        let status = trouble.clone();
++        let handle = std::thread::spawn(move || {
++            let mut attempt = 0;
++            drive(
++                view,
++                Arc::new(Session::default()),
++                rx,
++                status,
++                || {
++                    attempt += 1;
++                    Ok(attempt)
++                },
++                |attempt, bytes| {
++                    if *attempt == 1 {
++                        return Err("MIDI destination disappeared".into());
++                    }
++                    if bytes == [START] {
++                        observed.send(()).unwrap();
++                    }
++                    Ok(())
++                },
++            );
++        });
++        let deadline = Instant::now() + Duration::from_millis(800);
++        while trouble.lock().unwrap().is_none() && Instant::now() < deadline {
++            std::thread::sleep(Duration::from_millis(5));
++        }
++        assert_eq!(trouble.lock().unwrap().as_deref(), Some("MIDI destination disappeared"));
++        events.recv_timeout(Duration::from_secs(4)).unwrap();
++        assert!(trouble.lock().unwrap().is_none());
++        drop(tx);
++        handle.join().unwrap();
++    }
++
+     #[test]
+     fn delayed_start_stays_silent_until_zero_and_stop_cancels_it() {
+         let rate = SampleRate::new(48_000).unwrap();
+@@ -242,11 +551,11 @@ mod tests {
+     #[test]
+     fn between_blocks_clock_advances_once_then_waits_for_the_audio_device() {
+         let start = std::time::Instant::now();
+-        let mut clock = BlockClock::new(0, start);
+-        assert_eq!(clock.sample(480, 48_000, 1000, start), 480);
+-        assert_eq!(clock.sample(480, 48_000, 1000, start + Duration::from_millis(5)), 720);
+-        assert_eq!(clock.sample(480, 48_000, 1000, start + Duration::from_secs(1)), 960);
+-        assert_eq!(clock.sample(0, 48_000, 1000, start + Duration::from_secs(2)), 0);
++        let block =
++            Block { pass: 0, origin: 0, playing: true, position: 480, limit: 960, samples_per_second: 48_000., looped: None, end: None, when: start };
++        assert_eq!(block.at(start), 480);
++        assert_eq!(block.at(start + Duration::from_millis(5)), 720);
++        assert_eq!(block.at(start + Duration::from_secs(1)), 960);
+     }
+ 
+     #[test]
+diff --git a/crates/playback/src/callback.rs b/crates/playback/src/callback.rs
+index b29b5c5..8809b07 100644
+--- a/crates/playback/src/callback.rs
++++ b/crates/playback/src/callback.rs
+@@ -65,6 +65,8 @@ pub(crate) fn guarded_block(fault: &Fault, shared: &Shared, out: &mut [f32], fil
+ 
+ /// State owned by the audio callback.
+ pub(crate) struct AudioState {
++    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++    clock: Option<super::beat_clock::Publisher>,
+     rx: Receiver<Cmd>,
+     pub(crate) shared: Arc<Shared>,
+     pub(crate) session: Arc<Session>,
+@@ -169,6 +171,8 @@ impl AudioState {
+             pos: 0,
+             playing: false,
+             end: None,
++            #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++            clock: None,
+             looped: None,
+             pending: vec![vec![0.0; BLOCK]; nch],
+             pending_len: 0,
+@@ -257,9 +261,15 @@ impl AudioState {
+                         let _ = tx.try_send(old);
+                     }
+                 }
++                #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++                Cmd::Clock(clock) => self.clock = clock,
+                 Cmd::OldSessions(tx) => self.old_sessions = Some(tx),
+                 Cmd::Play { from, end, looped } => {
+                     self.pos = from;
++                    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++                    if let Some(clock) = &mut self.clock {
++                        clock.locate(from);
++                    }
+                     self.end = end;
+                     self.looped = looped.filter(|r| super::loops(*r));
+                     self.midi_wraps = 0;
+@@ -279,6 +289,10 @@ impl AudioState {
+                 Cmd::Locate(at) => {
+                     self.midi_stopped = None;
+                     self.pos = at;
++                    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++                    if let Some(clock) = &mut self.clock {
++                        clock.locate(at);
++                    }
+                     self.pending_len = 0;
+                     self.read = 0.0;
+                     self.mix.reset();
+@@ -551,6 +565,10 @@ impl AudioState {
+             && self.pos >= l.end
+         {
+             self.pos = l.start;
++            #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++            if let Some(clock) = &mut self.clock {
++                clock.locate(l.start);
++            }
+             if self.playing && self.recording {
+                 self.midi_wraps = self.midi_wraps.saturating_add(1);
+             }
+@@ -678,6 +696,12 @@ impl AudioState {
+         // A command may have installed a session at another sample rate: the audio is rendered
+         // at the rate that is there now, at the same speed.
+         let step = self.step(speed);
++        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++        if let Some(clock) = &mut self.clock {
++            let position = self.pos.saturating_sub(self.pending_len as i64).saturating_add(self.read as i64);
++            let limit = position.saturating_add((callback_frames as f64 * step).ceil() as i64);
++            clock.publish(self.playing, position, limit, speed * self.session.sample_rate.as_f64(), self.looped, self.end);
++        }
+         // A keyboard plays through record-enabled and input-monitored MIDI and instrument tracks.
+         let midi_live = self.midi.as_ref().is_some_and(|f| f.connected() > 0)
+             && self.session.tracks.iter().any(|t| matches!(t.kind, TrackKind::Instrument | TrackKind::Midi) && midi_thru(t));
+diff --git a/crates/playback/src/lib.rs b/crates/playback/src/lib.rs
+index 8fe5f54..fd5771d 100644
+--- a/crates/playback/src/lib.rs
++++ b/crates/playback/src/lib.rs
+@@ -134,6 +134,8 @@ pub type PluginStates = Vec<(TrackId, usize, Vec<u8>)>;
+ pub type EditorEdit = (TrackId, usize, String, f32);
+ 
+ enum Cmd {
++    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++    Clock(Option<beat_clock::Publisher>),
+     /// A new snapshot plus the third-party instances it needs (created on the UI thread).
+     Session(Arc<Session>, Vec<PreparedInstance>),
+     /// Where the callback sends the snapshots it replaces (freeing one takes thousands of frees).
+@@ -410,7 +412,7 @@ impl Player {
+     /// prepared) instances of any third-party plugin it newly needs. Call on the UI thread.
+     pub fn update_session(&self, s: Arc<Session>) {
+         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+-        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.shared);
++        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).configure(&s, &self.tx);
+         let (instances, gone) = {
+             let mut side = self.side();
+             (side.prepare(&s), side.gone_tracks(&s))
+@@ -496,13 +498,25 @@ impl Player {
+         self.side().editors.get_mut(&(track, slot))?.value_text(id, value)
+     }
+ 
++    /// Latest clock destination or synchronization error for the setup dialog.
++    pub fn midi_clock_error(&self) -> Option<String> {
++        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++        {
++            self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).trouble()
++        }
++        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
++        {
++            None
++        }
++    }
++
+     /// Start playback at `from`, stopping at `end`, or looping `looped`.
+     pub fn play(&self, from: Samples, end: Option<Samples>, looped: Option<Range>) {
+         self.shared.position.store(from, Ordering::Relaxed);
+         self.shared.playing.store(true, Ordering::Release);
+-        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+-        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).transport(from, true);
+         let _ = self.tx.send(Cmd::Play { from, end, looped });
++        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).wake();
+     }
+ 
+     /// Feed live input (from a `record::Recorder`) into the mix for input monitoring.
+@@ -527,17 +541,17 @@ impl Player {
+     }
+ 
+     pub fn stop(&self) {
+-        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+-        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).transport(self.position(), false);
+         self.shared.playing.store(false, Ordering::Relaxed);
+         let _ = self.tx.send(Cmd::Stop);
++        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).wake();
+     }
+ 
+     pub fn locate(&self, at: Samples) {
+         self.shared.position.store(at, Ordering::Relaxed);
+-        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+-        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).transport(at, self.is_playing());
+         let _ = self.tx.send(Cmd::Locate(at));
++        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++        self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).wake();
+     }
+ 
+     pub fn set_speed(&self, speed: f32) {
+diff --git a/crates/ui-egui/locales/pt-BR/mod.rs b/crates/ui-egui/locales/pt-BR/mod.rs
+index 2553b91..fcca314 100644
+--- a/crates/ui-egui/locales/pt-BR/mod.rs
++++ b/crates/ui-egui/locales/pt-BR/mod.rs
+@@ -1834,6 +1834,7 @@ fn menu_translate(source: &str) -> Option<&'static str> {
+         "Choose a MIDI output" => "Escolher uma saída MIDI",
+         "MIDI output" => "Saída MIDI",
+         "No MIDI output devices found" => "Nenhum dispositivo de saída MIDI encontrado",
++        "Position exceeds the MIDI Song Position Pointer range." => "A posição excede o limite do ponteiro de posição MIDI.",
+         "The saved MIDI output is unavailable." => "A saída MIDI salva está indisponível.",
+         "Offset (samples)" => "Deslocamento (amostras)",
+         "MIDI Input Monitoring Follows Selected Track" => "O monitoramento de entrada MIDI acompanha a pista selecionada",
+diff --git a/crates/ui-egui/src/app/playback.rs b/crates/ui-egui/src/app/playback.rs
+index 372a968..c848521 100644
+--- a/crates/ui-egui/src/app/playback.rs
++++ b/crates/ui-egui/src/app/playback.rs
+@@ -33,6 +33,9 @@ impl SoundApp {
+         if let Some(p) = &self.player {
+             p.update_session(self.engine.session_arc());
+             p.play(from, end, looped);
++            if let Some(error) = p.midi_clock_error() {
++                self.ui.status = crate::localization::error_text(&error);
++            }
+         } else {
+             self.sim = Some((from, end, looped));
+         }
+diff --git a/crates/ui-egui/src/dialogs.rs b/crates/ui-egui/src/dialogs.rs
+index 4287929..ec8255f 100644
+--- a/crates/ui-egui/src/dialogs.rs
++++ b/crates/ui-egui/src/dialogs.rs
+@@ -707,6 +707,7 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
+                     }
+                 }
+                 Dialog::MidiBeatClock(clock) => {
++                    if let Some(error) = app.player.as_ref().and_then(|p|p.midi_clock_error()) { ui.label(crate::localization::error_text(&error)); }
+                     if let Some(params) = clock.show(ui, enter) {
+                         action = Some(("setup.midi_beat_clock".into(), params));
+                     }
+@@ -997,6 +998,7 @@ mod tests {
+     #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+     #[test]
+     fn beat_clock_menu_applies_the_selected_port_and_preserves_an_unavailable_destination() {
++        let port = format!("  {}  ", "B".repeat(210));
+         const CMD: &str = "setup.midi_beat_clock";
+         const PATH: &str = "Setup > MIDI > MIDI Beat Clock...";
+         let mut app = SoundApp::new(Engine::default(), None, crate::Services::default());
+@@ -1021,25 +1023,25 @@ mod tests {
+         let Some(Dialog::MidiBeatClock(form)) = &mut app.dialogs.open else { panic!("missing clock dialog") };
+         assert!(!form.enabled);
+         assert!(form.destination.is_empty());
+-        form.outputs = Ok(vec!["Clock A".into(), "Clock B".into()]);
++        form.outputs = Ok(vec!["Clock A".into(), port.clone()]);
+         form.enabled = true;
+         dialog_frame(&ctx, &mut app, vec![]);
+         enter(&mut app);
+         assert_eq!(app.dialogs.open_name(), Some("midi_beat_clock"));
+         assert_eq!(app.engine.revision, revision);
+         let Some(Dialog::MidiBeatClock(form)) = &mut app.dialogs.open else { panic!("missing clock dialog") };
+-        form.destination = "Clock B".into();
++        form.destination = port.clone();
+         form.offset = -240;
+         enter(&mut app);
+         assert!(app.dialogs.open.is_none());
+         assert!(app.engine.revision > revision);
+         let config = soundcraft_model::MidiBeatClock::from_session(app.engine.session());
+-        assert_eq!((config.enabled, config.destination, config.offset), (true, Some("Clock B"), -240));
++        assert_eq!((config.enabled, config.destination, config.offset), (true, Some(port.as_str()), -240));
+ 
+         dialog_frame(&ctx, &mut app, vec![]);
+         open(&mut app);
+         let Some(Dialog::MidiBeatClock(form)) = &mut app.dialogs.open else { panic!("missing clock dialog") };
+-        assert_eq!((form.enabled, form.destination.as_str(), form.offset), (true, "Clock B", -240));
++        assert_eq!((form.enabled, form.destination.as_str(), form.offset), (true, port.as_str(), -240));
+         // Unplug the saved output. Opening and canceling must not replace it with the first port.
+         form.outputs = Ok(vec!["Clock A".into()]);
+         form.offset = 64;
+@@ -1049,7 +1051,7 @@ mod tests {
+         dialog_frame(&ctx, &mut app, vec![key(egui::Key::Escape, egui::Modifiers::NONE)]);
+         assert!(app.dialogs.open.is_none());
+         let config = soundcraft_model::MidiBeatClock::from_session(app.engine.session());
+-        assert_eq!((config.enabled, config.destination, config.offset), (true, Some("Clock B"), -240));
++        assert_eq!((config.enabled, config.destination, config.offset), (true, Some(port.as_str()), -240));
+     }
+ 
+     /// Returns every editable value from the active New Tracks row.
+diff --git a/docs/gaps.md b/docs/gaps.md
+index bfe710d..741fc3b 100644
+--- a/docs/gaps.md
++++ b/docs/gaps.md
+@@ -1,6 +1,6 @@
+ # Where SoundCraft falls short of Pro Tools
+ 
+-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-18 · **Change:** minor (G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
++> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-20 · **Change:** minor (G-11 MIDI Beat Clock output; G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+ 
+ Every known shortfall, one entry each, ranked by how much it stops a Pro Tools user from doing
+ real work in SoundCraft. This is the work list: pick from the top. Rows marked **alpha blocker**
+@@ -185,7 +185,7 @@ switch. ≈ 40–70 h for HUI/MCU plus a mapping layer; hardware needed to verif
+ 
+ ### G-11. Sync
+ 
+-For MIDI Beat Clock and MIDI Time Code, see the [hardware capability tables](hardware-parity.md#midi).
++Native MIDI Beat Clock output is available. MIDI Time Code generation and chase are still open in [#1663](https://github.com/storytold/soundcraft/pull/1663). See the [hardware capability tables](hardware-parity.md#midi).
+ LTC, video reference, word clock awareness and Satellite-style linking remain open.
+ 
+ ### G-12. Immersive delivery
+@@ -251,6 +251,7 @@ missing. Out of scope unless the owner decides otherwise.
+ 
+ | Date | Change | Summary |
+ |---|---|---|
++| 2026-11-20 | minor | G-11: native MIDI Beat Clock output; MTC generation and chase remain tracked separately in #1663. |
+ | 2026-11-14 | minor | G-03: strict external-WAV AAF import with bounded property caching; AAF/OMF export, OMF import and `.ptx` remain; estimates unchanged |
+ | 2026-11-13 | trivial | G-09: the pt-BR catalog now covers tooltips localized inside buttons and toggles, the Edit-window status bar, the remove-session question, the send help text and engine errors shown in the status line; estimates unchanged |
+ | 2026-11-09 | trivial | G-08: 28 processors + 3 instruments with the Frequency Shifter |
+diff --git a/docs/hardware-parity.md b/docs/hardware-parity.md
+index 042c597..83da5d4 100644
+--- a/docs/hardware-parity.md
++++ b/docs/hardware-parity.md
+@@ -1,6 +1,6 @@
+ # Hardware parity
+ 
+-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-18 · **Change:** minor (MIDI input devices, live play-through with controllers, and MIDI recording) · **Target:** Avid Pro Tools Ultimate 2026.4.1
++> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-20 · **Change:** minor (G-11 MIDI Beat Clock output; MIDI input devices, live play-through with controllers, and MIDI recording) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+ 
+ A DAW is judged by how it drives audio interfaces, MIDI gear, control surfaces and sync. This is
+ SoundCraft's weakest dimension. Ours is measured from `crates/playback` (cpal) and the absence of
+@@ -51,7 +51,8 @@ Legend: ✅ works · 🟡 partial · ❌ missing.
+ 
+ | Feature | Pro Tools | SoundCraft |
+ |---|---|---|
+-| LTC / MTC chase, 9-pin machine control | ✅ (Ultimate) | ❌ |
++| MTC generate / chase | ✅ | ❌ Tracked in [#1663](https://github.com/storytold/soundcraft/pull/1663). |
++| LTC chase, 9-pin machine control | ✅ (Ultimate) | ❌ |
+ | Word clock / video reference awareness | ✅ via interface | ❌ |
+ | Video output to a second display or video card | ✅ | ❌ (video window only) |
+ | MIDI Beat Clock out | ✅ | 🟡 [Named output and sample offset](midi-input.md#send-midi-beat-clock-to-external-hardware). Windows hardware verified at 120 BPM, including Start, Song Position Pointer, Continue and Stop. Linux and macOS share the native output path. |
+@@ -73,6 +74,7 @@ Legend: ✅ works · 🟡 partial · ❌ missing.
+ 
+ | Date | Change | Summary |
+ |---|---|---|
++| 2026-11-20 | minor | G-11: native MIDI Beat Clock output; MTC generation and chase remain tracked separately in #1663. |
+ | 2026-11-18 | minor | MIDI input devices (`midir`): live play-through to record-enabled MIDI and instrument tracks (notes, pedal, controllers, pitch bend, aftertouch), MIDI recording into clips, per-track device and channel, device switches in Playback Engine; guide in `midi-input.md` |
+ | 2026-10-13 | trivial | bounces of a bus fed by an aux compensate its latency (#246) |
+ | 2026-10-12 | minor | Audio device settings: system, output, input, sample rate and buffer size; opt-in ASIO |
+diff --git a/docs/midi-input.md b/docs/midi-input.md
+index 330275f..26c6b56 100644
+--- a/docs/midi-input.md
++++ b/docs/midi-input.md
+@@ -83,9 +83,9 @@ recordings.
+ 
+ ## Send MIDI Beat Clock to external hardware
+ 
+-On Windows, macOS or Linux, open **Setup › MIDI › MIDI Beat Clock…**. Choose the MIDI output connected to the receiving device, check **Enable MIDI Beat Clock**, and click **OK**. Set the receiving device to follow external MIDI clock, then start SoundCraft playback. The output follows the session tempo at 24 clock pulses per quarter note. Playback from the beginning sends Start. Playback from a later position sends Song Position Pointer and Continue. Stopping playback sends Stop.
++On Windows, macOS or Linux, open **Setup › MIDI › MIDI Beat Clock…**. Choose the MIDI output connected to the receiving device, check **Enable MIDI Beat Clock**, and click **OK**. Set the receiving device to follow external MIDI clock, then start SoundCraft playback. The output follows the session tempo at 24 clock pulses per quarter note. The offset-adjusted position determines the start message. At zero, the receiver gets Start. Starting, seeking or looping between sixteenths sends Song Position Pointer and Continue for the next sixteenth; its first clock arrives on that boundary. Playback before the adjusted origin waits for zero. Stop ends the outgoing pulses. A fresh position beyond 16,383 sixteenths cannot be encoded; clock output resumes after a locate in range. A continuous pass can play beyond that limit.
+ 
+-**Offset (samples)** shifts the outgoing clock relative to session playback. A positive value delays the clock and a negative value advances it. The session saves the enable switch, destination and offset. After connecting a MIDI device, choose **Refresh devices** to update the list. If a saved destination is missing, its name stays selected. Reconnect it or choose another output to enable the clock.
++**Offset (samples)** shifts the outgoing clock relative to session playback. A positive value delays the clock and a negative value advances it. The session saves the enable switch, destination and offset. After connecting a MIDI device, choose **Refresh devices** to update the list. If a saved destination is missing, its name stays selected. Reconnect it or choose another output to enable the clock. Open or send failures appear in the dialog and the worker retries the port. Outputs with identical names require distinct device names before selection can identify one reliably.
+ 
+ ## If something is lost
+ 
+diff --git a/docs/roadmap.md b/docs/roadmap.md
+index 441f94c..373ec0b 100644
+--- a/docs/roadmap.md
++++ b/docs/roadmap.md
+@@ -1,6 +1,6 @@
+ # SoundCraft roadmap: milestones and what's next
+ 
+-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-18 · **Change:** minor (MIDI input landed, the gate row needs checking on macOS and Windows; strict external-WAV AAF import; previously trivial: 28 built-in processors with the Frequency Shifter; G-05 estimate after Linux/X11 plugin editors; M15: partial pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1
++> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-20 · **Change:** minor (G-11 MIDI Beat Clock output; MIDI input landed, the gate row needs checking on macOS and Windows; strict external-WAV AAF import; previously trivial: 28 built-in processors with the Frequency Shifter; G-05 estimate after Linux/X11 plugin editors; M15: partial pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+ 
+ Forward-looking plan. Status and numbers: [`../ROADMAP.md`](../ROADMAP.md) and
+ [`target-app-parity.md`](target-app-parity.md); the ranked work list: [`gaps.md`](gaps.md).
+@@ -11,7 +11,7 @@ Hours are Opus 5.5 agent-hours.
+ 1. **Merge or close the open bug-fix PRs** (#123–#134, #146, #148, #75) and fix the rest of the
+    correctness backlog (G-04). ≈ 15–25 h.
+ 2. **Audio interface basics** (G-01): device selection, buffer size, duplex stream, ASIO. ≈ 25–40 h.
+-3. **MIDI devices** (G-02): input to armed tracks and instruments is in (checked on Linux); macOS and Windows checks, output, thru to gear, clock remain. ≈ 12–22 h.
++3. **MIDI devices** (G-02): input to armed tracks and instruments is in (checked on Linux); macOS and Windows checks, track output and thru to gear remain. G-11 provides Beat Clock output; MTC generation and chase are tracked in #1663. ≈ 12–22 h.
+ 4. **macOS plugin hosting** (G-05): library-validation entitlement now (#153), then AU editors and embedded CLAP editors on macOS. ≈ 10–15 h.
+ 5. **A PR CI that runs `cargo xtask ci`** on Linux, macOS and Windows (G-14). ≈ 5–10 h.
+ 
+@@ -88,6 +88,7 @@ There is no `cargo xtask scorecard` in this repo; the measured number is `cargo
+ 
+ | Date | Change | Summary |
+ |---|---|---|
++| 2026-11-20 | minor | G-11: native MIDI Beat Clock output; MTC generation and chase remain tracked separately in #1663. |
+ | 2026-11-18 | minor | MIDI input devices landed (G-02 shrunk); the MIDI gate row is unverified until checked on macOS and Windows |
+ | 2026-11-14 | minor | M13 is in progress with strict external-WAV AAF import; the exchange gate still fails without AAF export, OMF or `.ptx`; estimates unchanged |
+ | 2026-11-09 | trivial | 28 built-in processors with the Frequency Shifter |

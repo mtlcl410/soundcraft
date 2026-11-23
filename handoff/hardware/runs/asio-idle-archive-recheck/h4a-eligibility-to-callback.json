@@ -1,0 +1,722 @@
+{
+  "h4a-integration-24-forward-01": [
+    {
+      "eligible_to_next_observed_callback_ms": 4.377900011604652,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 160.972,
+      "origin_to_eligible_ms": 155.95763333840296,
+      "callback_to_pcm_minus_score_time_ms": 0.6364666623994708
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.892899985658005,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 159.9396,
+      "origin_to_eligible_ms": 156.38550001312979,
+      "callback_to_pcm_minus_score_time_ms": -0.3388333134353161
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.8924999826122075,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 159.9243,
+      "origin_to_eligible_ms": 156.39801663928665,
+      "callback_to_pcm_minus_score_time_ms": -0.36623331834562123
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.9975000070407987,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 159.8967,
+      "origin_to_eligible_ms": 156.2512000091374,
+      "callback_to_pcm_minus_score_time_ms": 0.6479666626546532
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.9617999971378595,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 158.9099,
+      "origin_to_eligible_ms": 156.2371166946832,
+      "callback_to_pcm_minus_score_time_ms": -0.28903334168717265
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.8574999887496233,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 158.8418,
+      "origin_to_eligible_ms": 156.38980001676828,
+      "callback_to_pcm_minus_score_time_ms": -0.4055333265569061
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.9789999932982028,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 158.8084,
+      "origin_to_eligible_ms": 156.17745000054128,
+      "callback_to_pcm_minus_score_time_ms": 0.6519666640087962
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.861800003098324,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 157.7838,
+      "origin_to_eligible_ms": 156.28465000190772,
+      "callback_to_pcm_minus_score_time_ms": -0.362633349141106
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.6915999983903021,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 157.7523,
+      "origin_to_eligible_ms": 156.48281667381525,
+      "callback_to_pcm_minus_score_time_ms": 0.5778666818514466
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.5964000010862947,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 156.726,
+      "origin_to_eligible_ms": 156.45473334006965,
+      "callback_to_pcm_minus_score_time_ms": -0.32513332553207874
+    }
+  ],
+  "h4a-integration-24-reverse-01": [
+    {
+      "eligible_to_next_observed_callback_ms": 3.244399995310232,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 159.0493,
+      "origin_to_eligible_ms": 156.28953333362006,
+      "callback_to_pcm_minus_score_time_ms": -0.4846333176828921
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.3748999994713813,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 158.9898,
+      "origin_to_eligible_ms": 155.97710001748055,
+      "callback_to_pcm_minus_score_time_ms": -0.3622333169914782
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.248599979793653,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 159.0465,
+      "origin_to_eligible_ms": 156.11648335470818,
+      "callback_to_pcm_minus_score_time_ms": 0.6813666841480881
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.1182000054977834,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 157.9563,
+      "origin_to_eligible_ms": 156.20480000507087,
+      "callback_to_pcm_minus_score_time_ms": -0.3667333221528679
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.100200013956055,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 157.921,
+      "origin_to_eligible_ms": 156.17876665783115,
+      "callback_to_pcm_minus_score_time_ms": -0.3579333424568176
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.902900006622076,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 156.8967,
+      "origin_to_eligible_ms": 156.40194999286905,
+      "callback_to_pcm_minus_score_time_ms": -0.40813334635458887
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.059800008079037,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 156.8671,
+      "origin_to_eligible_ms": 156.2485833419487,
+      "callback_to_pcm_minus_score_time_ms": -0.44133333722129464
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.10599999222904444,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 156.855,
+      "origin_to_eligible_ms": 156.11303332843818,
+      "callback_to_pcm_minus_score_time_ms": 0.6359666876960546
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.736200004117563,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 161.8629,
+      "origin_to_eligible_ms": 156.44165000412613,
+      "callback_to_pcm_minus_score_time_ms": 0.6850666832178831
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.869199998211116,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 160.8105,
+      "origin_to_eligible_ms": 156.29968332359567,
+      "callback_to_pcm_minus_score_time_ms": -0.35843331716023386
+    }
+  ],
+  "h4a-integration-25-forward-01": [
+    {
+      "eligible_to_next_observed_callback_ms": 3.6037999961990863,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 153.033,
+      "origin_to_eligible_ms": 149.80924999690615,
+      "callback_to_pcm_minus_score_time_ms": -0.38003333611413836
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.500299993902445,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 153.0159,
+      "origin_to_eligible_ms": 149.88765001180582,
+      "callback_to_pcm_minus_score_time_ms": -0.3720333334058523
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.508200006559491,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 152.9944,
+      "origin_to_eligible_ms": 149.90270000998862,
+      "callback_to_pcm_minus_score_time_ms": 0.5834666662849486
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.4175999860744923,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 151.971,
+      "origin_to_eligible_ms": 149.8847499897238,
+      "callback_to_pcm_minus_score_time_ms": -0.3313333145342767
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.0081999828107655,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 151.9397,
+      "origin_to_eligible_ms": 150.29239997966215,
+      "callback_to_pcm_minus_score_time_ms": -0.3609333070926368
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.4692999830003828,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 151.8754,
+      "origin_to_eligible_ms": 149.77730001555756,
+      "callback_to_pcm_minus_score_time_ms": 0.6287666910793632
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.496999990195036,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 150.8999,
+      "origin_to_eligible_ms": 149.7553000226617,
+      "callback_to_pcm_minus_score_time_ms": -0.35243332968093455
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.2426000137347728,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 150.8454,
+      "origin_to_eligible_ms": 149.9770499940496,
+      "callback_to_pcm_minus_score_time_ms": 0.6257666682358831
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.23320000036619604,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 149.8301,
+      "origin_to_eligible_ms": 149.93695000885054,
+      "callback_to_pcm_minus_score_time_ms": -0.34003332257270813
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.17839999054558575,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 149.7798,
+      "origin_to_eligible_ms": 149.93824998964556,
+      "callback_to_pcm_minus_score_time_ms": -0.3368333273101598
+    }
+  ],
+  "h4a-integration-25-reverse-01": [
+    {
+      "eligible_to_next_observed_callback_ms": 1.1541999992914498,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 151.0325,
+      "origin_to_eligible_ms": 150.25190002052113,
+      "callback_to_pcm_minus_score_time_ms": -0.37363331648521125
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.435199985280633,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 150.9705,
+      "origin_to_eligible_ms": 149.89005000097677,
+      "callback_to_pcm_minus_score_time_ms": -0.35473331809043884
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.27809999301098287,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 150.9864,
+      "origin_to_eligible_ms": 150.05649998784065,
+      "callback_to_pcm_minus_score_time_ms": 0.651766691589728
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.14560000272467732,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 149.9628,
+      "origin_to_eligible_ms": 150.17300000181422,
+      "callback_to_pcm_minus_score_time_ms": -0.35583332646638155
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 5.333299981430173,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 154.9544,
+      "origin_to_eligible_ms": 149.93835001951084,
+      "callback_to_pcm_minus_score_time_ms": -0.31723332358524203
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.222999996272847,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 154.886,
+      "origin_to_eligible_ms": 150.1045500044711,
+      "callback_to_pcm_minus_score_time_ms": 0.5584666796494275
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.380300000775605,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 153.8751,
+      "origin_to_eligible_ms": 149.84674999141134,
+      "callback_to_pcm_minus_score_time_ms": -0.35193332587368786
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.8754999986849725,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 153.9759,
+      "origin_to_eligible_ms": 150.3610999789089,
+      "callback_to_pcm_minus_score_time_ms": -0.2607333299238235
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.3841000113170594,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 153.809,
+      "origin_to_eligible_ms": 149.75699997739866,
+      "callback_to_pcm_minus_score_time_ms": 0.667866668663919
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.051400010008365,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 152.7752,
+      "origin_to_eligible_ms": 150.0771999999415,
+      "callback_to_pcm_minus_score_time_ms": -0.3534333372954279
+    }
+  ],
+  "h4a-integration-29.97df-forward-01": [
+    {
+      "eligible_to_next_observed_callback_ms": 5.592899979092181,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 130.2098,
+      "origin_to_eligible_ms": 124.98058335040696,
+      "callback_to_pcm_minus_score_time_ms": -0.3637332993093878
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.2106999822426587,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 127.1238,
+      "origin_to_eligible_ms": 125.25241668522358,
+      "callback_to_pcm_minus_score_time_ms": -0.3393333249257502
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.377700010081753,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 129.1674,
+      "origin_to_eligible_ms": 125.13574998592958,
+      "callback_to_pcm_minus_score_time_ms": -0.3460333391558379
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.106500014429912,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 126.109,
+      "origin_to_eligible_ms": 125.32876662630588,
+      "callback_to_pcm_minus_score_time_ms": -0.32623334159120887
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.1060999899636954,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 129.1222,
+      "origin_to_eligible_ms": 125.32956668292172,
+      "callback_to_pcm_minus_score_time_ms": 0.6865666946396232
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.0950000248849392,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 126.0444,
+      "origin_to_eligible_ms": 125.2916333109606,
+      "callback_to_pcm_minus_score_time_ms": 0.6577666422820094
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.338500013342127,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 128.1261,
+      "origin_to_eligible_ms": 125.07166666910052,
+      "callback_to_pcm_minus_score_time_ms": -0.28403333271853626
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 5.082200019387528,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 129.9736,
+      "origin_to_eligible_ms": 125.27389999781735,
+      "callback_to_pcm_minus_score_time_ms": -0.38253333372972875
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.420500008156523,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 126.9622,
+      "origin_to_eligible_ms": 124.95764996856451,
+      "callback_to_pcm_minus_score_time_ms": -0.4159333184361458
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.002100002253428,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 128.8969,
+      "origin_to_eligible_ms": 125.26609999663197,
+      "callback_to_pcm_minus_score_time_ms": -0.3713333357588944
+    }
+  ],
+  "h4a-integration-29.97df-reverse-01": [
+    {
+      "eligible_to_next_observed_callback_ms": 1.2045000039506704,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 127.0423,
+      "origin_to_eligible_ms": 125.18455000827089,
+      "callback_to_pcm_minus_score_time_ms": 0.6532666739076376
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.158600000664592,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 129.0305,
+      "origin_to_eligible_ms": 125.20249997801147,
+      "callback_to_pcm_minus_score_time_ms": -0.3306333168873188
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.0011999984271824,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 126.0223,
+      "origin_to_eligible_ms": 125.33523337333463,
+      "callback_to_pcm_minus_score_time_ms": -0.31413332908414304
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.1478999881073833,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 127.9877,
+      "origin_to_eligible_ms": 125.16066668508574,
+      "callback_to_pcm_minus_score_time_ms": -0.32083332957677513
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.2830000012181699,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 124.9944,
+      "origin_to_eligible_ms": 125.01068331766874,
+      "callback_to_pcm_minus_score_time_ms": -0.29923333204351366
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.879399991594255,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 127.8786,
+      "origin_to_eligible_ms": 125.3410833091475,
+      "callback_to_pcm_minus_score_time_ms": 0.6581666744316372
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 5.0552000175230205,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 129.9408,
+      "origin_to_eligible_ms": 125.22356666158885,
+      "callback_to_pcm_minus_score_time_ms": -0.3379333356861025
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.3967999839223921,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 126.8488,
+      "origin_to_eligible_ms": 124.79571667104028,
+      "callback_to_pcm_minus_score_time_ms": 0.6562666599640998
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.263500013621524,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 128.9517,
+      "origin_to_eligible_ms": 124.9427999719046,
+      "callback_to_pcm_minus_score_time_ms": -0.2546333125792444
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.8550999918952584,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 125.8115,
+      "origin_to_eligible_ms": 125.28263335884549,
+      "callback_to_pcm_minus_score_time_ms": -0.32623334159120887
+    }
+  ],
+  "h4a-integration-29.97nd-forward-01": [
+    {
+      "eligible_to_next_observed_callback_ms": 3.6359999794512987,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 128.2381,
+      "origin_to_eligible_ms": 124.93750001885928,
+      "callback_to_pcm_minus_score_time_ms": -0.3354333166498691
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.6427000043913722,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 125.1451,
+      "origin_to_eligible_ms": 124.8580500036478,
+      "callback_to_pcm_minus_score_time_ms": -0.3556333326266703
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.490399987436831,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 127.1499,
+      "origin_to_eligible_ms": 125.02358332858421,
+      "callback_to_pcm_minus_score_time_ms": -0.36413330235518515
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.581999994115904,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 130.1126,
+      "origin_to_eligible_ms": 124.85800000326708,
+      "callback_to_pcm_minus_score_time_ms": 0.6725666676650199
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.320900017162785,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 127.0873,
+      "origin_to_eligible_ms": 125.0982999918051,
+      "callback_to_pcm_minus_score_time_ms": 0.6680666701868176
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.45959999342449,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 129.0383,
+      "origin_to_eligible_ms": 125.01696663862094,
+      "callback_to_pcm_minus_score_time_ms": -0.4382333212995526
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.5073999927844852,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 126.0426,
+      "origin_to_eligible_ms": 124.91323336143978,
+      "callback_to_pcm_minus_score_time_ms": 0.6219666684046388
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.3745999971870333,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 128.1195,
+      "origin_to_eligible_ms": 124.99271665769629,
+      "callback_to_pcm_minus_score_time_ms": -0.2478333266915378
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.041399995097890496,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 130.0148,
+      "origin_to_eligible_ms": 125.292900018394,
+      "callback_to_pcm_minus_score_time_ms": 4.680466663558036
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.139999996870756,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 126.9889,
+      "origin_to_eligible_ms": 125.17034999513999,
+      "callback_to_pcm_minus_score_time_ms": -0.32143333414547115
+    }
+  ],
+  "h4a-integration-29.97nd-reverse-01": [
+    {
+      "eligible_to_next_observed_callback_ms": 3.6446000158321112,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 129.282,
+      "origin_to_eligible_ms": 124.97558331233449,
+      "callback_to_pcm_minus_score_time_ms": 0.6618666520807892
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.5336999893188477,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 126.2291,
+      "origin_to_eligible_ms": 125.02981670736335,
+      "callback_to_pcm_minus_score_time_ms": 0.6655666725712273
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.629400016507134,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 128.3519,
+      "origin_to_eligible_ms": 124.96258330065757,
+      "callback_to_pcm_minus_score_time_ms": -0.24003334692679346
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.13780000153928995,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 125.1953,
+      "origin_to_eligible_ms": 125.39834998501465,
+      "callback_to_pcm_minus_score_time_ms": -0.34083333634749025
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.53800000064075,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 127.2074,
+      "origin_to_eligible_ms": 124.9835499911569,
+      "callback_to_pcm_minus_score_time_ms": -0.31413332908414304
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.430100001627579,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 130.1262,
+      "origin_to_eligible_ms": 125.04363331431523,
+      "callback_to_pcm_minus_score_time_ms": 0.6524666601328555
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.9642000077292323,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 127.2134,
+      "origin_to_eligible_ms": 125.52509998204187,
+      "callback_to_pcm_minus_score_time_ms": 0.72406668914482
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.5412000035867095,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 129.1162,
+      "origin_to_eligible_ms": 124.90818333067,
+      "callback_to_pcm_minus_score_time_ms": -0.3331333359235522
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.4066000003367662,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 126.0741,
+      "origin_to_eligible_ms": 125.03806667518802,
+      "callback_to_pcm_minus_score_time_ms": -0.37053332198411226
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.088700002990663,
+      "first_pcm_sample_in_block": 128,
+      "recorded_tx_offset_ms": 128.0962,
+      "origin_to_eligible_ms": 125.25156664964743,
+      "callback_to_pcm_minus_score_time_ms": -0.24403332686029344
+    }
+  ],
+  "h4a-integration-30-forward-01": [
+    {
+      "eligible_to_next_observed_callback_ms": 0.22050002007745206,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 125.7424,
+      "origin_to_eligible_ms": 124.90101665025577,
+      "callback_to_pcm_minus_score_time_ms": 0.6208666600286961
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.931800009217113,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 130.8474,
+      "origin_to_eligible_ms": 125.16306663746923,
+      "callback_to_pcm_minus_score_time_ms": 0.7525666733272374
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.04049998824484646,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 129.7405,
+      "origin_to_eligible_ms": 125.01413334393874,
+      "callback_to_pcm_minus_score_time_ms": 4.68586667557247
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.739800002425909,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 129.6821,
+      "origin_to_eligible_ms": 125.26756664738036,
+      "callback_to_pcm_minus_score_time_ms": -0.3252333262935281
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.9326999976765364,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 129.6571,
+      "origin_to_eligible_ms": 125.07929999264888,
+      "callback_to_pcm_minus_score_time_ms": 0.6450666696764529
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.85070001357235,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 128.6909,
+      "origin_to_eligible_ms": 125.16806664643786,
+      "callback_to_pcm_minus_score_time_ms": -0.3278333169873804
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.8006999928038567,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 128.6055,
+      "origin_to_eligible_ms": 125.16409999807365,
+      "callback_to_pcm_minus_score_time_ms": 0.6406666652765125
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.986500010592863,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 128.6201,
+      "origin_to_eligible_ms": 124.97721664840333,
+      "callback_to_pcm_minus_score_time_ms": 0.6563666684087366
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 3.018599993083626,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 127.5607,
+      "origin_to_eligible_ms": 124.90310001885518,
+      "callback_to_pcm_minus_score_time_ms": -0.36103330785408616
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.853099984349683,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 127.5158,
+      "origin_to_eligible_ms": 125.0032666721379,
+      "callback_to_pcm_minus_score_time_ms": -0.3405333263799548
+    }
+  ],
+  "h4a-integration-30-reverse-01": [
+    {
+      "eligible_to_next_observed_callback_ms": 3.028100007213652,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 128.3932,
+      "origin_to_eligible_ms": 124.71696667489596,
+      "callback_to_pcm_minus_score_time_ms": 0.6481666932813823
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.698600001167506,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 127.3636,
+      "origin_to_eligible_ms": 125.07658335380233,
+      "callback_to_pcm_minus_score_time_ms": -0.4116333439014852
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 2.8267999878153205,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 127.299,
+      "origin_to_eligible_ms": 124.860866664676,
+      "callback_to_pcm_minus_score_time_ms": -0.38863331428729
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.575100002810359,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 127.3755,
+      "origin_to_eligible_ms": 125.14546667807713,
+      "callback_to_pcm_minus_score_time_ms": 0.6549666868522763
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.909899991005659,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 126.2865,
+      "origin_to_eligible_ms": 124.76194999180734,
+      "callback_to_pcm_minus_score_time_ms": -0.3853333182632923
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 1.6964999958872795,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 126.315,
+      "origin_to_eligible_ms": 124.92571666371055,
+      "callback_to_pcm_minus_score_time_ms": -0.3072333347517997
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.6522999901790172,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 125.2511,
+      "origin_to_eligible_ms": 124.91911667166278,
+      "callback_to_pcm_minus_score_time_ms": -0.320333318086341
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 0.4825999785680324,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 125.0897,
+      "origin_to_eligible_ms": 124.96753333834909,
+      "callback_to_pcm_minus_score_time_ms": -0.3604333323892206
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 5.569500004639849,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 130.3034,
+      "origin_to_eligible_ms": 124.9867333099246,
+      "callback_to_pcm_minus_score_time_ms": -0.25283332797698677
+    },
+    {
+      "eligible_to_next_observed_callback_ms": 4.679400008171797,
+      "first_pcm_sample_in_block": 224,
+      "recorded_tx_offset_ms": 130.1332,
+      "origin_to_eligible_ms": 124.81731665320672,
+      "callback_to_pcm_minus_score_time_ms": 0.6364666623994708
+    }
+  ]
+}

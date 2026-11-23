@@ -1,0 +1,26 @@
+{
+  "buffer": 256,
+  "rate": 48000,
+  "count": 1351067,
+  "min_ms": 4.2774,
+  "mean_ms": 5.333125178710737,
+  "median_ms": 5.0144,
+  "p99_ms": 6.0755,
+  "p999_ms": 6.111793500000005,
+  "max_ms": 6.7658,
+  "position_discontinuities": 0,
+  "serial_discontinuities": 0,
+  "invalid_samplepos": 0,
+  "unexpected_buffer": 0,
+  "negative_intervals": 0,
+  "histogram": {
+    "[0, 4)": 0,
+    "[4, 7)": 1351066,
+    "[7, 10)": 0,
+    "[10, 20)": 0,
+    "[20, 100)": 0,
+    "[100, 200)": 0,
+    "[200, 300)": 0,
+    "[300, inf)": 0
+  }
+}

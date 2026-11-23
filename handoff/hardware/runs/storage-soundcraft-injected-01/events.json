@@ -1,0 +1,82 @@
+[
+  {
+    "label": "stopped-before",
+    "time_ns": 235146642679800,
+    "epoch_count": 1,
+    "transport": {
+      "playing": false,
+      "position": 0,
+      "recording": false
+    }
+  },
+  {
+    "label": "stopped-recovered",
+    "time_ns": 235149250003100,
+    "epoch_count": 2,
+    "transport": {
+      "playing": false,
+      "position": 0,
+      "recording": false
+    }
+  },
+  {
+    "label": "playing-before",
+    "time_ns": 235158282829200,
+    "epoch_count": 2,
+    "transport": {
+      "playing": true,
+      "position": 23040,
+      "recording": false
+    }
+  },
+  {
+    "label": "playing-injected",
+    "time_ns": 235164285338800,
+    "epoch_count": 2,
+    "transport": {
+      "playing": true,
+      "position": 310784,
+      "recording": false
+    }
+  },
+  {
+    "label": "playing-recovered",
+    "time_ns": 235167095287700,
+    "epoch_count": 3,
+    "transport": {
+      "playing": false,
+      "position": 312064,
+      "recording": false
+    }
+  },
+  {
+    "label": "recording-before",
+    "time_ns": 235176127781900,
+    "epoch_count": 3,
+    "transport": {
+      "playing": true,
+      "position": 23552,
+      "recording": true
+    }
+  },
+  {
+    "label": "recording-injected",
+    "time_ns": 235182129869800,
+    "epoch_count": 3,
+    "transport": {
+      "playing": true,
+      "position": 311552,
+      "recording": true
+    }
+  },
+  {
+    "label": "recording-recovered",
+    "time_ns": 235184749334900,
+    "epoch_count": 4,
+    "transport": {
+      "playing": false,
+      "position": 312320,
+      "recording": false
+    }
+  }
+]

@@ -1,0 +1,151 @@
+{
+  "seconds": 7200,
+  "expected_clock": 345600,
+  "source": 345600,
+  "physical_input": 345600,
+  "relayed_input": 345600,
+  "received_clock": 345601,
+  "expected_qf": 864000,
+  "received_qf": 864024,
+  "status": {
+    "audio_device_open": true,
+    "clock_follow": {
+      "arrival_residual_us": -300,
+      "dropouts": 0,
+      "enabled": true,
+      "estimated_bpm": 119.99876571814548,
+      "input": "SC G11 5CF878 Out",
+      "input_offset_samples": 0,
+      "jitter_us": 0.0,
+      "loss_policy": "coast",
+      "phase_error_us": null,
+      "state": "Stopped"
+    },
+    "mtc_chase": {
+      "arrival_delay_p95_us": 0,
+      "elapsed_frames": 0,
+      "freewheel_entries": 0,
+      "freewheel_state": "waiting",
+      "hard_relocates": 0,
+      "incoming_rate": null,
+      "incoming_timecode": null,
+      "input_jitter_p95_us": 0,
+      "limit_frames": 8,
+      "locks": 0,
+      "losses": 0,
+      "rate_mismatch": null,
+      "state": "Offline"
+    },
+    "output": {
+      "callback_gap_max_us": 28575,
+      "callback_gaps_over_two_buffers": 3,
+      "catch_up_sends": 23,
+      "error": null,
+      "lateness_buckets": [
+        875784,
+        240990,
+        92624,
+        211,
+        17,
+        4,
+        0
+      ],
+      "lateness_max_us": 16519,
+      "lateness_p50_us": 500,
+      "lateness_p95_us": 2000,
+      "lead_clamps": 0,
+      "lead_source": "reported",
+      "oversized_dropped": 0,
+      "pending_transition_timeouts": 0,
+      "ports": {
+        "UM-ONE": {
+          "advance_limited": false,
+          "beat_clock_enabled": true,
+          "beat_clock_total_us": 15166,
+          "connected": true,
+          "device_lead_us": 15166,
+          "effective_total_us": 15166,
+          "lead_source": "reported",
+          "mtc_enabled": true,
+          "mtc_total_us": 15166,
+          "offset_samples": 0,
+          "requested_offset_samples": 0,
+          "system_delay_samples": 0
+        }
+      },
+      "priority": "raised",
+      "relaunches": 3,
+      "reported_lead_us": 15166,
+      "sent": 1209630,
+      "session_backlog_drops": 0,
+      "stale_dropped": 0
+    },
+    "settings": {
+      "compensation": {
+        "beat_clock": true,
+        "mtc": true,
+        "notes": false
+      },
+      "enabled": true,
+      "port_ids": {
+        "UM-ONE": "\\\\?\\usb#vid_0582&pid_0168&mi_00#8&256da864&0&0000#{6994ad04-93ef-11d0-a3cc-00a0c9223196}\\global"
+      },
+      "ports": {
+        "UM-ONE": {
+          "enabled": true,
+          "in_offset_samples": 0,
+          "out_offset_samples": 0
+        }
+      }
+    }
+  },
+  "din_in_ms": {
+    "median": 0.6474,
+    "p99": 0.7704,
+    "maximum": 18.8905
+  },
+  "relay_dispatch_ms": {
+    "median": 0.0326,
+    "p99": 0.0481,
+    "maximum": 0.1477
+  },
+  "virtual_ms": {
+    "median": 0.0948,
+    "p99": 0.1192,
+    "maximum": 18.8152
+  },
+  "added_ms": {
+    "median": 0.1267,
+    "p99": 0.1586,
+    "maximum": 18.8547
+  },
+  "discontinuous_qf_pieces": 0,
+  "controls": [
+    {
+      "at_ns": "251518321500",
+      "hex": "fa"
+    },
+    {
+      "at_ns": "251521885200",
+      "hex": "f07f7f010160000000f7"
+    },
+    {
+      "at_ns": "7451518149700",
+      "hex": "fc"
+    },
+    {
+      "at_ns": "7451534238600",
+      "hex": "f07f7f010162000007f7"
+    }
+  ],
+  "dropout_count": 0,
+  "states": [
+    "Locked",
+    "Stopped",
+    "Waiting"
+  ],
+  "private_bytes_first": 515563520,
+  "private_bytes_last": 517550080,
+  "relay_queue_max": null,
+  "output_capture_queue_max": 0
+}

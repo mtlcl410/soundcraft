@@ -1,0 +1,19 @@
+{
+  "head": "85623f28f99a9a788123f0f6b48829f95f07962f",
+  "requested": {
+    "sample_rate": 48000,
+    "buffer": 256,
+    "input": 9,
+    "output": 1
+  },
+  "observed_seconds": 10.0001009,
+  "epochs": 0,
+  "native_interval_ms": null,
+  "device": {
+    "buffer_size": null,
+    "channels": 0,
+    "name": "No audio device (silent)",
+    "sample_rate": 48000,
+    "silent": true
+  }
+}

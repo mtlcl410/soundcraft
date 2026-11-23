@@ -1,0 +1,83 @@
+diff --git a/crates/playback/src/sync_clock.rs b/crates/playback/src/sync_clock.rs
+index d1e711d..3426195 100644
+--- a/crates/playback/src/sync_clock.rs
++++ b/crates/playback/src/sync_clock.rs
+@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicU64, Ordering::Relaxed};
+ use std::sync::{Arc, Mutex};
+ use std::time::{Duration, Instant};
+ 
+-pub(crate) const RELAUNCH_PULSES: i64 = 6;
++pub(crate) const RELAUNCH_PULSES: i64 = 1;
+ pub(crate) const BACKWARD_TOLERANCE_PULSES: i64 = 1;
+ pub(crate) const CATCH_UP_SPACING: Duration = Duration::from_millis(1);
+ 
+@@ -19,7 +19,7 @@ pub(crate) struct DeviceTiming {
+ 
+ impl DeviceTiming {
+     pub(crate) fn new(callback: Instant, reported: Option<Duration>, frame_offset: usize) -> Self {
+-        let valid = reported.filter(|&v| v <= Duration::from_secs(1));
++        let valid = reported;
+         Self { callback, lead: valid.unwrap_or_default(), frame_offset, clamped: valid.is_none() }
+     }
+     pub(crate) fn heard_instant(self, device_rate: f64, frame_index: usize) -> Instant {
+@@ -55,13 +55,13 @@ impl Presentation {
+     pub fn sample_index_at(self, now: Instant) -> i64 {
+         let sample = self.sample_heard_at(now);
+         let nearest = sample.round();
+-        if (nearest - sample).abs() <= 2. * f64::EPSILON * sample.abs().max(1.) { nearest as i64 } else { sample.floor() as i64 }
++        if nearest == sample { nearest as i64 } else { sample.floor() as i64 }
+     }
+     pub fn instant_for(self, sample: f64) -> Instant {
+         shift(self.heard_at, (sample - self.sample) / self.samples_per_second)
+     }
+     fn adjusted(mut self, compensate: bool, offset_seconds: f64) -> Self {
+-        self.heard_at = shift(self.heard_at, offset_seconds - if compensate { 0.0 } else { self.lead.as_secs_f64() });
++        self.heard_at = shift(self.heard_at, -self.lead.as_secs_f64());
+         self
+     }
+     pub(crate) fn current(mut self, now: Instant) -> Self {
+@@ -105,6 +105,7 @@ impl Default for Timeline {
+ }
+ impl Timeline {
+     pub(crate) fn push(&mut self, block: Presentation) {
++        self.blocks.clear();
+         if self.blocks.len() == HISTORY {
+             self.blocks.pop_front();
+         }
+diff --git a/crates/playback/src/sync_output.rs b/crates/playback/src/sync_output.rs
+index 781cce2..9e57cba 100644
+--- a/crates/playback/src/sync_output.rs
++++ b/crates/playback/src/sync_output.rs
+@@ -70,9 +70,9 @@ impl Stats {
+ }
+ fn effective_offset(offset: i64, sr: soundcraft_time::SampleRate) -> i64 {
+     let max = crate::max_sync_offset_samples(sr);
+-    offset.clamp(-max, max)
++    offset
+ }
+-const BOUNDS: [u64; 6] = [500, 1000, 2000, 5000, 10_000, 20_000];
++const BOUNDS: [u64; 6] = [800, 1000, 2000, 5000, 10_000, 20_000];
+ fn percentile(buckets: [u64; 7], p: u64, max: u64) -> u64 {
+     let target = buckets.iter().sum::<u64>().saturating_mul(p).div_ceil(100);
+     if target == 0 {
+@@ -385,6 +385,7 @@ fn drive<C: SyncPort>(
+                         clear_route(p, 1, &stats);
+                     }
+                     if let Some((n, o)) = dest {
++                        if let Some(p) = ports.get_mut(&n) { p.link = None; p.retry = now; }
+                         set_route(&mut ports, 1, n, Route { offset: o, compensate: c, encoder });
+                     }
+                 }
+diff --git a/crates/playback/src/sync_output_tests.rs b/crates/playback/src/sync_output_tests.rs
+index 19a41a5..6cca3be 100644
+--- a/crates/playback/src/sync_output_tests.rs
++++ b/crates/playback/src/sync_output_tests.rs
+@@ -297,7 +297,7 @@ fn receiver_recovers_grid_through_jitter_quantised_wakes_and_worker_stalls() {
+                             clocks += 1;
+                             pulse += 1;
+                         }
+-                        unexpected => panic!("unexpected receiver message {unexpected:?}"),
++                        _ => unreachable!(),
+                     }
+                 }
+             }

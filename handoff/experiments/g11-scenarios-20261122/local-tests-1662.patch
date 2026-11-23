@@ -1,0 +1,675 @@
+diff --git a/crates/playback/src/sync_output_tests.rs b/crates/playback/src/sync_output_tests.rs
+index ce95736..0b185d2 100644
+--- a/crates/playback/src/sync_output_tests.rs
++++ b/crates/playback/src/sync_output_tests.rs
+@@ -942,3 +942,6 @@ fn connected_worker_accepts_control_and_shuts_down_while_a_future_message_is_pen
+     eprintln!("control={control:?} shutdown={shutdown:?}");
+     assert!(shutdown < bound, "Output::drop took {shutdown:?}");
+ }
++
++#[path = "scenario_1662.rs"]
++mod scenario_1662;
+diff --git a/crates/ui-egui/src/midi_sync.rs b/crates/ui-egui/src/midi_sync.rs
+index f594822..bd371af 100644
+--- a/crates/ui-egui/src/midi_sync.rs
++++ b/crates/ui-egui/src/midi_sync.rs
+@@ -298,3 +298,52 @@ mod tests {
+         }
+     }
+ }
++
++#[cfg(test)]
++mod scenario_settings {
++    use super::*;
++
++    #[test]
++    fn d4_selection_pre_post_roll_bounds_given_to_clock_output() {
++        let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
++        let edit = &mut app.engine.session_mut().edit;
++        edit.selection.start = 192_000;
++        edit.selection.end = 288_000;
++        edit.loop_playback = false;
++        edit.pre_post_roll = true;
++        edit.pre_roll = 48_000;
++        edit.post_roll = 24_000;
++        app.play_from_selection();
++        assert_eq!(app.engine.transport.position, 144_000);
++        assert_eq!(app.sim.unwrap(), (144_000, Some(312_000), None));
++        println!("D4 SoundApp selection=192000..288000 real play request=144000..312000");
++    }
++    #[test]
++    fn d5_station_calibration_rename_and_same_named_units() {
++        let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
++        app.sync_command("setup.midi_beat_clock", &json!({"enabled":true,"destination":"Deck","offset":-2501})).unwrap();
++        let p = std::env::temp_dir().join(format!("soundcraft-d5-{}-beat.json", std::process::id()));
++        std::fs::write(&p, serde_json::to_vec(&app.ui.midi_sync).unwrap()).unwrap();
++        let mut reopened = SoundApp::new(Default::default(), None, crate::Services::default());
++        reopened.ui.midi_sync = serde_json::from_slice(&std::fs::read(&p).unwrap()).unwrap();
++        std::fs::remove_file(&p).unwrap();
++        assert_eq!(reopened.ui.midi_sync.ports["Deck"].offset_samples, -2501);
++        reopened.sync_command("setup.midi_beat_clock", &json!({"ports":{"Deck 2":{"enabled":true,"offset_samples":900}}})).unwrap();
++        let old = reopened.ui.midi_sync.ports["Deck"];
++        assert_eq!(old.offset_samples, -2501);
++        assert!(!old.enabled);
++        let new = reopened.ui.midi_sync.ports["Deck 2"];
++        assert_eq!(new.offset_samples, 900);
++        // Both physical endpoints now enumerate the same OS name. Exercise both edits via RPC.
++        for calibration in [701, 302] {
++            reopened.sync_command("setup.midi_beat_clock", &json!({"destination":"Identical","offset":calibration})).unwrap();
++        }
++        let shared: Vec<_> = reopened.ui.midi_sync.ports.iter().filter(|(k, _)| k.as_str() == "Identical").collect();
++        println!(
++            "D5 saved=-2501 restored=-2501 renamed_preserved_old=-2501 new=900 same_named_endpoints=2 stored_keys={} final_value={}",
++            shared.len(),
++            shared[0].1.offset_samples
++        );
++        assert_eq!(shared.len(), 2, "two independently calibrated same-name units should remain distinct");
++    }
++}
+diff --git a/crates/playback/src/scenario_1662.rs b/crates/playback/src/scenario_1662.rs
+new file mode 100644
+index 0000000..27fb2dd
+--- /dev/null
++++ b/crates/playback/src/scenario_1662.rs
+@@ -0,0 +1,601 @@
++use super::*;
++use soundcraft_time::{SampleRate, TICKS_PER_QUARTER};
++const TPC: i64 = TICKS_PER_QUARTER / 24;
++
++fn seconds(n: i64, rate: SampleRate) -> Duration {
++    Duration::from_secs_f64(n as f64 / rate.as_f64())
++}
++fn distance(a: Instant, b: Instant) -> Duration {
++    a.saturating_duration_since(b).max(b.saturating_duration_since(a))
++}
++fn test_rate(rate: u32) -> SampleRate {
++    SampleRate::new(rate).unwrap()
++}
++
++/// Calls the actual encoder on an independent 125-us worker lattice.
++/// Compares both its tagged presentation time and the tick handed to the sink.
++fn check_map(s: &Session, pulses: i64) -> (f64, f64, f64) {
++    let start = Instant::now();
++    let mut cursor = Cursor::default();
++    let rate = s.sample_rate;
++    let mut b = block(start, 0., 1e14, Duration::ZERO);
++    b.sample_rate = rate;
++    b.samples_per_second = rate.as_f64();
++    let mut previous: Option<(Instant, Instant)> = None;
++    let mut max_target = Duration::ZERO;
++    let mut max_hand = Duration::ZERO;
++    let mut max_interval = Duration::ZERO;
++    for n in 0..pulses {
++        let ideal = start + seconds(s.tempo.tick_to_samples(n * TPC, rate), rate);
++        let us = ideal.duration_since(start).as_nanos().div_ceil(125000) as u64 * 125;
++        let now = start + Duration::from_micros(us);
++        let mut count = 0;
++        cursor.update(b, now, s, &mut |stamp, m| {
++            if m == [CLOCK] {
++                count += 1;
++                max_target = max_target.max(distance(stamp, ideal));
++                max_hand = max_hand.max(distance(now, ideal));
++                if let Some((prev, should)) = previous {
++                    max_interval = max_interval.max((now - prev).abs_diff(ideal - should));
++                }
++                previous = Some((now, ideal));
++            }
++        });
++        assert_eq!(count, 1, "pulse {n} at {us} us");
++    }
++    (max_target.as_secs_f64() * 1000., max_hand.as_secs_f64() * 1000., max_interval.as_secs_f64() * 1000.)
++}
++fn position_messages(s: &Session, tick: i64, playing: bool) -> Vec<Vec<u8>> {
++    let now = Instant::now();
++    let at = s.tempo.tick_to_samples(tick, s.sample_rate) as f64;
++    let b = Presentation {
++        playing,
++        origin: at as i64,
++        sample_rate: s.sample_rate,
++        samples_per_second: s.sample_rate.as_f64(),
++        ..block(now, at, 4096., Duration::ZERO)
++    };
++    let mut m = Vec::new();
++    Cursor::default().update(b, now, s, &mut |_, bytes| m.push(bytes.to_vec()));
++    m
++}
++fn spp(messages: &[Vec<u8>]) -> Option<i64> {
++    messages.iter().find_map(|m| match m.as_slice() {
++        [0xf2, l, h] => Some(*l as i64 + 128 * (*h as i64)),
++        _ => None,
++    })
++}
++#[test]
++fn a7_three_destinations() {
++    let start = Instant::now();
++    let lead = Duration::from_millis(300);
++    for hz in [44100, 48000, 96000, 192000] {
++        let srate = test_rate(hz);
++        let mut s = Session::new("DJ", srate);
++        s.tempo.set_tempo(0, 128.).unwrap();
++        s.tempo.set_tempo(16 * TICKS_PER_QUARTER, 140.).unwrap();
++        let view = View::default();
++        let stats = Stats::default();
++        let mut events = Vec::new();
++        let cap = i64::from(hz) / 4;
++        let offsets = [-cap, 0, cap];
++        let mut ports = offsets.map(|o| active_port(o, true));
++        let mut idx = [0i64; 3];
++        let mut peaks = [0u64; 3];
++        let mut labels = [0u64; 3];
++        for us in (0..10_000_000).step_by(500) {
++            let now = start + Duration::from_micros(us);
++            if us % 10_000 == 0 {
++                view.lock().unwrap().push(Presentation {
++                    sample_rate: srate,
++                    samples_per_second: srate.as_f64(),
++                    ..block(now, us as f64 * srate.as_f64() / 1e6, srate.as_f64() / 100., lead)
++                });
++            }
++            for (i, p) in ports.iter_mut().enumerate() {
++                p.poll("DIN", now, &s, &view, &stats, &mut events);
++                for (stamp, m) in p.link.as_mut().unwrap().messages.drain(..) {
++                    if m == [CLOCK] {
++                        let target = start + lead + seconds(s.tempo.tick_to_samples(idx[i] * TPC, srate), srate);
++                        let target = crate::sync_clock::shift(target, offsets[i] as f64 / srate.as_f64());
++                        peaks[i] = peaks[i].max(distance(now, target).as_micros() as u64);
++                        labels[i] = labels[i].max(distance(stamp, target).as_micros() as u64);
++                        idx[i] += 1;
++                    }
++                }
++            }
++        }
++        println!("A7 hz={hz} count={idx:?} peak_actual_us={peaks:?} peak_target_us={labels:?}");
++        assert!(idx.iter().all(|n| *n > 384) && peaks.iter().all(|n| *n <= 1000));
++        assert_eq!(effective_offset(2 * cap, srate), cap);
++        assert_eq!(effective_offset(-2 * cap, srate), -cap);
++    }
++}
++fn setlist_at(hz: u32) -> Session {
++    let mut s = Session::new("setlist", test_rate(hz));
++    for i in 0..12 {
++        let base = i * 16 * TICKS_PER_QUARTER;
++        s.tempo.set_tempo(base, (95 + i) as f64).unwrap();
++        let sample = s.tempo.tick_to_samples(base, s.sample_rate);
++        s.add_marker(&format!("Song {}", i + 1), soundcraft_model::MarkerKind::Marker, sample, sample);
++        for j in 0..=8 {
++            s.tempo.set_tempo(base + (8 + j) * TICKS_PER_QUARTER, 120. - 5. * j as f64).unwrap();
++        }
++    }
++    s
++}
++#[test]
++fn b1_setlist_rate_and_running_locates() {
++    for hz in [44100, 48000, 96000, 192000] {
++        let s = setlist_at(hz);
++        let (target, hand, interval) = check_map(&s, 12 * 16 * 24);
++        let mut correct = 0;
++        for i in 1..12 {
++            let tick = i * 16 * TICKS_PER_QUARTER;
++            if spp(&position_messages(&s, tick, true)) == Some(i * 16 * 4) {
++                correct += 1;
++            }
++        }
++        println!("B1 hz={hz} pulses=4608 target_ms={target} dispatch_ms={hand} interval_ms={interval} running_nonzero_spp={correct}/11");
++        assert_eq!(correct, 11);
++        assert!(interval <= 0.5);
++    }
++}
++#[test]
++fn b1_stopped_setlist_locates_send_marker_spp() {
++    let s = setlist_at(48000);
++    let mut cursor = Cursor::default();
++    let now = Instant::now();
++    let mut n = 0;
++    for (idx, marker) in s.markers.iter().enumerate() {
++        let t = now + Duration::from_secs(idx as u64);
++        let mut batch = Vec::new();
++        let b = Presentation { playing: idx == 0, origin: marker.start, pass: idx as u64, ..block(t, marker.start as f64, 4096., Duration::ZERO) };
++        cursor.update(b, t, &s, &mut |_, m| batch.push(m.to_vec()));
++        if idx > 0 && spp(&batch) == Some(idx as i64 * 64) {
++            n += 1;
++        }
++    }
++    println!("B1 stopped_nonzero_spp={n}/11");
++    assert_eq!(n, 11, "proposed stopped locate expectation");
++}
++#[test]
++fn c5_dense_map() {
++    for hz in [44100, 48000, 96000, 192000] {
++        let mut s = Session::new("rubato", test_rate(hz));
++        for i in 0..1000 {
++            s.tempo.set_tempo(i * TICKS_PER_QUARTER, 40. + (i * 71 % 121) as f64).unwrap();
++        }
++        for (i, (n, d)) in [(5, 8), (7, 8), (6, 8), (3, 4)].into_iter().enumerate() {
++            s.tempo.set_meter(i as i64 * 250 * TICKS_PER_QUARTER, n, d).unwrap();
++        }
++        let (target, hand, interval) = check_map(&s, 24000);
++        let lookup_median = |song: &Session| {
++            let mut trials = [Duration::ZERO; 7];
++            for trial in &mut trials {
++                let begin = Instant::now();
++                for i in 0..1000 {
++                    let sixteenth = (i * 73 % 3960) + 1;
++                    assert_eq!(spp(&position_messages(song, sixteenth * TICKS_PER_QUARTER / 4, true)), Some(sixteenth));
++                }
++                *trial = begin.elapsed();
++            }
++            trials.sort();
++            trials[3].as_secs_f64() * 1000.
++        };
++        let simple = lookup_median(&Session::new("flat", test_rate(hz)));
++        let dense = lookup_median(&s);
++        println!(
++            "C5 hz={hz} pulses=24000 target_ms={target} dispatch_ms={hand} interval_ms={interval} 1000_locates_dense_median_ms={dense} 1000_locates_flat_median_ms={simple}"
++        );
++        assert!(interval <= 0.5);
++    }
++}
++#[test]
++fn c6_extreme_clock_at_all_rates() {
++    for hz in [44100, 48000, 96000, 192000] {
++        for bpm in [5., 20., 30., 300., 999., 1000.] {
++            let mut s = Session::new("tempo", test_rate(hz));
++            s.tempo.set_tempo(0, bpm).unwrap();
++            let (tag, hand, interval) = check_map(&s, 96);
++            println!("C6 hz={hz} bpm={bpm} tagged_ms={tag} dispatch_ms={hand} interval_ms={interval}");
++            assert!(hand <= 0.5);
++        }
++    }
++}
++#[test]
++fn c8_calibration_duration_on_rate_change() {
++    for hz in [44100, 48000, 96000, 192000] {
++        let mut out = Output::default();
++        out.beat.push(("DIN".into(), 4800));
++        out.session = Some(Arc::new(Session::new("rate", test_rate(hz))));
++        let s = out.status();
++        let p = &s.ports["DIN"];
++        println!("C8 hz={hz} requested=4800 effective_samples={} effective_us={:?}", p.offset_samples, p.beat_clock_total_us);
++        assert_eq!(p.offset_samples, 4800);
++    }
++}
++#[test]
++fn d4_clock_play_from_preroll_until_postroll() {
++    let s = Session::default();
++    let m = position_messages(&s, 6 * TICKS_PER_QUARTER, true);
++    println!("D4 playback at pre-roll beat=6 {:?}", m);
++    assert_eq!(spp(&m), Some(24));
++    assert!(m.ends_with(&[vec![CONTINUE], vec![CLOCK]]));
++}
++/// This instrument sends one unit sample per quarter. The backing aux insert
++/// models a 2048-frame lookahead on a silent backing bus. The measured path is
++/// the mixer's PDC-delayed click, not a mathematically delayed reference buffer.
++struct ShowProcessor {
++    gain: Box<dyn soundcraft_dsp::Plugin>,
++    latency: usize,
++    quarter: usize,
++    frame: usize,
++}
++impl soundcraft_dsp::Plugin for ShowProcessor {
++    fn info(&self) -> &'static soundcraft_dsp::PluginInfo {
++        self.gain.info()
++    }
++    fn prepare(&mut self, sr: f32, n: usize, ch: usize) {
++        self.gain.prepare(sr, n, ch)
++    }
++    fn reset(&mut self) {
++        self.frame = 0
++    }
++    fn param(&self, id: &str) -> Option<f32> {
++        self.gain.param(id)
++    }
++    fn set_param(&mut self, id: &str, v: f32) -> bool {
++        self.gain.set_param(id, v)
++    }
++    fn latency(&self) -> usize {
++        self.latency
++    }
++    fn process(&mut self, io: &mut [Vec<f32>], frames: usize) {
++        if self.latency == 0 {
++            let offset = (self.quarter - self.frame % self.quarter) % self.quarter;
++            for ch in io {
++                ch[..frames].fill(0.);
++                for i in (offset..frames).step_by(self.quarter) {
++                    ch[i] = 0.25;
++                }
++            }
++        }
++        self.frame += frames;
++    }
++}
++fn pdc_show(beats: usize, hz: u32) {
++    use soundcraft_mix::{INSTRUMENT_SLOT, MixEngine, PreparedInstance};
++    use soundcraft_model::{ChannelFormat, Insert, TrackKind};
++    let mut s = Session::new("show", test_rate(hz));
++    let quarter = hz as usize / 2;
++    let stride = hz as usize / 2000;
++    s.edit.delay_compensation = true;
++    let click = s.add_track(TrackKind::Instrument, ChannelFormat::Stereo, None);
++    let aux = s.add_track(TrackKind::Aux, ChannelFormat::Stereo, None);
++    let mut engine = MixEngine::new(hz as f32, 4096);
++    engine.set_external_instances(true);
++    s.track_mut(click).unwrap().instrument = Some(Insert::new("clap:show.click"));
++    s.track_mut(aux).unwrap().mixer.inserts[0] = Some(Insert::new("clap:show.lookahead"));
++    for (track, slot, id, latency) in [(click, INSTRUMENT_SLOT, "clap:show.click", 0), (aux, 0, "clap:show.lookahead", 2048)] {
++        engine.adopt(vec![PreparedInstance {
++            track,
++            slot,
++            id: id.into(),
++            ch: 2,
++            plugin: Box::new(ShowProcessor { gain: soundcraft_dsp::create("gain").unwrap(), latency, quarter, frame: 0 }),
++        }]);
++    }
++    let n = beats * quarter;
++    let mut buf = vec![vec![0.; 4096]; 2];
++    let mut clicks = Vec::with_capacity(beats);
++    let mut clocks = Vec::with_capacity(beats + 1);
++    let view = View::default();
++    let stats = Stats::default();
++    let mut scratch = Vec::new();
++    let mut port = active_port(0, true);
++    let base = Instant::now();
++    let mut pulse = 0;
++    for pos in (0..n + 4096).step_by(4096) {
++        engine.render(&s, pos as i64, 4096, &mut buf);
++        assert_eq!(engine.latency, 2048);
++        for (i, x) in buf[0].iter().enumerate().take(4096) {
++            if x.abs() > 0.01 {
++                clicks.push(pos + i);
++            }
++        }
++        let at = base + seconds(pos as i64, s.sample_rate);
++        view.lock().unwrap().push(Presentation {
++            system_delay_samples: engine.latency,
++            sample_rate: s.sample_rate,
++            samples_per_second: s.sample_rate.as_f64(),
++            ..block(at, pos as f64, 4096., Duration::ZERO)
++        });
++        // Poll the real route at each half-millisecond of this rendered block.
++        for f in (pos.div_ceil(stride) * stride..pos + 4096).step_by(stride) {
++            let now = base + seconds(f as i64, s.sample_rate);
++            port.poll("arp", now, &s, &view, &stats, &mut scratch);
++            for (_, m) in port.link.as_mut().unwrap().messages.drain(..) {
++                if m == [CLOCK] {
++                    if pulse % 24 == 0 {
++                        clocks.push(f);
++                    }
++                    pulse += 1;
++                }
++            }
++        }
++    }
++    let count = clicks.len().min(clocks.len());
++    assert!(count >= beats, "render {} send {}", clicks.len(), clocks.len());
++    let error = clicks.iter().zip(&clocks).map(|(a, b)| a.abs_diff(*b)).max().unwrap();
++    println!(
++        "B7 hz={hz} beats={beats} rendered={} dispatch={} matched={count} actual_pdc={} max_pulse_vs_audio_samples={error} max_ms={}",
++        clicks.len(),
++        clocks.len(),
++        engine.latency,
++        error as f64 * 1000. / hz as f64
++    );
++    assert!(error * 1000 <= hz as usize);
++}
++#[test]
++fn b7_pdc_smoke() {
++    for hz in [44100, 48000, 96000, 192000] {
++        pdc_show(8, hz);
++    }
++}
++#[test]
++#[ignore = "Two-hour PDC render"]
++fn b7_two_hour_pdc_render() {
++    for hz in [44100, 48000, 96000, 192000] {
++        pdc_show(14400, hz);
++    }
++}
++
++#[test]
++fn b8_unsynced_device_reset_retained_then_unknown_then_fresh() {
++    let out = Output::default();
++    let base = Instant::now();
++    let mut publisher = Publisher::new(out.view.clone(), out.metrics.clone());
++    let mut local = crate::sync_clock::StreamLead::default();
++    let mut pcm = Vec::new();
++    let mut reset_pcm = Vec::new();
++    let mut cursor = 0;
++    let mut mix = soundcraft_mix::MixEngine::new(48000., 480);
++    let mut candidate_mix = soundcraft_mix::MixEngine::new(48000., 480);
++    let mut candidate_block = vec![vec![0.; 480]; 2];
++    let mut song = Session::default();
++    let track = song.add_track(soundcraft_model::TrackKind::Audio, soundcraft_model::ChannelFormat::Stereo, None);
++    let clip_id = song.new_clip_id();
++    let src = soundcraft_model::SourceId(1700);
++    song.pool.insert(
++        src,
++        Arc::new(soundcraft_model::SourceAudio::new(craft_audio::AudioBuffer { sample_rate: 48000, channels: vec![vec![0.25; 3360]; 2] })),
++    );
++    song.track_mut(track).unwrap().playlist_mut().unwrap().clips.push(soundcraft_model::Clip::audio(clip_id, "tone", src, 0, 0, 3360));
++    let mut buf = vec![vec![0.; 480]; 2];
++    for i in 0..7 {
++        if i == 4 {
++            local = Default::default();
++        }
++        let report = match i {
++            0 | 1 | 6 => Some(Duration::from_millis(12)),
++            _ => None,
++        };
++        publisher.observe(local.observe(base + Duration::from_millis(i * 10), report), 0.01);
++        let source = out.status().lead_source;
++        let warning = out.timing_issue();
++        println!("B8 t_ms={} lead={source:?} warning={warning:?}", i * 10);
++        // The active route is retained: render an unbroken reference signal on the same graph.
++        mix.render(&song, cursor, 480, &mut buf);
++        pcm.extend_from_slice(&buf[0]);
++        // A capture device on the same wall-time grid sees no delivered samples for
++        // exactly two dropped output callbacks; the healthy reference still renders.
++        if matches!(i, 3 | 4) {
++            reset_pcm.resize(reset_pcm.len() + 480, 0.);
++        } else {
++            candidate_mix.render(&song, cursor, 480, &mut candidate_block);
++            reset_pcm.extend_from_slice(&candidate_block[0]);
++        }
++        cursor += 480;
++    }
++    assert_eq!(out.status().lead_source, crate::OutputLeadSource::Reported);
++    assert!(out.timing_issue().is_none());
++    assert_eq!(pcm.len(), 3360);
++    let zeros = pcm.iter().filter(|x| x.abs() < 0.001).count();
++    println!("B8 rendered={} near_zero={zeros} output_gap_ms={}", pcm.len(), zeros as f64 / 48.);
++    assert_eq!(zeros, 0);
++    let muted = reset_pcm
++        .iter()
++        .zip(&pcm)
++        .enumerate()
++        .filter_map(|(i, (actual, reference))| (actual - reference).abs().gt(&0.001).then_some(i))
++        .collect::<Vec<_>>();
++    let start = *muted.first().unwrap();
++    let end = *muted.last().unwrap() + 1;
++    println!(
++        "B8 injected_reopen_frames=960 observed_difference={start}..{end} extra_gap_samples={} gap_ms={}",
++        muted.len().abs_diff(960),
++        muted.len() as f64 / 48.
++    );
++    assert_eq!(muted, (1440..2400).collect::<Vec<_>>());
++}
++#[test]
++fn a8_one_dropped_output_preserves_other_ports_and_rejoins_on_grid() {
++    struct Wire {
++        name: String,
++        first: bool,
++        clocks: usize,
++        tx: Sender<(String, bool, Instant, Instant, Vec<u8>)>,
++    }
++    impl SyncPort for Wire {
++        fn send_at(&mut self, at: Instant, msg: &[u8]) -> Result<Instant, String> {
++            if msg == [CLOCK] {
++                self.clocks += 1;
++            }
++            if self.first && self.clocks == 8 {
++                return Err("device gone".into());
++            }
++            let actual = Instant::now();
++            self.tx.send((self.name.clone(), self.first, at, actual, msg.to_vec())).unwrap();
++            Ok(actual)
++        }
++    }
++    let out = Output::default();
++    let stats = out.stats.clone();
++    let err = out.trouble.clone();
++    let view = out.view.clone();
++    let t0 = Instant::now() + Duration::from_millis(80);
++    view.lock().unwrap().push(block(t0, 0., 192000., Duration::ZERO));
++    let (tx, rx) = channel();
++    let (evt, wire) = channel();
++    let worker = std::thread::spawn(move || {
++        let mut attempts = 0;
++        drive(view, Arc::new(Session::default()), rx, err, stats, move |name| {
++            let first = name == "A" && attempts == 0;
++            if name == "A" {
++                attempts += 1;
++            }
++            Ok((Wire { name: name.into(), first, clocks: 0, tx: evt.clone() }, None))
++        })
++    });
++    tx.send(Update::Beats(vec![("A".into(), 0), ("B".into(), 0)], true)).unwrap();
++    let mut right = Vec::new();
++    let mut reopened = Vec::new();
++    let mut lost = false;
++    let mut reopened_actual = Vec::new();
++    let limit = Instant::now() + Duration::from_secs(5);
++    while Instant::now() < limit {
++        if out.status().error.as_deref() == Some("A: device gone") {
++            lost = true;
++        }
++        if let Ok((name, first, at, actual, msg)) = wire.recv_timeout(Duration::from_millis(10)) {
++            if name == "B" && msg == [CLOCK] {
++                right.push(at);
++            }
++            if name == "A" && !first {
++                if msg == [CLOCK] {
++                    reopened_actual.push(actual);
++                }
++                reopened.push((at, msg));
++            }
++            if reopened.iter().filter(|(_, m)| m == &[CLOCK]).count() >= 4 {
++                break;
++            }
++        }
++    }
++    drop(tx);
++    worker.join().unwrap();
++    assert!(lost);
++    assert!(right.len() > 48, "other destination kept rolling");
++    let p = spp(&reopened.iter().map(|(_, m)| m.clone()).collect::<Vec<_>>()).unwrap();
++    let f8: Vec<_> = reopened.iter().filter(|(_, m)| m == &[CLOCK]).map(|(t, _)| *t).collect();
++    let err = distance(f8[0], t0 + Duration::from_secs_f64(p as f64 * 0.125));
++    let min = f8.windows(2).map(|w| w[1] - w[0]).min().unwrap();
++    println!(
++        "A8 status_lost={lost} healthy_clocks={} reconnect_spp={p} prefix={:?} phase_us={} min_clock_spacing_us={}",
++        right.len(),
++        reopened.iter().take(3).map(|(_, m)| m).collect::<Vec<_>>(),
++        err.as_micros(),
++        min.as_micros()
++    );
++    let true_phase = distance(reopened_actual[0], t0 + Duration::from_secs_f64(p as f64 * 0.125));
++    let true_min = reopened_actual.windows(2).map(|w| w[1] - w[0]).min().unwrap();
++    println!("A8 first_clock_actual_phase_us={} actual_min_spacing_us={}", true_phase.as_micros(), true_min.as_micros());
++    assert_eq!(reopened[0].1[0], 0xf2);
++    assert_eq!(reopened[1].1, [CONTINUE]);
++    assert!(err <= Duration::from_millis(2));
++    assert!(min >= Duration::from_millis(15));
++    assert!(right.windows(2).all(|w| (w[1] - w[0]) < Duration::from_millis(30)));
++}
++
++#[test]
++fn d5_missing_calibrated_name_is_reported_without_substituting_renamed_device() {
++    let out = Output::default();
++    let view = out.view.clone();
++    let trouble = out.trouble.clone();
++    let stats = out.stats.clone();
++    let requested = Arc::new(Mutex::new(Vec::new()));
++    let seen = requested.clone();
++    let (tx, rx) = channel();
++    let worker = std::thread::spawn(move || {
++        drive(view, Arc::new(Session::default()), rx, trouble, stats, move |name| {
++            seen.lock().unwrap().push(name.to_owned());
++            if name == "Deck 2" { Ok((FakePort::default(), None)) } else { Err(format!("MIDI output {name} unavailable")) }
++        })
++    });
++    tx.send(Update::Beats(vec![("Deck".into(), -2501)], true)).unwrap();
++    let end = Instant::now() + Duration::from_secs(2);
++    let msg = loop {
++        if let Some(e) = out.status().error {
++            break e;
++        }
++        assert!(Instant::now() < end);
++        std::thread::yield_now();
++    };
++    drop(tx);
++    worker.join().unwrap();
++    let attempts = requested.lock().unwrap().clone();
++    println!("D5 missing_name=Deck available_name=Deck_2 open_attempts={attempts:?} status={msg}");
++    assert_eq!(msg, "MIDI output Deck unavailable");
++    assert!(attempts.iter().all(|p| p == "Deck"));
++}
++
++/// The first delivery after a 100-ms interval without a device lead must be
++/// checked at the instant the receiver sees F8, even if its tag is on grid.
++#[test]
++fn a10_first_clock_after_unknown_lead_is_handed_off_on_time() {
++    struct ClockWire {
++        now: Instant,
++        writes: Vec<(Instant, Instant)>,
++    }
++    impl SyncPort for ClockWire {
++        fn send_at(&mut self, deadline: Instant, bytes: &[u8]) -> Result<Instant, String> {
++            if bytes == [CLOCK] {
++                self.writes.push((deadline, self.now));
++            }
++            Ok(self.now)
++        }
++    }
++    let base = Instant::now();
++    let mut routes = BTreeMap::new();
++    set_route(&mut routes, 0, "desk".into(), Route { map: None, offset: 0, compensate: true, encoder: Box::<Cursor>::default() });
++    let port = routes.get_mut("desk").unwrap();
++    port.link = Some(ClockWire { now: base, writes: Vec::new() });
++    let song = Session::new("reset", test_rate(48000));
++    let view = View::default();
++    let stats = Stats::default();
++    let mut pending = Vec::new();
++    for ms in 0..=400 {
++        let now = base + Duration::from_millis(ms);
++        if ms % 10 == 0 {
++            let lead = (!(100..200).contains(&ms)).then_some(Duration::ZERO);
++            view.lock().unwrap().push(Presentation { lead, ..block(now, ms as f64 * 48., 480., Duration::ZERO) });
++        }
++        port.link.as_mut().unwrap().now = now;
++        port.poll("desk", now, &song, &view, &stats, &mut pending);
++    }
++    let writes = &port.link.as_ref().unwrap().writes;
++    let valid_again = base + Duration::from_millis(200);
++    let unknown_start = base + Duration::from_millis(100);
++    let while_unknown = writes.iter().filter(|(_, at)| (unknown_start..valid_again).contains(at)).count();
++    let recovered: Vec<_> = writes.iter().filter(|(_, at)| *at >= valid_again).collect();
++    let (due, handed) = *recovered[0];
++    let late = handed.saturating_duration_since(due);
++    let stale = recovered.iter().filter(|(d, _)| *d < valid_again).count();
++    println!(
++        "A10 F8 only unknown_ms=100 packets_while_unknown={while_unknown} recovery_packets={} stale_after_recovery={stale} first_due_ms={:.6} first_handoff_ms={:.6} first_handoff_late_ms={:.6}",
++        recovered.len(),
++        (due - base).as_secs_f64() * 1000.,
++        (handed - base).as_secs_f64() * 1000.,
++        late.as_secs_f64() * 1000.
++    );
++    for (due, at) in recovered.iter().take(7).copied() {
++        println!("A10 recovered_F8 due_ms={:.6} handoff_ms={:.6}", (*due - base).as_secs_f64() * 1000., (*at - base).as_secs_f64() * 1000.);
++    }
++    assert_eq!(while_unknown, 0);
++    assert!(
++        late <= Duration::from_millis(1),
++        "first F8 missed the proposed one-millisecond handoff target by {:?}",
++        late.saturating_sub(Duration::from_millis(1))
++    );
++}

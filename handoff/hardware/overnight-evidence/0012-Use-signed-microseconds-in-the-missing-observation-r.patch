@@ -1,0 +1,26 @@
+From de85a2938ee8a4861ac348bd134d001f073eb122 Mon Sep 17 00:00:00 2001
+From: mtlcl410 <2368091+mtlcl410@users.noreply.github.com>
+Date: Mon, 23 Nov 2026 06:27:07 +0800
+Subject: [PATCH 12/12] Use signed microseconds in the missing-observation
+ regression
+
+---
+ crates/ui-egui/src/app/clock_follow/device_time.rs | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/crates/ui-egui/src/app/clock_follow/device_time.rs b/crates/ui-egui/src/app/clock_follow/device_time.rs
+index 3d9a76c8..0a2e61ee 100644
+--- a/crates/ui-egui/src/app/clock_follow/device_time.rs
++++ b/crates/ui-egui/src/app/clock_follow/device_time.rs
+@@ -67,7 +67,7 @@ mod tests {
+         let mut device = DeviceTime::default();
+         let start = Instant::now();
+         let rate = SampleRate::HZ_48000;
+-        let wire = |s| Snapshot { bpm: Some(120.), stamp_us: s * 1_000_000, now_us: s * 1_000_000, ..Snapshot::default() };
++        let wire = |s: i64| Snapshot { bpm: Some(120.), stamp_us: s * 1_000_000, now_us: s * 1_000_000, ..Snapshot::default() };
+         let cue = Some((0, 0));
+         device.project(wire(0), cue, rate, || Some((1, start, 0.)));
+         let projected = device.project(wire(30), cue, rate, || Some((1, start + Duration::from_secs(30), 1_440_144.)));
+-- 
+2.55.0.windows.1
+

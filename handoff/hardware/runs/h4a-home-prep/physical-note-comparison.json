@@ -1,0 +1,42 @@
+{
+  "home-20261122-233258-din-30-forward": {
+    "identical": 7,
+    "old_missing": 7,
+    "new_missing": 8
+  },
+  "home-20261122-233258-din-30-reverse": {
+    "identical": 9,
+    "old_missing": 9,
+    "new_missing": 8
+  },
+  "home-20261122-234047-din-24-forward": {
+    "identical": 10,
+    "old_missing": 10,
+    "new_missing": 10
+  },
+  "home-20261122-234238-din-24-reverse": {
+    "identical": 10,
+    "old_missing": 10,
+    "new_missing": 10
+  },
+  "home-20261122-234811-din-25-forward": {
+    "identical": 10,
+    "old_missing": 10,
+    "new_missing": 10
+  },
+  "home-20261122-235002-din-25-reverse": {
+    "identical": 10,
+    "old_missing": 10,
+    "new_missing": 10
+  },
+  "home-20261122-235153-din-29.97df-forward": {
+    "identical": 10,
+    "old_missing": 0,
+    "new_missing": 0
+  },
+  "home-20261122-235345-din-29.97df-reverse": {
+    "identical": 10,
+    "old_missing": 0,
+    "new_missing": 0
+  }
+}

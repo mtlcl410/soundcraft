@@ -1,0 +1,129 @@
+diff --git a/apps/soundcraft/src/config.rs b/apps/soundcraft/src/config.rs
+index b1a1c4f..c72d6fe 100644
+--- a/apps/soundcraft/src/config.rs
++++ b/apps/soundcraft/src/config.rs
+@@ -138,6 +138,24 @@ pub fn save_ui(path: &std::path::Path, ui: &soundcraft_ui_egui::UiState) -> Resu
+ mod config_tests {
+     use super::*;
+ 
++    #[test]
++    fn bad_clock_follow_prefs_reset_only_the_invalid_leaf_and_keep_workstation_settings() {
++        let path = std::env::temp_dir().join(format!("soundcraft-clock-follow-pref-{}.json", std::process::id()));
++        for (field, invalid) in [("clock_follow_stop_on_loss",serde_json::json!(7)),("clock_follow_input",serde_json::json!(" ")),("clock_follow_input_offsets",serde_json::json!({"DIN":"bad","Keys":120}))] {
++            let mut stored = serde_json::json!({"gen_mtc":true,"clock_follow_input":"DIN","clock_follow_stop_on_loss":true,"clock_follow_input_offsets":{"DIN":360,"Keys":120}});
++            stored[field] = invalid;
++            std::fs::write(&path, serde_json::to_vec(&stored).unwrap()).unwrap();
++            let ui = load_ui(&path).unwrap().unwrap();
++            assert!(ui.gen_mtc);
++            assert_eq!(ui.clock_follow_input.as_deref(),(field!="clock_follow_input").then_some("DIN"));
++            assert_eq!(ui.clock_follow_stop_on_loss,field!="clock_follow_stop_on_loss");
++            assert_eq!(ui.clock_follow_input_offsets["Keys"],120);
++            assert_eq!(ui.clock_follow_input_offsets.get("DIN").copied(),(field!="clock_follow_input_offsets").then_some(360));
++            assert!(ui.status.contains(field), "{}",ui.status);
++        }
++        std::fs::remove_file(path).unwrap();
++    }
++
+     #[test]
+     fn native_file_reload_preserves_edit_mix_and_hidden_floating_panels() {
+         use soundcraft_ui_egui::{MainWindow, Services, SoundApp, docking::Panel};
+diff --git a/crates/ui-egui/src/app/clock_follow.rs b/crates/ui-egui/src/app/clock_follow.rs
+index 43ba046..b120614 100644
+--- a/crates/ui-egui/src/app/clock_follow.rs
++++ b/crates/ui-egui/src/app/clock_follow.rs
+@@ -450,6 +450,95 @@ mod tests {
+         soundcraft_playback::Player::reconnect_output(engine.session_arc(), &Default::default(), "SoundCraft absent Clock test device")
+     }
+ 
++    /// Six simulated hours of seeded A-6 tempo steps, with the same input jitter on every run.
++    #[test]
++    #[ignore = "six simulated hours, real silent-output snapshot publication"]
++    fn six_hour_clock_history_has_bounded_unreferenced_events() {
++        let engine = soundcraft_engine::Engine::default();
++        let player = simulated_player(&engine);
++        let sr = SampleRate::HZ_48000;
++        let inputs = MidiInputs::with_port_names(Vec::new(), vec!["DJ".into()]);
++        let feed = inputs.feed();
++        let id = feed.ports().assign("DJ");
++        feed.set_clock_follow(Some(id), true, 0, false);
++        let mut grid = TempoMap::new(120., 4, 4).unwrap();
++        let mut actions = Vec::new();
++        let mut bpm = 120.;
++        let mut us = 0_f64;
++        let mut seed = 41_u64;
++        let mut next = 180_000_000.;
++        let mut total_edits = 0;
++        let mut peak_count = 1;
++        let mut changes = 0;
++        feed.set_clock(0);
++        feed.receive(id, &[0xfa]);
++        let mut pulses = 0;
++        while us < 21_600_000_000. {
++            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
++            let at = if pulses == 0 { 0 } else { us.round() as i64 + ((seed >> 32) % 2001) as i64 - 1_000 };
++            feed.set_clock(at);
++            feed.receive(id, &[0xf8]);
++            if pulses % 6 == 0 {
++                let snapshot = feed.clock_follow_status(&mut actions);
++                actions.clear();
++                if update_grid(&mut grid, Some((0,0)), 0, snapshot, sr, sr.samples(at as f64 / 1e6 + 0.030)) {
++                    total_edits += 1;
++                    peak_count = peak_count.max(grid.tempos().len());
++                }
++            }
++            if us >= next {
++                bpm = 120. + ((seed >> 35) % 31) as f64;
++                next = us + (180. + ((seed >> 32) % 301) as f64) * 1e6;
++                changes += 1;
++            }
++            pulses += 1;
++            us += 2_500_000. / bpm;
++        }
++
++        player.prepare_clock_session(engine.session_arc(), &grid);
++        let mut timings = Vec::new();
++        let mut publish_grid = grid.clone();
++        let probe_tick = pulses * TICKS_PER_PULSE;
++        for i in 0..101 {
++            publish_grid.set_tempo(probe_tick, if i%2==0 {120.1} else {119.9}).unwrap();
++            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
++            loop {
++                let start = std::time::Instant::now();
++                if player.update_follow_grid(&publish_grid) {
++                    timings.push(start.elapsed());
++                    break;
++                }
++                assert!(start < deadline, "silent callback failed to consume the published snapshot");
++                std::thread::sleep(std::time::Duration::from_millis(1));
++            }
++        }
++        timings.sort_unstable();
++        eprintln!("A6 pulses={pulses} changes={changes} edits={total_edits} peak_events={peak_count} final_events={} end_publish_p95_us={:.3}", grid.tempos().len(), timings[95].as_secs_f64()*1e6);
++        assert!(peak_count <= 512, "{peak_count} unreferenced tempo events");
++    }
++
++    #[test]
++    fn ext_transport_toggle_dispatches_follow_and_announces_clock_state() {
++        use egui_kittest::{Harness, kittest::Queryable};
++        let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
++        app.ui.clock_follow_input = Some("DIN".into());
++        let mut window = Harness::builder().with_size(egui::vec2(2000., 200.)).build_ui_state(
++            |ui, app| crate::toolbar::show(app, ui), app,
++        );
++        window.run_steps(2);
++        window.get_by_label("Follow external MIDI Clock").click();
++        window.run_steps(2);
++        assert!(window.state().clock_follow.enabled);
++        for (state, label) in [(State::Waiting, "Waiting"), (State::Locked, "Locked"), (State::Coasting, "Coasting")] {
++            window.state_mut().clock_follow.snapshot.state = state;
++            window.run_steps(2);
++            window.get_by_label(label);
++        }
++        window.get_by_label("Follow external MIDI Clock").click();
++        window.run_steps(2);
++        assert!(!window.state().clock_follow.enabled);
++    }
++
+     #[test]
+     fn cold_clock_follow_continues_only_the_current_start_on_the_first_valid_report() {
+         for interrupt in ["none", "wire stop", "wire locate", "local stop", "local locate", "local play", "local record"] {

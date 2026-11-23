@@ -1,0 +1,36 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling soundcraft-dsp v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-prearmed-red\crates\dsp)
+   Compiling soundcraft-model v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-prearmed-red\crates\model)
+   Compiling soundcraft-time v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-prearmed-red\crates\time)
+   Compiling soundcraft-midi v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-prearmed-red\crates\midi)
+   Compiling soundcraft-vst3-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-prearmed-red\crates\vst3-host)
+   Compiling soundcraft-au-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-prearmed-red\crates\au-host)
+   Compiling soundcraft-clap-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-prearmed-red\crates\clap-host)
+   Compiling soundcraft-mix v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-prearmed-red\crates\mix)
+   Compiling soundcraft-playback v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-prearmed-red\crates\playback)
+    Finished `test` profile [optimized + debuginfo] target(s) in 49.02s
+     Running unittests src\lib.rs (E:\soundcraft\compatibility-audit\g11-follow-target\debug\build\soundcraft-playback/02c6748131393de9\out\soundcraft_playback-02c6748131393de9.exe)
+
+running 1 test
+
+thread 'beat_clock::tests::a_prearmed_zero_start_one_pulse_late_does_not_jump_to_the_next_sixteenth' (8500) panicked at crates\playback\src\beat_clock.rs:272:17:
+assertion `left == right` failed
+  left: [[242, 1, 0], [251]]
+ right: [[250]]
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test beat_clock::tests::a_prearmed_zero_start_one_pulse_late_does_not_jump_to_the_next_sixteenth ... FAILED
+
+failures:
+
+failures:
+    beat_clock::tests::a_prearmed_zero_start_one_pulse_late_does_not_jump_to_the_next_sixteenth
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p soundcraft-playback --lib`

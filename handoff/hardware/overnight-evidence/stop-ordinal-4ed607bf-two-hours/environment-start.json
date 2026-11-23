@@ -1,0 +1,27 @@
+{
+  "panel_reported": {
+    "firmware": "1.50 0103",
+    "output_delay": "DISABLE",
+    "usb_audio": "MULTI INPUT",
+    "return": "TO CH9/10",
+    "channel_mode": "PC",
+    "midi_timecode": "OFF",
+    "midi_clock_spp": "OFF",
+    "song": "48/24",
+    "local_confirmed": true,
+    "source": "operator confirmation and photograph; USB replugged, green light confirmed"
+  },
+  "at": "2026-11-23T04:23:25.354110+00:00",
+  "playback_endpoint": "{0.0.0.00000000}.{1c2d2607-ad49-4a08-893e-377b4f2ba88b}",
+  "power_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c",
+  "rdp_active": false,
+  "asio_panel": {
+    "blockFrames": 256,
+    "sampleRate": 48000
+  },
+  "crd_last_event": {
+    "Id": 2,
+    "RecordId": 40902
+  },
+  "compilers": []
+}

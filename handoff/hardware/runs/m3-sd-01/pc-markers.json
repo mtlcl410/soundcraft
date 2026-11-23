@@ -1,0 +1,34 @@
+{
+  "output_codes": 609,
+  "input9_codes": 609,
+  "matched": 609,
+  "first_code": 0,
+  "last_code": 608,
+  "matched_span_s": 607.99925,
+  "host_qpc_span_s": 607.9766853000037,
+  "missing_internal": [],
+  "unexpected": [
+    [],
+    [
+      [
+        843991,
+        822,
+        0.15468880835980356
+      ]
+    ]
+  ],
+  "whole_stream_gaps": {
+    "position": 0,
+    "sequence": 0,
+    "invalid_flags": 0,
+    "buffer_mismatch": 0
+  },
+  "measurement_gaps": {
+    "position": 0,
+    "sequence": 0,
+    "invalid_flags": 0,
+    "buffer_mismatch": 0
+  },
+  "min_loop_samples": 945,
+  "max_loop_samples": 981
+}

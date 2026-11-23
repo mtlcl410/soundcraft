@@ -1,0 +1,38 @@
+## What this PR does
+
+Select the reader and generator ports under **Setup › Peripherals › Synchronization**. Use **Online** to chase an external master or **Gen MTC** to enable output. Port selections are workstation settings. Session Setup holds the timecode rate, start label and signed external offset in frames. New sessions start at 01:00:00:00 by default; existing sessions retain their saved start.
+
+The generator sends a full-frame locate on a stopped cursor move and quarter frames during playback. Generation and chase support 23.976, 24, 25, 29.97 non-drop, 29.97 drop-frame and 30 fps. Fractional non-drop rates retain their session cadence using the nearest representable wire rate.
+
+Chase locates on acquisition, runs at the audio sample clock's normal speed, and relocates after sustained drift greater than a frame. A stopped locate protects the first event at that position. Freewheel is configurable from 4 to 40 frames (default 8). Jam Sync keeps playback running after timecode loss; explicit Stop still stops. Take chase offline to record.
+
+Pro Tools Reference Guide 2026.4 references: synchronization peripherals (pp. 184–185, 1820), Session Setup, external timecode offset and Freewheel (pp. 1815–1820), and Gen MTC (p. 1826).
+
+## Shared code
+
+The generator uses #1662's audio presentation timeline, signed per-port calibration, delay-compensation preference and worker. Beat Clock and MTC sent to the same destination share one connection. This branch adds a timestamped MIDI input path and a bounded, windowed pulse estimator used by the external clock follow draft.
+
+## How it was verified
+
+- The pre-fix playback suite failed the fractional generator and native lock-without-repaint probes. The old new-session command returned a zero-hour start. The corrected suites exercise the resulting behavior.
+- `all_six_rates_align_eight_wire_pieces_and_session_offset_to_presentation` checks wire labels, cadence and sample positioning. `stopped_locates_drop_frame_labels_and_delayed_worker_resumes_a_whole_group` covers drop-frame minute/tenth-minute boundaries and stale quarter frames.
+- `locked_device_tracks_and_stops_during_a_ui_stall` and `external_lock_starts_and_runs_at_unity_without_repaints` cover callback-side acquisition, grace, forced drift, and loss. The virtual run retained the 5.000 s anchor, measured 499.979 ms between the first two onsets, and had zero samples of phase error at the simulated 17 s checkpoint. In the sustained-drift case the transport sought once after the qualification interval. These are simulated sample-clock results.
+- The existing selection-range integration test caught an ambiguity with the new one-hour session start: the main timecode counter could interpret the end of an elapsed range as an absolute label. The regression now covers both 0:12.500–0:20.000 and selections entered with full timecode labels from the one-hour origin. The test passed after disambiguating fractional minutes/seconds input.
+- A virtual generator-to-slave loopback compared 301 audible positions with 30 ms output lead at each device and a 1 ms phase-error bound. The desktop diagnostics test failed when its reader counter was missing and passed after wiring it to the MIDI input feed.
+- Windows playback suite: 139 passed; three timing or OS loopback tests are opt-in. The native playback crate passed strict all-target Clippy and the WebAssembly playback crate compiled successfully. The MTC benchmark used the actual worker, Rust precise sleeps and an in-process sink. At 24 fps (480 messages) p95 interval error was 0.417 ms and p95 handoff lateness 0.561 ms. At 30 fps (600 messages) these were 0.343 and 0.547 ms. Neither run had an interval below 1 ms. This measures host handoff only.
+
+Windows Clippy passed for playback, engine and UI with all targets and warnings denied on a local integration with #1536. Running the workspace tests on Windows also requires the independent AAF rooted-path correction in #1658: the absolute-locator test fails on the unmodified main + #1536 baseline as well, and all 18 AAF integration tests pass when #1658 is applied. The integrated engine, playback and desktop UI library suites passed 426, 139 and 353 tests respectively. Neither Windows fix is included in this branch.
+
+Final Windows integration gate: `cargo xtask ci` passed for feature head `be3d9b9` plus #1536 and #1658. Cargo reported 1,939 passing tests across all targets and doctests. The gate includes workspace Clippy with warnings denied and the WebAssembly app build.
+
+## Hardware status
+
+Not yet verified on hardware; a hardware check is planned once all three PRs are final (see #1661).
+
+## Known limits and deferred work
+
+Sustained differences between device clock speeds produce occasional position jumps. Continuous speed control and resampling, online recording under MTC, MMC, guided loopback calibration, native timestamped send APIs and Windows MIDI Services remain separate work.
+
+## Review and merge order
+
+#1536 → #1662 → **#1663** → #1669. This draft includes the prerequisite commits because the upstream repository has no matching fork branches to target. Review the [increment over #1662](https://github.com/mtlcl410/soundcraft/compare/feat/g11-midi-beat-clock-out...feat/g11-mtc-generate-chase). Refresh from main after #1662 lands, then refresh the clock-follow draft. Tracks #1661.

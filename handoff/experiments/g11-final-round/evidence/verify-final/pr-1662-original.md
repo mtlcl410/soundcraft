@@ -1,0 +1,38 @@
+## What this PR does
+
+Send Beat Clock, transport and Song Position Pointer to selected MIDI outputs. A stopped locate sends one SPP immediately. After an output timing interruption, repay missing clocks evenly within one quarter note. Each destination has its own ±250 ms calibration. Duplicate port names have numbered destinations; a known device remains bound to its saved endpoint. Warnings require a route using device compensation. A damaged preference resets individually and is identified at startup.
+
+The scheduler uses the `craft-midi-sync` alias at `08da5e14` (MIT OR Apache-2.0) alongside the existing `craft-midi` revision to obtain the sync message API. `thread-priority 3.1.1` (MIT) raises the output worker priority where supported. Both licenses satisfy the project allowlist.
+
+## Verification on the exact head
+
+Windows, `7ff81296df6d36a565c4636d75da682d52bc5423`. [Test evidence](https://github.com/storytold/soundcraft/pull/1662#issuecomment-7074204227)
+
+| Command | Result |
+| --- | --- |
+| `cargo test --locked -j 2 -p soundcraft-playback --lib -- --test-threads=2` | ok. 160 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out |
+| `cargo test --locked -j 2 -p soundcraft-ui-egui --lib -- --test-threads=2` | ok. 361 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out |
+| `cargo test --locked -j 2 -p soundcraft --bin soundcraft -- --test-threads=2` | ok. 56 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out |
+| `cargo clippy --locked -j 2 -p soundcraft-playback -p soundcraft-ui-egui --lib --tests --no-deps -- -D warnings` | Passed |
+| `cargo fmt --all -- --check` | Passed |
+
+Before the fixes the stopped seek emitted only Stop, the second same-name output was unavailable, an unused route raised a timing warning, and enumeration ran eight times in a minute after the retry budget expired. A poisoned graph returned silence, Notes/Controllers remained editable, and one malformed MIDI setting rejected the saved UI state.
+
+GitHub Actions: ast-grep action_required, Nix action_required, SonarCloud action_required, CI action_required.
+
+## Hardware status
+
+Earlier Model 12 USB MIDI → DIN → UM-ONE tests verified 20/20 idle starts, 5/5 minimized starts and 20/20 loop-end stops at 480 frames. The −200-sample setting advanced clock arrivals by 4.268/4.071 ms at 120/180 BPM. Physical duplicate-output recovery, 256-frame stop and acoustic alignment remain unverified. Optional loopback: set `SOUNDCRAFT_LOOPBACK_IN` and `SOUNDCRAFT_LOOPBACK_OUT`, then run `cargo test -p soundcraft-playback --lib beat_clock_reaches_a_virtual_midi_receiver -- --ignored --nocapture`. [Hardware evidence](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7072496268)
+
+## Known limits
+
+Exclusive audio backends require manual Reconnect. Live plug-in delay changes take effect on the next rendered session revision. Already delivered MIDI retains its timing. Notes/Controllers compensation becomes available when external MIDI track output is supported.
+
+## Open questions
+
+None.
+
+## Merge order
+
+Merge #1662, then #1663, then #1669. #1536 handles independent Windows checks. Part of #1661.
+

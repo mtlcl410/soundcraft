@@ -1,0 +1,40 @@
+{
+  "time": "2026-11-23 08:14:46 +0800",
+  "inputs": [
+    "UM-ONE 0",
+    "Model 12 MIDI 1",
+    "MIDIIN2 (Model 12 MIDI) 2",
+    "Model 12 MIDI 3",
+    "MIDIIN2 (Model 12 MIDI) 4"
+  ],
+  "outputs": [
+    "Microsoft GS Wavetable Synth 0",
+    "UM-ONE 1",
+    "Model 12 MIDI 2",
+    "MIDIOUT2 (Model 12 MIDI) 3",
+    "Model 12 MIDI 4",
+    "MIDIOUT2 (Model 12 MIDI) 5"
+  ],
+  "tests": [
+    [
+      "Model 12 MIDI 2",
+      "UM-ONE",
+      "MidiOutWinMM::openPort: error creating Windows MM MIDI output port."
+    ],
+    [
+      "Model 12 MIDI 4",
+      "UM-ONE",
+      "MidiOutWinMM::openPort: error creating Windows MM MIDI output port."
+    ],
+    [
+      "UM-ONE",
+      "Model 12 MIDI 1",
+      "MidiInWinMM::openPort: error creating Windows MM MIDI input port."
+    ],
+    [
+      "UM-ONE",
+      "Model 12 MIDI 3",
+      "MidiInWinMM::openPort: error creating Windows MM MIDI input port."
+    ]
+  ]
+}

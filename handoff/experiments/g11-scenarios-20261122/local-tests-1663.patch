@@ -1,0 +1,878 @@
+diff --git a/crates/engine/src/cmd/options.rs b/crates/engine/src/cmd/options.rs
+index f56b6e8..1771c3f 100644
+--- a/crates/engine/src/cmd/options.rs
++++ b/crates/engine/src/cmd/options.rs
+@@ -399,3 +399,34 @@ mod sync_session_tests {
+         assert_eq!(crate::cmd::position_param(&e, "test", &json!({"at":"0:20.000"}), "at").unwrap(), Some(960_000));
+     }
+ }
++#[cfg(test)]
++mod scenario_session_timecode {
++    use super::*;
++    #[test]
++    fn scenario_d3_session_start_undo_redo() {
++        for follows in [false,true] {
++            let mut e = crate::demo::demo_engine();
++            let delta=e.session().sample_rate.samples(1800.);
++            e.session_mut().timecode_start=delta*2;
++            e.session_mut().edit.automation_follows_edit=follows;
++            let tr=e.session().tracks[0].id;
++            e.session_mut().add_marker("Scenario",soundcraft_model::MarkerKind::Marker,2500,2500);
++            e.session_mut().tempo.set_tempo(960,80.).unwrap();
++            e.execute("automation.set_point",&json!({"track":tr.0,"param":"volume","at":50000,"value":-6.})).unwrap();
++            let snapshot=|e:&Engine|{
++                let s=e.session();
++                let clips=s.tracks.iter().flat_map(|t| &t.playlists).flat_map(|p| &p.clips).map(|c|(c.id,c.start)).collect::<Vec<_>>();
++                let lane=s.track(tr).unwrap().lane(&soundcraft_model::AutoParam::Volume).unwrap().points.iter().map(|p|(p.at,p.value)).collect::<Vec<_>>();
++                (clips,lane,serde_json::to_value(&s.markers).unwrap(),serde_json::to_value(&s.tempo).unwrap(),s.timecode_start)
++            };
++            let before=snapshot(&e);
++            e.execute("setup.session",&json!({"start_timecode":"00:30:00:00","keep":"timecode"})).unwrap();
++            let after=snapshot(&e);
++            assert!(before.0.len()>0 && before.1.len()>0);
++            assert!(after.0.iter().zip(&before.0).all(|((a,x),(b,y))|a==b && x-y==delta));
++            assert_eq!(after.1,before.1); assert_eq!(after.2,before.2); assert_eq!(after.3,before.3);
++            assert!(e.undo()); assert_eq!(snapshot(&e),before); assert!(e.redo()); assert_eq!(snapshot(&e),after);
++            eprintln!("D-3 follows={follows} clips={} delta_samples={delta} automation_points={} marker_and_tempo_unchanged=true undo=true redo=true",before.0.len(),before.1.len());
++        }
++    }
++}
+diff --git a/crates/engine/src/lib.rs b/crates/engine/src/lib.rs
+index 7c5c242..aae7a5b 100644
+--- a/crates/engine/src/lib.rs
++++ b/crates/engine/src/lib.rs
+@@ -922,3 +922,7 @@ mod panic_tests {
+         assert_eq!(e.last_selection, selection);
+     }
+ }
++
++#[cfg(test)]
++#[path = "scenario_session.rs"]
++mod scenario_session;
+diff --git a/crates/playback/src/mtc/tests.rs b/crates/playback/src/mtc/tests.rs
+index dcf6cb9..a23ff6f 100644
+--- a/crates/playback/src/mtc/tests.rs
++++ b/crates/playback/src/mtc/tests.rs
+@@ -399,3 +399,6 @@ fn jam_sync_audio_free_runs_for_ten_seconds_and_seeks_only_on_the_second_new_gro
+         }
+     }
+ }
++
++#[path = "scenarios.rs"]
++mod scenarios;
+diff --git a/crates/playback/src/mtc_sync_output_tests.rs b/crates/playback/src/mtc_sync_output_tests.rs
+index b757ab8..7448236 100644
+--- a/crates/playback/src/mtc_sync_output_tests.rs
++++ b/crates/playback/src/mtc_sync_output_tests.rs
+@@ -371,3 +371,108 @@ fn measure_native_worker_quarter_frame_spacing() {
+         );
+     }
+ }
++
++#[test]
++fn scenario_a10_dual_encoder_recovers_after_midroll_invalid_timestamp() {
++    let origin=Instant::now();
++    let mut song=Session::new("reset",soundcraft_time::SampleRate::HZ_48000);
++    song.frame_rate=soundcraft_time::FrameRate::Fps25; song.timecode_start=0;
++    let mut routes=BTreeMap::new();
++    set_route(&mut routes,0,"desk".into(),Route{map:None,offset:0,compensate:true,encoder:Box::<Cursor>::default()});
++    set_route(&mut routes,1,"desk".into(),Route{map:None,offset:0,compensate:true,encoder:Box::<crate::mtc::Encoder>::default()});
++    let port=routes.get_mut("desk").unwrap();
++    let capture=Arc::default();port.link=Some(Capture(Arc::clone(&capture)));
++    let view=View::default();let stats=Stats::default();
++    let mut bad=0; let mut errs:[Vec<f64>;2]=Default::default(); let mut seen=[0usize;2]; let mut dispatch=[0f64;2];
++    for ms in 0..401u64 {
++        let now=origin+Duration::from_millis(ms);
++        if ms%10==0 {
++            let block=super::tests::block(now,(ms*48) as f64,480.,Duration::ZERO);
++            let lead=if (100..200).contains(&ms){None}else{Some(Duration::ZERO)};
++            view.lock().unwrap().push(Presentation{lead,..block});
++        }
++        let before=capture.lock().unwrap().len();
++        port.poll("desk",now,&song,&view,&stats,&mut Vec::new());
++        let rows=capture.lock().unwrap();
++        for (due,_,msg) in &rows[before..] {
++            let (k,interval)=match msg[0]{0xf8=>(0,60./120./24.),0xf1=>(1,0.01),_=>continue};
++            if (101..200).contains(&ms){bad+=1;}
++            if ms>=200 {
++                if now.saturating_duration_since(*due)>Duration::from_millis(2){eprintln!("A10 late kind={k} handoff_ms={ms} tagged_ms={:.3}",due.duration_since(origin).as_secs_f64()*1e3);} seen[k]+=1;dispatch[k]=dispatch[k].max(now.saturating_duration_since(*due).as_secs_f64()*1000.);
++                let s=due.duration_since(origin).as_secs_f64();errs[k].push((s-(s/interval).round()*interval).abs()*1000.);
++            }
++        }
++    }
++    let max=errs.map(|v|v.into_iter().fold(0f64,f64::max));
++    eprintln!("A10 invalid_for_ms=100 packets_while_unknown={bad} after_recovery={seen:?} max_due_grid_ms={max:?} max_handoff_after_due_ms={dispatch:?}");
++    assert!(seen.iter().all(|n|*n>3)&&bad==0&&max.iter().all(|e|*e<=1.)&&dispatch.iter().all(|e|*e<=1.));
++}
++#[test]
++fn scenario_a10_d4_two_encoders_and_stream_reset() {
++    use crate::sync_clock::StreamLead;
++    struct ScheduledCapture {poll_time:Arc<Mutex<Instant>>, data:Arc<Mutex<Vec<Handoff>>>}
++    impl SyncPort for ScheduledCapture {
++        fn send_at(&mut self, at:Instant, bytes:&[u8])->Result<Instant,String> {
++            let now=*self.poll_time.lock().unwrap();
++            self.data.lock().unwrap().push((at,now,bytes.to_vec()));Ok(now)
++        }
++    }
++    let base=Instant::now();
++    let out=Output::default();
++    let mut pubber=Publisher::new(out.view.clone(),out.metrics.clone());
++    let mut hardware=StreamLead::default();
++    let mut s=Session::new("pre/post",soundcraft_time::SampleRate::HZ_48000);
++    s.frame_rate=soundcraft_time::FrameRate::Fps25;s.timecode_start=0;
++    let mut routes=BTreeMap::new();
++    set_route(&mut routes,0,"loop".into(),Route{map:None,offset:0,compensate:true,encoder:Box::<Cursor>::default()});
++    set_route(&mut routes,1,"loop".into(),Route{map:None,offset:0,compensate:true,encoder:Box::<crate::mtc::Encoder>::default()});
++    let port=routes.get_mut("loop").unwrap();let data=Arc::default();let poll_time=Arc::new(Mutex::new(base));
++    port.link=Some(ScheduledCapture{poll_time:poll_time.clone(),data:Arc::clone(&data)});
++    // Selection [1, 2] seconds, 500 ms pre-roll and 250 ms post-roll.
++    let origin=24000;let end=108000;let mut waiting=0;let mut warnings=Vec::new();
++    for ms in 0..=1760 {
++        let now=base+Duration::from_millis(ms);
++        if ms%10==0 {
++            if ms==300 {hardware=StreamLead::default();}
++            let valid=ms<250 || ms>=500;
++            let timing=hardware.observe(now,valid.then_some(Duration::ZERO));let lead=timing.lead();
++            pubber.observe(timing,0.010);
++            let warning=format!("{:?}",out.timing_issue());
++            if warnings.last().is_none_or(|(_,old)|old!=&warning){warnings.push((ms,warning));}
++            let playing=ms<1750;
++            let pos=(origin+ms as i64*48).min(end);
++            let b=Presentation{generation:0,sample_rate:s.sample_rate,system_delay_samples:0,pass:if playing{1}else{2},
++                origin:if playing{origin}else{end},playing,sample:pos as f64,heard_at:now,samples_per_second:48000.,
++                limit:(pos+480).min(end) as f64,looped:None,end:Some(end),lead};
++            pubber.publish(b);
++        }
++        *poll_time.lock().unwrap()=now;
++        port.poll("loop",now,&s,&out.view,&out.stats,&mut Vec::new());
++        waiting+=usize::from(port.waiting_for_timing);
++    }
++    let data=data.lock().unwrap();
++    let first=data.iter().position(|(_,_,m)|m[0]==0xf0).unwrap();
++    let first_q=data.iter().position(|(_,_,m)|m[0]==0xf1).unwrap();
++    assert!(first<first_q);
++    assert_eq!(&data[first].2[5..9],&[0x20,0,0,12]); // 500 ms, floored to frame 12.
++    assert_eq!(&data.iter().find(|(_,_,m)|m[0]==0xf2).unwrap().2,&[0xf2,4,0]);
++    assert!(data.iter().any(|(t,_,m)|m==&[0xfc] && t.duration_since(base)==Duration::from_millis(1750)));
++    let mut offsets=[Vec::new(),Vec::new()];
++    for (deadline,handoff,m) in data.iter().filter(|(t,_,_)|t.duration_since(base)>=Duration::from_millis(600)) {
++        if let Some(i)=[0xf8,0xf1].iter().position(|b|*b==m[0]) {
++           let us=deadline.duration_since(base).as_micros() as i64;
++           let period=if i==0{1_000_000./48.}else{10000.};
++           let expected=(us as f64/period).round()*period;
++           offsets[i].push(handoff.duration_since(base).as_micros() as i64-expected.round() as i64);
++        }
++    }
++    let recovery=data.iter().filter(|(_,at,m)|[0xf8,0xf1].contains(&m[0]) && at.duration_since(base)>=Duration::from_millis(500) && at.duration_since(base)<Duration::from_millis(600)).map(|(due,at,m)|(m[0],due.duration_since(base).as_micros(),at.duration_since(base).as_micros(),at.saturating_duration_since(*due).as_micros())).collect::<Vec<_>>();
++    eprintln!("A-10 recovered_first_100ms=opcode_due_handed_late_us {recovery:?}");
++    for code in [0xf8,0xf1] {
++        let stale:Vec<_>=recovery.iter().filter(|(op,due,_,_)|*op==code && *due<500000).collect();
++        eprintln!("A-10 opcode={code:x} handed_after_reset_with_past_deadline={} worst_handoff_late_us={}",stale.len(),stale.iter().map(|m|m.3).max().unwrap_or(0));
++    }
++    let peaks=offsets.map(|x|x.into_iter().map(i64::abs).max().unwrap());
++    eprintln!("A-10/D-4 warnings_ms={warnings:?} waiting_ms={waiting} clock_mtc_max_grid_error_us={peaks:?} pre_roll=24000 post_roll_end={end} full_before_first_q={first}/{first_q}");
++    assert_eq!(waiting,200);assert!(peaks.iter().all(|v|*v<=1000));
++}
+diff --git a/crates/playback/src/record.rs b/crates/playback/src/record.rs
+index 94e8f15..5c13a2e 100644
+--- a/crates/playback/src/record.rs
++++ b/crates/playback/src/record.rs
+@@ -886,3 +886,15 @@ mod ring_tests {
+         assert_eq!(out[0], [0.5, 0.0, 0.0, -0.5]);
+     }
+ }
++#[cfg(test)]
++impl Recorder {
++    pub(crate) fn mtc_scenario_input() -> (Recorder, impl FnMut(&[f32])) {
++        let shared=Arc::new(Shared::new(CaptureRing::new(1<<19)));
++        let copy=Arc::clone(&shared);
++        let mut owed=0;
++        (Recorder {shared,monitor:InputRing::new(2,48000),
++           #[cfg(not(target_os="freebsd"))] _stream:None,
++           device_name:"scenario input".into(),sample_rate:48000,channels:2,writer:None,seen:(0,Instant::now())},
++           move |data|{ if copy.armed.load(Ordering::Acquire){copy.capture(data,&mut owed);} })
++    }
++}
+diff --git a/crates/ui-egui/src/app/mtc.rs b/crates/ui-egui/src/app/mtc.rs
+index 0e50908..86e7745 100644
+--- a/crates/ui-egui/src/app/mtc.rs
++++ b/crates/ui-egui/src/app/mtc.rs
+@@ -514,3 +514,61 @@ mod tests {
+         assert!(app.run("options.transport_online", json!({"value":true})).is_err());
+     }
+ }
++
++#[cfg(test)]
++#[path = "scenario_load.rs"]
++mod scenario_load;
++#[cfg(test)]
++mod scenario_record_guard {
++    use super::*;
++    use soundcraft_playback::midi::MidiInputs;
++    #[test]
++    fn scenario_b5_three_online_record_requests() {
++        let mut app=SoundApp::new(Default::default(),None,crate::Services::default());
++        let path=std::env::temp_dir().join(format!("mtc-b5-{}",std::process::id()));
++        std::fs::create_dir(&path).unwrap();
++        app.fallback_take_dir=Some(path.clone());
++        app.midi_inputs=Some(MidiInputs::with_port_names(vec![],vec!["Sender".into()]));
++        app.run("setup.mtc",json!({"input":"Sender","online":true})).unwrap();
++        app.service_mtc_chase();
++        for route in ["toolbar_command","keyboard_command","transport_queue"] {
++            app.ui.status.clear();
++            if route=="transport_queue" {app.engine.transport_requests.push(TransportRequest::Record);}
++            else if route=="toolbar_command" {crate::toolbar::scenario_click_transport_record(&mut app);} else {
++                let input=egui::RawInput {events:vec![egui::Event::Key{key:egui::Key::F12,physical_key:Some(egui::Key::F12),pressed:true,repeat:false,modifiers:egui::Modifiers::NONE}],..Default::default()};
++                let ctx=egui::Context::default();let mut output=ctx.run_ui(input,|ui|crate::shortcuts::handle(&mut app,ui.ctx()));output.textures_delta.clear();
++            }
++            app.service_mtc_chase(); app.handle_transport(0.);
++            let files=std::fs::read_dir(&path).unwrap().count();
++            eprintln!("B-5 route={route} online={} recording={} files={} visible={:?}",app.mtc_online,app.engine.transport.recording,files,app.ui.status);
++            assert!(app.mtc_online && !app.engine.transport.recording); assert_eq!(files,0);
++            assert!(!app.ui.status.is_empty(),"online record was silently refused on {route}");
++        }
++    }
++}
++#[test]
++fn scenario_d4_transport_pre_and_post() {
++    let mut app=SoundApp::new(Default::default(),None,crate::Services::default());
++    app.run("options.loop_playback",json!({"value":false})).unwrap();
++    app.run("options.pre_post_roll",json!({"value":true})).unwrap();
++    app.run("options.pre_roll",json!({"length":24000})).unwrap();
++    app.run("options.post_roll",json!({"length":12000})).unwrap();
++    app.run("edit.select",json!({"start":48000,"end":96000})).unwrap();
++    app.play_from_selection();
++    assert_eq!(app.sim,Some((24000,Some(108000),None)));
++    eprintln!("D-4 transport origin=24000 selection=48000..96000 stop=108000");
++}
++#[test]
++fn scenario_b4_generator_accepts_host_record() {
++    use soundcraft_playback::midi::MidiInputs;
++    use soundcraft_model::{ChannelFormat,TrackKind};
++    let mut app=SoundApp::new(Default::default(),None,crate::Services::default());
++    app.midi_inputs=Some(MidiInputs::with_port_names(vec![],vec!["simulated performance".into()]));
++    let tr=app.engine.session_mut().add_track(TrackKind::Midi,ChannelFormat::Mono,None);
++    app.engine.session_mut().track_mut(tr).unwrap().mixer.record_arm=true;
++    app.run("setup.mtc_output",json!({"port":"simulated lighting","enabled":true})).unwrap();
++    assert!(app.ui.gen_mtc && !app.mtc_online);
++    app.run("transport.record",json!({})).unwrap(); app.handle_transport(0.);
++    eprintln!("B-4 host record={} gen={} online={} status={:?}",app.engine.transport.recording,app.ui.gen_mtc,app.mtc_online,app.ui.status);
++    assert!(app.engine.transport.recording && app.ui.gen_mtc && !app.mtc_online);
++}
+diff --git a/crates/ui-egui/src/toolbar.rs b/crates/ui-egui/src/toolbar.rs
+index b6864e7..4d25470 100644
+--- a/crates/ui-egui/src/toolbar.rs
++++ b/crates/ui-egui/src/toolbar.rs
+@@ -853,3 +853,19 @@ mod tests {
+         assert_eq!(icons.len(), toggles.len(), "every option toggle needs its own icon");
+     }
+ }
++#[cfg(test)]
++pub(crate) fn scenario_click_transport_record(app: &mut SoundApp) {
++    let ctx=egui::Context::default();
++    let mut point=egui::Pos2::ZERO;
++    for pass in 0..4 {
++        let mut events=Vec::new();
++        if pass>0 {events.push(egui::Event::PointerMoved(point));}
++        if pass>=2 {events.push(egui::Event::PointerButton{pos:point,button:egui::PointerButton::Primary,pressed:pass==2,modifiers:egui::Modifiers::NONE});}
++        let input=egui::RawInput {screen_rect:Some(egui::Rect::from_min_size(egui::Pos2::ZERO,egui::vec2(500.,200.))),events,..Default::default()};
++        let mut output=ctx.run_ui(input,|ui| {
++            point=ui.next_widget_position()+egui::vec2(5.+3.*41.+19.,5.+14.);
++            transport(app,ui);
++        });
++        output.textures_delta.clear();
++    }
++}
+diff --git a/crates/engine/src/scenario_session.rs b/crates/engine/src/scenario_session.rs
+new file mode 100644
+index 0000000..318fe94
+--- /dev/null
++++ b/crates/engine/src/scenario_session.rs
+@@ -0,0 +1,30 @@
++use super::*;
++use serde_json::{json,Value};
++#[test]
++fn scenario_d7_session_reload_recovers_sync_values_and_preserves_score(){
++    let mut s=Session::default();
++    s.name="Unrelated arrangement".into();
++    s.add_track(soundcraft_model::TrackKind::Audio,soundcraft_model::ChannelFormat::Mono,Some("Backing".into()));
++    let base:Value=serde_json::from_str(&s.to_json().unwrap()).unwrap();
++    let dir=std::env::temp_dir().join(format!("g11-corrupt-session-{}",std::process::id()));std::fs::create_dir_all(&dir).unwrap();
++    let path=dir.join("session.scraft");
++    let mut misses=Vec::new();
++    for (name,payload) in [("rate",json!("unrecognized rate")),("negative_frames",json!(-19)),("huge_frames",json!(1e20)),("wrong_type_frames",json!([8])),("offset",json!(1e22)),("unknown_mode",json!("midi.mtc.freewheel_mode=teleport")),("timecode_start",json!(true))]{
++        let mut doc=base.clone();
++        match name {
++            "rate"=>doc["frame_rate"]=payload,
++            "negative_frames"|"huge_frames"|"wrong_type_frames"=>doc["edit"]["values"]["midi.mtc.freewheel_frames"]=payload,
++            "unknown_mode"=>doc["edit"]["flags"]=json!([payload]),
++            "timecode_start"=>doc["timecode_start"]=payload,
++            _=>doc["edit"]["values"]["sync.external_offset"]=payload
++        }
++        let bytes=serde_json::to_vec(&doc).unwrap();std::fs::write(&path,&bytes).unwrap();
++        let mut engine=Engine::default();let opened=engine.execute("session.open",&json!({"path":path}));
++        let score=engine.session().name=="Unrelated arrangement" && engine.session().tracks.iter().any(|t|t.name=="Backing");
++        eprintln!("D7SESSION {name} score={score} open={opened:?} messages={:?} frames={} mode={}",engine.messages,engine.mtc_freewheel_frames(),engine.mtc_freewheel_mode());
++        if !score || engine.messages.iter().all(|m|!(m.to_lowercase().contains("offset")||m.to_lowercase().contains("invalid")||m.to_lowercase().contains("freewheel")||m.to_lowercase().contains("rate"))) {misses.push(name);}
++        assert_eq!(std::fs::read(&path).unwrap(),bytes);
++    }
++    std::fs::remove_dir_all(dir).unwrap();
++    assert!(misses.is_empty(),"fields without independent recovery and warning {misses:?}");
++}
+diff --git a/crates/playback/src/mtc/scenarios.rs b/crates/playback/src/mtc/scenarios.rs
+new file mode 100644
+index 0000000..c10f874
+--- /dev/null
++++ b/crates/playback/src/mtc/scenarios.rs
+@@ -0,0 +1,476 @@
++use super::*;
++use crate::mtc_input::{ChaseEvent, Reader};
++use soundcraft_time::SampleRate;
++
++#[test]
++fn scenario_e1_interleaved_wire_realtime() {
++    let rate = FrameRate::Fps30;
++    let mut failures = Vec::new();
++    for rt in [0xf8, 0xfa, 0xfc] {
++        let mut r = Reader::default();
++        let mut full = locate(240, rate).to_vec();
++        full.insert(6, rt);
++        r.receive(&full, 0, 0);
++        let ff = matches!(r.take(0), Some(ChaseEvent::Locate(_)));
++        let mut r = Reader::default();
++        for i in 0..16 {
++            let msg = quarters(i / 8 * 2, rate)[i as usize % 8];
++            r.receive(&[msg[0], rt, msg[1]], i * 8333, i * 8333);
++        }
++        let qf = matches!(r.take(125000), Some(ChaseEvent::Roll(_, _)));
++        eprintln!("E-1 {rt:x} full={ff} quarter={qf}");
++        if !ff || !qf {
++            failures.push(rt);
++        }
++    }
++    assert!(failures.is_empty(), "interleaved bytes lost MTC: {failures:?}");
++}
++
++#[test]
++fn scenario_e2_reject_invalid_timecode() {
++    let mut frames = vec![];
++    let valid = locate(0, FrameRate::Fps30).to_vec();
++    frames.push(valid[..9].to_vec());
++    let mut extra = valid.clone();
++    extra.insert(5, 1);
++    frames.push(extra);
++    for (index, byte) in [(2, 128), (5, 128), (5, 0x60 | 24), (6, 60), (7, 60), (8, 30), (8, 128)] {
++        let mut msg = valid.clone();
++        msg[index] = byte;
++        frames.push(msg);
++    }
++    for msg in &frames {
++        let mut r = Reader::default();
++        r.receive(msg, 0, 0);
++        assert!(r.take(0).is_none(), "{msg:?}");
++    }
++    for pattern in [&[0, 1, 2, 4, 5, 6, 7][..], &[0, 1, 4, 3, 2, 5, 6, 7][..], &[7, 6, 5, 4, 3, 2, 1, 0][..]] {
++        let mut r = Reader::default();
++        for n in 0..3 {
++            let q = quarters(n * 2, FrameRate::Fps30);
++            for (i, &piece) in pattern.iter().enumerate() {
++                let stamp = (n * 8 + i as i64) * 8333;
++                r.receive(&q[piece], stamp, stamp);
++                assert!(r.take(stamp).is_none());
++            }
++        }
++    }
++    eprintln!("E-2 rejected {} malformed SysEx plus missing, shuffled, backward QF groups", frames.len());
++}
++
++#[test]
++fn scenario_e5_ten_million_reader_bytes() {
++    let mut r = Reader::default();
++    let mut seed = 0x3f5da90c4bfe11u64;
++    let mut processed = 0usize;
++    let mut packets = 0;
++    let mut events = 0;
++    while processed < 10_000_000 {
++        let mut buf = [0u8; 12];
++        for b in &mut buf {
++            seed ^= seed << 13;
++            seed ^= seed >> 7;
++            seed ^= seed << 17;
++            *b = seed as u8;
++        }
++        let len = (1 + buf[11] as usize % 12).min(10_000_000 - processed);
++        if packets % 5 == 0 {
++            buf[0] = 0xf1;
++        } else if packets % 7 == 0 {
++            buf[0] = 0xf0;
++        }
++        r.receive(&buf[..len], packets, packets);
++        events += usize::from(r.take(packets).is_some());
++        packets += 1;
++        processed += len;
++    }
++    eprintln!("E-5 processed={processed} packets={packets} events={events} reader_bytes={}", std::mem::size_of::<Reader>());
++}
++const RATES: [FrameRate; 6] =
++    [FrameRate::Fps23_976, FrameRate::Fps24, FrameRate::Fps25, FrameRate::Fps29_97, FrameRate::Fps29_97Drop, FrameRate::Fps30];
++fn stamp(piece: i64, rate: FrameRate) -> i64 {
++    let (n, d) = rate.rational();
++    (piece as f64 * 1e6 * d as f64 / (4. * n as f64)).round() as i64
++}
++fn decode_group(r: &mut Reader, frame: i64, first_piece: i64, rate: FrameRate) -> Option<ChaseEvent> {
++    let group = quarters(frame, rate);
++    for (i, m) in group.iter().enumerate() {
++        let t = stamp(first_piece + i as i64, rate);
++        r.receive(m, t, t);
++    }
++    r.take(stamp(first_piece + 7, rate))
++}
++
++#[test]
++fn scenario_a9_b2_generator_restarts() {
++    let rate = FrameRate::Fps25;
++    let song = session(rate);
++    let mut enc = Encoder::default();
++    let base = Instant::now();
++    let mut follower = Reader::default();
++    follower.options.rate = rate;
++    for rolling in [true, false] {
++        let count = if rolling { 20 } else { 30 };
++        let mut max_lock = 0;
++        let mut ff = 0;
++        let mut qfs = 0;
++        let mut parked_cues = 0;
++        for i in 0..count {
++            let frame = if rolling { 25 * (10 + (i * 7) % 11) } else { 25 * 16 }; // Return to the same point, eight 4/4 bars back at 120 BPM.
++            let host = base + Duration::from_secs((i + if rolling { 0 } else { 100 }) as u64 * 20);
++            let sr = song.sample_rate;
++            let start = sr.samples(frame as f64 / 25.);
++            if !rolling {
++                // Prior pass actually reaches the end of eight bars.
++                let park = block(host - Duration::from_millis(20), start + 16 * 48000, 0, false, 3 * i as u64 + 1);
++                enc.update(park, park.heard_at, &song, &mut |at, m| {
++                    let t = at.duration_since(base).as_micros() as i64;
++                    follower.receive(m, t, t);
++                });
++                let cue = block(host - Duration::from_millis(10), start, 0, false, 3 * i as u64 + 2);
++                let mut cues = Vec::new();
++                enc.update(cue, cue.heard_at, &song, &mut |at, m| {
++                    let t = at.duration_since(base).as_micros() as i64;
++                    follower.receive(m, t, t);
++                    cues.push(m.to_vec());
++                });
++                assert_eq!(cues, vec![locate(frame, rate).to_vec()]);
++                parked_cues += 1;
++            }
++            let b = block(host, start, if rolling { 48_000 } else { 16 * 48000 }, true, if rolling { i as u64 + 501 } else { 3 * i as u64 + 3 });
++            let mut packets = Vec::new();
++            let mut now = host;
++            for _ in 0..if rolling { 40 } else { 1600 } {
++                now = enc.update(b, now, &song, &mut |t, m| packets.push((t, m.to_vec()))).unwrap_or(now + Duration::from_millis(10));
++            }
++            assert_eq!(packets[0].1, locate(frame, rate));
++            assert_eq!(packets.iter().filter(|(_, m)| m[0] == 0xf0).count(), 1);
++            ff += 1;
++            let mut locked = None;
++            let mut prev = None;
++            for (n, (at, msg)) in packets.iter().enumerate() {
++                let us = at.duration_since(base).as_micros() as i64;
++                follower.receive(msg, us, us);
++                if n > 0 {
++                    let frame_offset = (n as i64 - 1) / 8 * 2;
++                    let first = ((frame + 1) / 2) * 2;
++                    assert_eq!(*msg, quarters(first + frame_offset, rate)[(n - 1) % 8]);
++                    qfs += 1;
++                }
++                if let Some(ChaseEvent::Roll(pos, _)) = follower.take(us) {
++                    let s = pos.samples(sr);
++                    assert!(prev.is_none_or(|old| s > old));
++                    prev = Some(s);
++                    locked.get_or_insert(at.duration_since(host).as_micros());
++                }
++            }
++            max_lock = max_lock.max(locked.unwrap());
++        }
++        eprintln!(
++            "{} passes={count} parked_locates={parked_cues} relaunch_fullframes={ff} quarters={qfs} maximum_relock_us={max_lock}",
++            if rolling { "A-9" } else { "B-2" }
++        );
++        if !rolling {
++            assert!(max_lock <= 320_000);
++        }
++    }
++}
++
++#[test]
++fn scenario_c1_c8_ten_minutes_six_rates() {
++    let mut total_differences = 0;
++    for rate in RATES {
++        let mut r = Reader::default();
++        r.options.rate = rate;
++        r.source = Some(0);
++        let mut stationary = Reader::default();
++        let mut max = 0;
++        let mut groups = 0;
++        let mut frames = 0;
++        let mut mismatches = 0;
++        let mut wrong = [0usize; 4];
++        let mut worst = 0u64;
++        let mut first = None;
++        let total = 600 * rate.rational().0 as i64 / rate.rational().1 as i64;
++        for frame in 0..total {
++            let ff = locate(frame, rate);
++            let t = stamp(frame * 4, rate);
++            stationary.receive(&ff, t, t);
++            let Some(ChaseEvent::Locate(pos)) = stationary.take(t) else { panic!("invalid literal frame {frame} {rate:?}") };
++            for (i, hz) in [44100, 48000, 96000, 192000].into_iter().enumerate() {
++                let sr = SampleRate::new(hz).unwrap();
++                let expected = rate.samples_at_frame(frame, sr);
++                let actual = pos.session_sample(rate, sr, 0, 0);
++                if actual != expected {
++                    wrong[i] += 1;
++                    worst = worst.max(actual.abs_diff(expected));
++                    first.get_or_insert((hz, frame, actual, expected));
++                }
++            }
++            frames += 1;
++            if frame % 2 != 0 {
++                continue;
++            }
++            let ev = decode_group(&mut r, frame, frame * 4, rate);
++            if frame > 0 {
++                let Some(ChaseEvent::Roll(p, _)) = ev else { panic!("no lock {rate:?} frame {frame}") };
++                for hz in [44100, 48000, 96000, 192000] {
++                    let sr = SampleRate::new(hz).unwrap();
++                    let expected = ((frame as f64 + 1.75) * rate.samples_per_frame(sr)).round() as i64;
++                    max = max.max(p.in_session_rate(rate).samples(sr).abs_diff(expected));
++                }
++                groups += 1;
++                mismatches += usize::from(r.incoming_status().1.is_some());
++            }
++        }
++        eprintln!(
++            "C-1/C-8 {rate:?} full_frames={frames} whole_mismatches_by_sample_rate={wrong:?} worst_whole_samples={worst} first={first:?} rolling_groups={groups} max_quarter_error_samples={max} rate_warnings={mismatches}"
++        );
++        total_differences += wrong.iter().sum::<usize>();
++        assert_eq!(mismatches, 0);
++        assert!(max <= 1);
++        r.options.rate = if rate == FrameRate::Fps25 { FrameRate::Fps30 } else { FrameRate::Fps25 };
++        assert!(r.incoming_status().1.is_some());
++    }
++    assert_eq!(total_differences, 0, "MTC locates must agree with Session Setup at whole frames");
++}
++
++#[test]
++fn scenario_c2_c3_midnight_and_df() {
++    for (rate, frame, pair, wrap) in [
++        (FrameRate::Fps29_97Drop, 1799, ([0x40, 0, 59, 29], [0x40, 1, 0, 2]), false),
++        (FrameRate::Fps29_97Drop, 17981, ([0x40, 9, 59, 29], [0x40, 10, 0, 0]), false),
++        (FrameRate::Fps30, 107999, ([0x60, 59, 59, 29], [0x61, 0, 0, 0]), false),
++        (FrameRate::Fps30, 2591999, ([0x77, 59, 59, 29], [0x60, 0, 0, 0]), true),
++    ] {
++        let mut pos = Vec::new();
++        let mut r = Reader::default();
++        for (n, expected) in [pair.0, pair.1].iter().enumerate() {
++            let msg = locate(frame + n as i64, rate);
++            assert_eq!(&msg[5..9], expected);
++            r.receive(&msg, 0, 0);
++            let Some(ChaseEvent::Locate(p)) = r.take(0) else { panic!("no locate") };
++            pos.push(p.samples(SampleRate::HZ_48000));
++        }
++        let mut r = Reader::default();
++        r.options.rate = rate;
++        r.source = Some(0);
++        let mut rolls = vec![];
++        for group in 0..5 {
++            if let Some(ChaseEvent::Roll(p, _)) = decode_group(&mut r, frame - 5 + group * 2, group * 8, rate) {
++                rolls.push(p.samples(SampleRate::HZ_48000));
++            }
++        }
++        eprintln!("C2/C3 {rate:?} source_frame={frame} position_delta={} roll_positions={rolls:?}", pos[1] - pos[0]);
++        assert_eq!(rolls.len(), 4);
++        if wrap {
++            assert!(rolls.windows(2).any(|p| p[0] > p[1]));
++        } else {
++            assert!(rolls.windows(2).all(|p| p[0] < p[1]));
++            assert!((1600..=1602).contains(&(pos[1] - pos[0])));
++        }
++    }
++}
++
++#[test]
++fn scenario_b3_loss_modes() {
++    for (frames, jam) in [(0, false), (4, false), (8, false), (40, false), (8, true)] {
++        let rate = FrameRate::Fps25;
++        let (mut audio, tx, _) = callback(session(rate), 48000.);
++        let input = Arc::new(crate::midi::MidiFeed::default());
++        input.set_mtc_options(rate, frames, jam, 0);
++        input.set_mtc_source(Some(0));
++        tx.send(Cmd::Midi(input.clone())).unwrap();
++        let mut stop = None;
++        let mut origin = 0;
++        let mut end = 0;
++        for i in 0..=1030 {
++            let us = i * 10000;
++            input.set_clock(us);
++            if i <= 31 {
++                input.receive(0, &quarters(i / 8 * 2, rate)[i as usize % 8]);
++            }
++            audio.fill(&mut [0.; 960], 2);
++            if i == 30 {
++                origin = audio.shared.position.load(Ordering::Acquire);
++            }
++            if i > 31 && !audio.shared.playing.load(Ordering::Acquire) {
++                stop.get_or_insert(us - 310000);
++            }
++            end = audio.shared.position.load(Ordering::Acquire);
++        }
++        let drift = end - origin - 480000;
++        eprintln!("B-3 frames={frames} jam={jam} first_stopped_us={stop:?} jam_drift_samples={:?}", jam.then_some(drift));
++        if jam {
++            assert_eq!(stop, None);
++            assert_eq!(drift, 0);
++        } else {
++            assert_eq!(stop, Some(i64::from(if frames == 0 { 2 } else { frames }) * 40000));
++        }
++    }
++}
++
++#[test]
++#[ignore = "two hours per drift sign of offline PCM; run explicitly"]
++fn scenario_c4_two_hour_drift_render() {
++    for ppm in [-50, 50] {
++        let rate = FrameRate::Fps30;
++        let mut s = session(rate);
++        s.edit.click = true;
++        let (mut audio, tx, _) = callback(s, 48000.);
++        let feed = Arc::new(crate::midi::MidiFeed::default());
++        feed.set_mtc_source(Some(0));
++        tx.send(Cmd::Midi(feed.clone())).unwrap();
++        let base = Instant::now();
++        let mut pcm = [0.; 960];
++        let mut piece = 0;
++        let mut max_err = 0;
++        let mut last_on = -1_000_000i64;
++        let mut prev_relocs = 0;
++        let mut jumps = Vec::new();
++        let mut prev_pos = 0;
++        let mut clicks = 0;
++        let mut last_err = 0;
++        let mut last_beat: Option<i64> = None;
++        let mut duplicates = 0;
++        let mut missed = 0;
++        let blocks = (720000. * (1. + f64::from(ppm) * 1e-6)).ceil() as i64;
++        for k in 0..blocks {
++            let us = (k * 10000) as f64 / (1. + f64::from(ppm) * 1e-6);
++            let us = us.round() as i64;
++            while stamp(piece, rate) <= us {
++                let t = stamp(piece, rate);
++                feed.set_clock(t);
++                feed.receive(0, &quarters((piece / 8) * 2, rate)[piece as usize % 8]);
++                piece += 1;
++            }
++            feed.set_clock(us);
++            audio.device_timing = Some(DeviceTiming::new(base + Duration::from_micros(us as u64), Some(Duration::ZERO), 0));
++            audio.fill(&mut pcm, 2);
++            let pos = audio.shared.position.load(Ordering::Relaxed);
++            let reloc = feed.mtc_diagnostics().hard_relocates;
++            if reloc != prev_relocs {
++                jumps.push((us, pos - prev_pos - 480));
++            }
++            if us > 2_000_000
++                && us - last_on > 200000
++                && let Some(offset) = pcm.chunks_exact(2).position(|ch| ch[0].abs() > 0.01)
++            {
++                let t = us + (offset as f64 * 1e6 / (48000. * (1. + f64::from(ppm) * 1e-6))).round() as i64;
++                let beat = (t + 250000) / 500000;
++                if let Some(old) = last_beat {
++                    duplicates += usize::from(old == beat);
++                    missed += (beat - old - 1).max(0);
++                }
++                last_beat = Some(beat);
++                let error = t - beat * 500000;
++                last_err = error;
++                max_err = max_err.max(error.abs());
++                last_on = t;
++                clicks += 1;
++            }
++            prev_relocs = reloc;
++            prev_pos = pos;
++        }
++        let diag = feed.mtc_diagnostics();
++        assert!(audio.shared.playing.load(Ordering::Acquire));
++        assert_eq!(diag.locks, 1);
++        eprintln!(
++            "C-4 ppm={ppm} source_interval_us={} clicks={clicks} duplicate_beats={duplicates} missing_beats={missed} peak_audible_offset_us={max_err} last_offset_us={last_err} losses={} relocations={} jumps_us_samples={jumps:?}",
++            stamp(piece, rate),
++            diag.losses,
++            diag.hard_relocates
++        );
++        assert_eq!(diag.losses, 0);
++        assert!(clicks > 14000);
++    }
++}
++#[test]
++fn scenario_b4_record_while_generating() {
++    use crate::record::{Recorder, TakeFiles};
++    let song = session(FrameRate::Fps25);
++    let (mut audio, tx, view) = callback(song.clone(), 48000.);
++    let mut enc = Encoder::default();
++    let (mut rec, mut insert) = Recorder::mtc_scenario_input();
++    let dir = std::env::temp_dir().join(format!("mtc-b4-{}", std::process::id()));
++    std::fs::create_dir(&dir).unwrap();
++    let a = dir.join("L.wav");
++    let b = dir.join("R.wav");
++    let mut packets = vec![];
++    let base = Instant::now();
++    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
++    for k in 0..200 {
++        if k == 25 {
++            tx.send(Cmd::Recording(true, 0)).unwrap();
++            rec.arm(
++                vec![(soundcraft_model::TrackId(1), vec![0], a.clone()), (soundcraft_model::TrackId(2), vec![1], b.clone())],
++                TakeFiles { samples: u64::MAX, part: |_, _| unreachable!() },
++            )
++            .unwrap();
++        }
++        let mut input = [0.; 960];
++        if [50, 100, 175].contains(&k) {
++            input[2 * 13] = 0.5;
++            input[2 * 64 + 1] = 0.75;
++        }
++        insert(&input);
++        let now = base + Duration::from_millis(k * 10);
++        audio.device_timing = Some(DeviceTiming::new(now, Some(Duration::ZERO), 0));
++        audio.fill(&mut [0.; 960], 2);
++        if k >= 25 {
++            assert!(audio.is_recording());
++        }
++        let p = view.lock().unwrap().read(now, true, 0).0.unwrap();
++        enc.update(p, now, &song, &mut |t, m| packets.push((t, m.to_vec())));
++    }
++    let (takes, problem) = rec.finish();
++    assert!(problem.is_none());
++    assert_eq!(takes.len(), 2);
++    for (path, delay) in [(a, 13), (b, 64)] {
++        let wav = craft_audio::decode(&std::fs::read(path).unwrap(), None).unwrap().1;
++        let attacks = wav.channels[0].iter().enumerate().filter(|(_, x)| x.abs() > 0.4).map(|(i, _)| i as i64 + 25 * 480).collect::<Vec<_>>();
++        let expected = [50 * 480 + delay, 100 * 480 + delay, 175 * 480 + delay];
++        assert_eq!(attacks, expected);
++        eprintln!("B-4 WAV attacks timeline_samples={attacks:?} offset_samples=0");
++    }
++    assert_eq!(packets.iter().filter(|(_, m)| m[0] == 0xf0).count(), 1);
++    let times = packets.iter().filter(|(_, m)| m[0] == 0xf1).map(|(t, _)| *t).collect::<Vec<_>>();
++    assert_eq!(times.len(), 200);
++    assert!(times.windows(2).all(|w| w[1] - w[0] == Duration::from_millis(10)));
++    eprintln!("B-4 FF=1 quarters={} period_us=10000 record_start_ms=250", times.len());
++}
++#[test]
++fn scenario_a10_render_continues_across_stream_reset() {
++    use soundcraft_model::{ChannelFormat, Clip, SourceAudio, SourceId, TrackKind};
++    let mut song = session(FrameRate::Fps25);
++    let track = song.add_track(TrackKind::Audio, ChannelFormat::Mono, None);
++    let wave = (0..96000).map(|i| if i % 48 < 24 { 0.25 } else { -0.25 }).collect::<Vec<_>>();
++    song.pool.insert(SourceId(1), Arc::new(SourceAudio::new(craft_audio::AudioBuffer { sample_rate: 48000, channels: vec![wave] })));
++    let id = song.new_clip_id();
++    song.track_mut(track).unwrap().playlist_mut().unwrap().clips.push(Clip::audio(id, "Reset", SourceId(1), 0, 0, 96000));
++    let (mut test, t_test, _) = callback(song.clone(), 48000.);
++    let (mut control, t_control, _) = callback(song, 48000.);
++    for tx in [t_test, t_control] {
++        tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
++    }
++    let now = Instant::now();
++    let mut hardware = crate::sync_clock::StreamLead::default();
++    let mut energy = 0.;
++    for ms in (0..1000).step_by(10) {
++        let t = now + Duration::from_millis(ms);
++        if ms == 300 {
++            hardware = Default::default();
++        }
++        test.device_timing = Some(hardware.observe(t, (ms < 250 || ms >= 500).then_some(Duration::ZERO)));
++        control.device_timing = Some(DeviceTiming::new(t, Some(Duration::ZERO), 0));
++        let mut measured = [0.; 960];
++        let mut expected = [0.; 960];
++        test.fill(&mut measured, 2);
++        control.fill(&mut expected, 2);
++        assert_eq!(measured, expected);
++        let chunk = measured.iter().map(|x| x * x).sum::<f32>();
++        assert!(chunk > 1.);
++        energy += chunk;
++    }
++    eprintln!("A-10 audio frames=48000 channels=2 sample_differences=0 signal_energy={energy:.2}");
++}
+diff --git a/crates/ui-egui/src/app/scenario_load.rs b/crates/ui-egui/src/app/scenario_load.rs
+new file mode 100644
+index 0000000..9421a26
+--- /dev/null
++++ b/crates/ui-egui/src/app/scenario_load.rs
+@@ -0,0 +1,69 @@
++use super::*;
++use soundcraft_model::{Clip, SourceId, SourceAudio, TrackKind, ChannelFormat, Insert};
++use soundcraft_playback::midi::MidiInputs;
++use std::{sync::{Arc,atomic::{AtomicBool,Ordering}},time::{Duration,Instant}};
++
++#[test]
++#[ignore = "real-time 150-track software load benchmark; run serially"]
++fn scenario_c7_chase_under_150_track_load(){
++    const SR:usize=48000; const BLOCK:usize=128;
++    let mut failed=Vec::new(); for inserts in [0, 2, 6] { if std::env::var("SCENARIO_C7_INSERTS").ok().and_then(|n|n.parse::<usize>().ok()).is_some_and(|n|n!=inserts){continue;}
++        let mut host=SoundApp::new(Default::default(),None,crate::Services::default());
++        host.run("setup.session",json!({"frame_rate":"25"})).unwrap();
++        host.engine.session_mut().timecode_start=0; host.midi_inputs=Some(MidiInputs::with_port_names(vec![],vec!["Desk".into()]));
++        host.run("setup.mtc",json!({"input":"Desk","online":true,"freewheel":"none"})).unwrap();
++        host.service_mtc_chase();
++        let feed=host.midi_inputs.as_ref().unwrap().feed().clone();
++        let src=feed.ports().assign("Desk");
++        let s=host.engine.session_mut(); let src_id=SourceId(27000);
++        let pcm=(0..4*SR).map(|i| ((i%128) as f32/128.-0.5)*0.001).collect();
++        s.pool.insert(src_id,Arc::new(SourceAudio::new(craft_audio::AudioBuffer{sample_rate:48000,channels:vec![pcm]})));
++        for _ in 0..150{
++            let id=s.add_track(TrackKind::Audio,ChannelFormat::Mono,None);
++            let clip=s.new_clip_id(); let t=s.track_mut(id).unwrap();
++            t.playlist_mut().unwrap().clips.push(Clip::audio(clip,"backing",src_id,0,0,4*SR as i64));
++            for slot in t.mixer.inserts.iter_mut().take(inserts){*slot=Some(Insert::new("compressor"));}
++        }
++        let scene=host.engine.session_arc();
++        let mut render=soundcraft_mix::RangeRender::new(&scene,None,soundcraft_time::Range::new(0,4*SR as i64),BLOCK);
++        let stop=Arc::new(AtomicBool::new(false));let signal=stop.clone();let origin=Instant::now();
++        let driver=std::thread::spawn(move||{
++            let mut q=0u64;
++            while !signal.load(Ordering::Relaxed){
++                let due=origin+Duration::from_millis(q*10);
++                std::thread::sleep(due.saturating_duration_since(Instant::now()));
++                let frames=(q/8)*2;let f=frames%25;let secs=(frames/25)%60;let mins=(frames/1500)%60;
++                let data=[f&15,f>>4,secs&15,secs>>4,mins&15,mins>>4,0,2];
++                feed.receive(src,&[0xf1,(((q%8)<<4)|data[(q%8) as usize]) as u8]);q+=1;
++            }
++            q
++        });
++        let budget=Duration::from_secs_f64(BLOCK as f64/SR as f64);
++        let mut peak=0f32;let mut elapsed=Vec::new();let mut statuses=std::collections::BTreeMap::new();let mut lock=false;let mut losses=0;let mut prev=false;
++        for _ in 0..4*SR/BLOCK{
++            let block=Instant::now();let Some((y,n))=render.next_block(&scene) else{break;};
++            for v in &y[0][..n]{peak=peak.max(v.abs());}
++            host.service_mtc_chase();host.handle_transport(n as f32/SR as f32);
++            *statuses.entry(host.mtc_status).or_insert(0usize)+=1;let now=host.mtc_status=="Locked";
++            if prev && !now{losses+=1;} lock|=now;prev=now;
++            let load=block.elapsed();elapsed.push(load.as_secs_f64()/budget.as_secs_f64());std::thread::sleep(budget.saturating_sub(load));
++        }
++        stop.store(true,Ordering::Relaxed);let q=driver.join().unwrap();
++        elapsed.sort_by(f64::total_cmp);let len=elapsed.len();
++        eprintln!("C7 inserts={inserts} tracks=150 actual_wall_s={:.2} pcm_peak={peak} blocks={len} budget_ms={:.3} render_host_budget_median_pct={:.1} p95_pct={:.1} max_pct={:.1} software_deadline_misses={} QF={q} acquired={lock} lock_losses={losses}",origin.elapsed().as_secs_f64(),budget.as_secs_f64()*1000.,100.*elapsed[len/2],100.*elapsed[len*95/100],100.*elapsed[len-1],elapsed.iter().filter(|x|**x>1.).count());
++        eprintln!("C7 statuses={statuses:?}"); if !(peak>0.&&lock&&losses==0){failed.push(inserts);}
++    }
++    assert!(failed.is_empty(),"lock or PCM failures, inserts {failed:?}");
++}
++
++#[test]
++fn scenario_d4_transport_publishes_preroll_and_postroll_boundaries() {
++    let mut app=SoundApp::new(Default::default(),None,crate::Services::default());
++    let edit=&mut app.engine.session_mut().edit;
++    edit.pre_post_roll=true;edit.pre_roll=24000;edit.post_roll=12000;
++    edit.selection=soundcraft_time::Range::new(96000,192000);
++    app.play_from_selection();
++    eprintln!("D4 selection=96000..192000 simulated_output_transport={:?}",app.sim);
++    assert_eq!(app.sim,Some((72000,Some(204000),None)));
++}
++

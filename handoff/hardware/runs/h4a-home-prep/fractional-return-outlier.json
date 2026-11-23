@@ -1,0 +1,147 @@
+{
+  "summary": {
+    "path": "home-20261122-235535-din-29.97nd-forward",
+    "rate": "29.97nd",
+    "direction": "forward",
+    "environment_valid": true,
+    "passed": false,
+    "prior": {
+      "tx": {
+        "count": 10,
+        "median": 127.6347,
+        "spread": 4.9675
+      },
+      "rx": {
+        "count": 10,
+        "median": 148.4749,
+        "spread": 5.8574
+      }
+    },
+    "current": {
+      "tx": {
+        "count": 10,
+        "median": 130.2221,
+        "spread": 2.0072
+      },
+      "rx": {
+        "count": 10,
+        "median": 150.4033,
+        "spread": 6.3261
+      }
+    },
+    "wire_equal": false,
+    "packet_differences": [
+      {
+        "tag": "take-10:stopped-frame-300",
+        "sent": "f07f7f010160000a00f7",
+        "received": "f07f7f00010160000a00f7"
+      }
+    ],
+    "hard_relocates": 10,
+    "gap_bins": [
+      0,
+      0,
+      14988,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "max_callback_ms": 6.1937,
+    "mean_callback_ms": 5.3338
+  },
+  "per_take": [
+    {
+      "take": 1,
+      "count": 16,
+      "first": 992,
+      "lo": 992,
+      "hi": 992,
+      "first_tx_score": 1.0,
+      "first_rx_score": 1.0
+    },
+    {
+      "take": 2,
+      "count": 16,
+      "first": 992,
+      "lo": 992,
+      "hi": 992,
+      "first_tx_score": 1.0,
+      "first_rx_score": 1.0
+    },
+    {
+      "take": 3,
+      "count": 16,
+      "first": 992,
+      "lo": 992,
+      "hi": 992,
+      "first_tx_score": 1.0,
+      "first_rx_score": 1.0
+    },
+    {
+      "take": 4,
+      "count": 16,
+      "first": 992,
+      "lo": 992,
+      "hi": 992,
+      "first_tx_score": 1.0,
+      "first_rx_score": 1.0
+    },
+    {
+      "take": 5,
+      "count": 16,
+      "first": 992,
+      "lo": 992,
+      "hi": 992,
+      "first_tx_score": 1.0,
+      "first_rx_score": 1.0
+    },
+    {
+      "take": 6,
+      "count": 16,
+      "first": 992,
+      "lo": 992,
+      "hi": 992,
+      "first_tx_score": 1.0,
+      "first_rx_score": 1.0
+    },
+    {
+      "take": 7,
+      "count": 16,
+      "first": 992,
+      "lo": 986,
+      "hi": 992,
+      "first_tx_score": 1.0,
+      "first_rx_score": 1.0
+    },
+    {
+      "take": 8,
+      "count": 16,
+      "first": 938,
+      "lo": 788,
+      "hi": 938,
+      "first_tx_score": 1.0,
+      "first_rx_score": 1.0
+    },
+    {
+      "take": 9,
+      "count": 14,
+      "first": 795,
+      "lo": 786,
+      "hi": 800,
+      "first_tx_score": 1.0,
+      "first_rx_score": 1.0
+    },
+    {
+      "take": 10,
+      "count": 15,
+      "first": 785,
+      "lo": 783,
+      "hi": 800,
+      "first_tx_score": 1.0,
+      "first_rx_score": 1.0
+    }
+  ]
+}

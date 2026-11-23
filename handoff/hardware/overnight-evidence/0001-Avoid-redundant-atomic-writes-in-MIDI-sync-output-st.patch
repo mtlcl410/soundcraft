@@ -1,0 +1,90 @@
+From 030277080ec32a71fdf4ea82b860c1b466b5570f Mon Sep 17 00:00:00 2001
+From: mtlcl410 <2368091+mtlcl410@users.noreply.github.com>
+Date: Mon, 23 Nov 2026 01:15:40 +0800
+Subject: [PATCH 1/3] Avoid redundant atomic writes in MIDI sync output
+ statistics
+
+---
+ crates/playback/src/sync_clock.rs        |  5 ++++-
+ crates/playback/src/sync_output.rs       | 14 +++++++++++---
+ crates/playback/src/sync_output_tests.rs | 19 +++++++++++++++++++
+ 3 files changed, 34 insertions(+), 4 deletions(-)
+
+diff --git a/crates/playback/src/sync_clock.rs b/crates/playback/src/sync_clock.rs
+index 240d91ad..f754518d 100644
+--- a/crates/playback/src/sync_clock.rs
++++ b/crates/playback/src/sync_clock.rs
+@@ -358,7 +358,10 @@ impl Publisher {
+         }
+         if let Some((last, size)) = self.last_callback.replace((timing.callback, buffer_seconds)) {
+             let gap = timing.callback.saturating_duration_since(last);
+-            self.metrics.max_gap_us.fetch_max(gap.as_micros() as u64, Relaxed);
++            let gap_us = gap.as_micros() as u64;
++            if gap_us > self.metrics.max_gap_us.load(Relaxed) {
++                self.metrics.max_gap_us.fetch_max(gap_us, Relaxed);
++            }
+             if gap.as_secs_f64() > 2. * size {
+                 self.metrics.late_buffers.fetch_add(1, Relaxed);
+             }
+diff --git a/crates/playback/src/sync_output.rs b/crates/playback/src/sync_output.rs
+index 68f47508..1c94b1c8 100644
+--- a/crates/playback/src/sync_output.rs
++++ b/crates/playback/src/sync_output.rs
+@@ -87,7 +87,9 @@ impl Stats {
+         let bucket = BOUNDS.partition_point(|&v| v < us);
+         self.buckets[bucket].fetch_add(1, Relaxed);
+         self.sent.fetch_add(1, Relaxed);
+-        self.max.fetch_max(us, Relaxed);
++        if us > self.max.load(Relaxed) {
++            self.max.fetch_max(us, Relaxed);
++        }
+     }
+ }
+ fn effective_offset(offset: i64, sr: soundcraft_time::SampleRate) -> i64 {
+@@ -578,8 +580,14 @@ impl<C: Destination> Port<C> {
+                 } else if b.playing && !self.future.iter().any(|e| e.route == route_index) {
+                     soon(now + Duration::from_millis(1));
+                 }
+-                stats.catch_up_sends.fetch_add(r.encoder.take_catchups(), Relaxed);
+-                stats.stale_dropped.fetch_add(r.encoder.take_stale_dropped(), Relaxed);
++                let catchups = r.encoder.take_catchups();
++                if catchups != 0 {
++                    stats.catch_up_sends.fetch_add(catchups, Relaxed);
++                }
++                let stale = r.encoder.take_stale_dropped();
++                if stale != 0 {
++                    stats.stale_dropped.fetch_add(stale, Relaxed);
++                }
+             }
+         }
+         pending.sort_by_key(|m| m.at);
+diff --git a/crates/playback/src/sync_output_tests.rs b/crates/playback/src/sync_output_tests.rs
+index 515e18f2..a482c59c 100644
+--- a/crates/playback/src/sync_output_tests.rs
++++ b/crates/playback/src/sync_output_tests.rs
+@@ -1684,3 +1684,22 @@ fn mtc_sync_route_warns_only_with_an_open_chase_source() {
+     feed.set_mtc_source(None);
+     assert_eq!(output.timing_issue(), None);
+ }
++
++#[test]
++fn concurrent_delivery_stats_keep_every_event_and_the_largest_delay() {
++    let stats = Stats::default();
++    let at = Instant::now();
++    std::thread::scope(|threads| {
++        for writer in 0..4 {
++            let stats = &stats;
++            threads.spawn(move || {
++                for i in 0..1000 {
++                    stats.record(at, at + Duration::from_micros((999 - i) * 4 + writer));
++                }
++            });
++        }
++    });
++    assert_eq!(stats.sent.load(Relaxed), 4000);
++    assert_eq!(stats.max.load(Relaxed), 3999);
++    assert_eq!(stats.buckets.iter().map(|value| value.load(Relaxed)).sum::<u64>(), 4000);
++}
+-- 
+2.55.0.windows.1
+

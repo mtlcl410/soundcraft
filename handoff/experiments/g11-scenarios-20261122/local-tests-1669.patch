@@ -1,0 +1,912 @@
+diff --git a/apps/soundcraft/src/config.rs b/apps/soundcraft/src/config.rs
+index b1a1c4f..960813c 100644
+--- a/apps/soundcraft/src/config.rs
++++ b/apps/soundcraft/src/config.rs
+@@ -329,3 +329,7 @@ mod config_tests {
+         assert_eq!(config_dir_with(Platform::Mac, |_| Some(value.clone()), None), Some(PathBuf::from(value)));
+     }
+ }
++
++#[cfg(test)]
++#[path = "scenario_config.rs"]
++mod scenario_config;
+diff --git a/crates/playback/src/clock_follow/tests.rs b/crates/playback/src/clock_follow/tests.rs
+index f7e37f8..b799c98 100644
+--- a/crates/playback/src/clock_follow/tests.rs
++++ b/crates/playback/src/clock_follow/tests.rs
+@@ -346,3 +346,5 @@ fn prepared_device_clock_needs_a_report_and_accepts_both_retained_and_true_zero(
+         shared.playing.store(false, Ordering::Relaxed);
+     }
+ }
++
++mod performance_scenarios;
+diff --git a/crates/playback/src/mtc/tests.rs b/crates/playback/src/mtc/tests.rs
+index 0d5a5fa..373d206 100644
+--- a/crates/playback/src/mtc/tests.rs
++++ b/crates/playback/src/mtc/tests.rs
+@@ -418,3 +418,4 @@ fn first_integer_sample_of_an_even_fractional_frame_emits_its_quarter_group() {
+         }
+     }
+ }
++#[path="scenario_c1_comparison.rs"] mod scenario_c1_comparison;
+diff --git a/crates/ui-egui/src/app/clock_follow.rs b/crates/ui-egui/src/app/clock_follow.rs
+index 7cc4a05..861cdb9 100644
+--- a/crates/ui-egui/src/app/clock_follow.rs
++++ b/crates/ui-egui/src/app/clock_follow.rs
+@@ -743,6 +743,7 @@ mod tests {
+ 
+     #[cfg(not(target_arch = "wasm32"))]
+     mod recording;
++    mod performance_scenarios;
+ 
+     #[test]
+     fn master_and_reader_conflicts_are_rejected_in_both_directions() {
+diff --git a/crates/ui-egui/src/app/clock_follow/tests/recording.rs b/crates/ui-egui/src/app/clock_follow/tests/recording.rs
+index 0cb8937..6cd36ae 100644
+--- a/crates/ui-egui/src/app/clock_follow/tests/recording.rs
++++ b/crates/ui-egui/src/app/clock_follow/tests/recording.rs
+@@ -118,3 +118,6 @@ fn record_through_loss(policy: &str) {
+     assert_eq!(samples, if coast { vec![0, 12_000, 24_000] } else { vec![0] });
+     std::fs::remove_dir_all(app.fallback_take_dir.as_ref().unwrap()).unwrap();
+ }
++
++#[path = "scenario_studio.rs"]
++mod scenario_studio;
+diff --git a/apps/soundcraft/src/scenario_config.rs b/apps/soundcraft/src/scenario_config.rs
+new file mode 100644
+index 0000000..2c8e0ba
+--- /dev/null
++++ b/apps/soundcraft/src/scenario_config.rs
+@@ -0,0 +1,34 @@
++use super::*;
++use serde_json::json;
++
++#[test]
++fn scenario_d7_corrupt_sync_settings_recover_independently_with_diagnostics(){
++    let dir=std::env::temp_dir().join(format!("g11-pref-probe-{}",std::process::id()));
++    std::fs::create_dir_all(&dir).unwrap();
++    let path=dir.join("ui.json");
++    let mut base=serde_json::to_value(soundcraft_ui_egui::UiState::default()).unwrap();
++    base["narrow_mix"]=json!(true);base["midi_sync"]["ports"]["DIN"]=json!({"enabled":false,"in_offset_samples":0,"out_offset_samples":0});
++    let mut misses=Vec::new();
++    for (owner,key,v) in [
++        (1662,"/midi_sync/enabled",json!(7)),(1662,"/midi_sync/compensation/beat_clock",json!("no")),
++        (1662,"/midi_sync/compensation/notes",json!([])),(1662,"/midi_sync/ports/DIN/enabled",json!("yes")),
++        (1662,"/midi_sync/ports/DIN/out_offset_samples",json!(i64::MAX)),
++        (1662,"/midi_sync/ports/DIN/in_offset_samples",json!(i64::MIN)),
++        (1663,"/gen_mtc",json!({})),(1663,"/mtc_input_port",json!(99)),(1663,"/mtc_output_port",json!([])),
++        (1663,"/midi_sync/compensation/mtc",json!({})),
++        (1669,"/clock_follow_input",json!([13])),(1669,"/clock_follow_stop_on_loss",json!("stop")),
++        (1669,"/clock_follow_input_offsets",json!({"DIN":"-bad"}))]{
++        let mut j=base.clone();
++        let k=key.strip_prefix('/').unwrap();
++        if let Some(slot)=j.pointer_mut(key){*slot=v;}else{assert!(!k.contains('/'));j[k]=v;}
++        let bytes=serde_json::to_vec(&j).unwrap();
++        std::fs::write(&path,&bytes).unwrap();
++        match load_ui(&path){
++            Ok(Some(ui))=>{eprintln!("D7 {owner} {key} loaded other={} note={:?}",ui.narrow_mix,ui.status);if !ui.narrow_mix || ui.status.is_empty(){misses.push(key);}}
++            other=>{eprintln!("D7 {owner} {key} load error={:?}, startup uses whole defaults",other.err());misses.push(key);}
++        }
++        assert_eq!(std::fs::read(&path).unwrap(),bytes);
++    }
++    std::fs::remove_dir_all(dir).unwrap();
++    assert!(misses.is_empty(),"settings missing independent recovery or visible note: {misses:?}");
++}
+diff --git a/crates/playback/src/clock_follow/tests/performance_scenarios.rs b/crates/playback/src/clock_follow/tests/performance_scenarios.rs
+new file mode 100644
+index 0000000..01afae4
+--- /dev/null
++++ b/crates/playback/src/clock_follow/tests/performance_scenarios.rs
+@@ -0,0 +1,240 @@
++use super::*;
++
++fn random(seed: &mut u64) -> u64 {
++    *seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
++    *seed >> 32
++}
++
++#[test]
++fn scenario_e1_clock_interleaved_in_timecode() {
++    let mut f = Follower::default();
++    f.receive(&[0xf0, 0x7f, 0xfa, 0x7f, 1, 1, 0xf8, 0x60, 0, 0, 0, 0xfc, 0xf7], 100);
++    assert_eq!(f.take(), Some(Action::Locate(0)));
++    assert_eq!(f.take(), Some(Action::Play { pulse: 0, at: 100 }));
++    assert_eq!(f.take(), Some(Action::Stop));
++    f.receive(&[0xf1, 0xfa, 0, 0xf1, 0xf8, 0x10, 0xf1, 0xfc, 0x20], 200);
++    assert_eq!(f.take(), Some(Action::Locate(0)));
++    assert_eq!(f.take(), Some(Action::Play { pulse: 0, at: 200 }));
++    assert_eq!(f.take(), Some(Action::Stop));
++    assert!(f.take().is_none());
++}
++#[test]
++fn scenario_e3_song_pointer_during_play_and_at_rest() {
++    let mut f = Follower::default();
++    f.receive(&[0xf2, 0x80, 1, 0xf2, 1, 0x90, 2], 0);
++    assert!(f.take().is_none());
++    f.receive(&[0xf2, 0x7f, 0x7f, 0xf2, 3, 0], 100);
++    assert_eq!(f.take(), Some(Action::Locate(98_298)));
++    assert_eq!(f.take(), Some(Action::Locate(18)));
++    f.receive(&[0xfb, 0xf8], 200);
++    assert_eq!(f.take(), Some(Action::Play { pulse: 18, at: 200 }));
++    f.receive(&[0xf2, 5, 0], 300);
++    assert!(f.take().is_none());
++    eprintln!("E3 invalid=0 locates; consecutive=98298,18; Continue=18; while playing=0 locates");
++}
++#[test]
++fn scenario_e4_extreme_clock_rates() {
++    for (period, n) in [(10_000_000, 60), (100, 100_000)] {
++        let mut f = Follower::default();
++        f.receive(&[0xfa], 0);
++        let mut high = 0;
++        for i in 0..n {
++            f.receive(&[0xf8], i * period);
++            high = high.max(f.count);
++            while f.take().is_some() {}
++        }
++        let snap = f.snapshot(n * period);
++        eprintln!("E4 interval_us={period} pulses={n} state={:?} bpm={:?} queue_peak={high}", snap.state, snap.bpm);
++        assert!(high <= 2);
++        assert!(snap.bpm.is_none());
++    }
++}
++#[test]
++fn scenario_e5_clock_ten_million_stream_bytes() {
++    let mut f = Follower::default();
++    let mut seed = 20261122;
++    let mut high = 0;
++    for i in 0..10_000_000 {
++        f.receive(&[random(&mut seed) as u8], i * 11);
++        high = high.max(f.count);
++        if i % 50 == 0 {
++            while f.take().is_some() {}
++        }
++    }
++    eprintln!("E5 bytes=10000000 queue_peak={high}/{} reader_bytes={}", f.events.len(), size_of::<Follower>());
++    assert!(high <= f.events.len());
++}
++#[test]
++fn scenario_a4_ten_minutes_of_bunched_clock() {
++    let mut worst = 0.0_f64;
++    for count in 3..=5 {
++        let mut f = Follower::default();
++        f.receive(&[0xfa], 0);
++        let mut min = f64::MAX;
++        let mut max = 0.0_f64;
++        let mut false_steps = 0;
++        let mut active = false;
++        for p in 0..28_800 {
++            let at = (((p / count) * count) as f64 * 2_500_000. / 120.).round() as i64 + (p % count) * 200;
++            f.receive(&[0xf8], at);
++            assert_eq!(f.state, State::Locked);
++            let s = f.snapshot(at);
++            if p > 192 {
++                let b = s.bpm.unwrap();
++                min = min.min(b);
++                max = max.max(b);
++                if !active && s.recovering_tempo_step {
++                    false_steps += 1;
++                }
++            }
++            active = s.recovering_tempo_step;
++        }
++        eprintln!("A4 group={count} pulses=28800 bpm={min:.4}..{max:.4} false_steps={false_steps} dropouts={}", f.dropouts);
++        worst = worst.max(max - min);
++        assert_eq!(false_steps, 0);
++    }
++    assert!(worst <= 0.1, "proposed steady display tolerance; span={worst}");
++}
++#[test]
++fn scenario_a5_random_phase_transport() {
++    let mut seed = 55_u64;
++    let mut r = Follower::default();
++    let mut at = 0;
++    let mut starts = 0;
++    let mut resumes = 0;
++    for _ in 0..50 {
++        for _ in 0..(1 + random(&mut seed) % 24) {
++            at += 20_833;
++            r.receive(&[0xf8], at);
++            assert!(r.take().is_none());
++        }
++        r.receive(&[0xfa], at + 1);
++        assert_eq!(r.take(), Some(Action::Locate(0)));
++        at += 20_833;
++        r.receive(&[0xf8], at);
++        assert_eq!(r.take(), Some(Action::Play { pulse: 0, at }));
++        starts += 1;
++        r.receive(&[0xfc], at + 1);
++        assert_eq!(r.take(), Some(Action::Stop));
++        let spp = (random(&mut seed) % 1000) as i64;
++        r.receive(&[0xf2, (spp % 128) as u8, (spp / 128) as u8], at + 2);
++        assert_eq!(r.take(), Some(Action::Locate(6 * spp)));
++        r.receive(&[0xfb], at + 3);
++        at += 20_833;
++        r.receive(&[0xf8], at);
++        assert_eq!(r.take(), Some(Action::Play { pulse: 6 * spp, at }));
++        resumes += 1;
++        r.receive(&[0xfc], at + 1);
++        assert_eq!(r.take(), Some(Action::Stop));
++    }
++    eprintln!("A5 starts={starts} continuations={resumes} stops=100; parked clocks never played");
++}
++#[test]
++fn scenario_a5_notes_released_across_random_stops() {
++    use crate::{AudioState, Cmd, PreparedInstance, Shared};
++    use soundcraft_dsp::Plugin;
++    use soundcraft_model::{ChannelFormat, Clip, Insert, Session, TrackKind};
++    use std::sync::{
++        Arc, Mutex,
++        atomic::{AtomicBool, AtomicI64, AtomicU32},
++        mpsc::channel,
++    };
++    #[derive(Default)]
++    struct Counts {
++        on: usize,
++        off: usize,
++        by_reset: usize,
++        active: bool,
++    }
++    struct Keys {
++        counts: Arc<Mutex<Counts>>,
++        inner: Box<dyn Plugin>,
++    }
++    impl Plugin for Keys {
++        fn info(&self) -> &'static soundcraft_dsp::PluginInfo {
++            self.inner.info()
++        }
++        fn prepare(&mut self, sr: f32, mb: usize, ch: usize) {
++            self.inner.prepare(sr, mb, ch)
++        }
++        fn reset(&mut self) {
++            let mut c = self.counts.lock().unwrap();
++            c.by_reset += usize::from(c.active);
++            c.active = false;
++        }
++        fn set_param(&mut self, id: &str, x: f32) -> bool {
++            self.inner.set_param(id, x)
++        }
++        fn param(&self, id: &str) -> Option<f32> {
++            self.inner.param(id)
++        }
++        fn process(&mut self, io: &mut [Vec<f32>], n: usize) {
++            for ch in io {
++                ch[..n].fill(0.)
++            }
++        }
++        fn note_on(&mut self, _: usize, _: u8, _: u8) {
++            let mut c = self.counts.lock().unwrap();
++            c.on += 1;
++            c.active = true;
++        }
++        fn note_off(&mut self, _: usize, _: u8) {
++            let mut c = self.counts.lock().unwrap();
++            c.off += 1;
++            c.active = false;
++        }
++    }
++    let mut song = Session::default();
++    let track = song.add_track(TrackKind::Instrument, ChannelFormat::Stereo, None);
++    let cid = song.new_clip_id();
++    let tr = song.track_mut(track).unwrap();
++    let notes: Vec<_> =
++        (0..64).map(|i| serde_json::json!({"start":i*240,"length":80,"channel":0,"velocity":110,"pitch":60,"release_velocity":64})).collect();
++    let seq = serde_json::from_value(serde_json::json!({"notes":notes,"ctrls":[]})).unwrap();
++    tr.playlist_mut().unwrap().clips.push(Clip::midi(cid, "Show", 0, 384000, seq));
++    tr.instrument = Some(Insert::new("clap:test.keys"));
++    let counts = Arc::new(Mutex::new(Counts::default()));
++    let probe = Keys { counts: counts.clone(), inner: soundcraft_dsp::create("gain").unwrap() };
++    let shared =
++        Arc::new(Shared { position: AtomicI64::new(0), playing: AtomicBool::new(false), speed: AtomicU32::new(1000), meters: Mutex::default() });
++    let (tx, rx) = channel();
++    let song = Arc::new(song);
++    let mut st = AudioState::new(rx, shared, song.clone(), 48000., channel().0);
++    tx.send(Cmd::Session(
++        1,
++        song.clone(),
++        vec![PreparedInstance { track, slot: soundcraft_mix::INSTRUMENT_SLOT, id: "clap:test.keys".into(), ch: 2, plugin: Box::new(probe) }],
++    ))
++    .unwrap();
++    let mut seed = 55;
++    let mut r = Follower::default();
++    let mut at = 0;
++    for _ in 0..50 {
++        for _ in 0..(1 + random(&mut seed) % 24) {
++            at += 20_833;
++            r.receive(&[0xf8], at);
++            assert!(r.take().is_none());
++        }
++        let spp = (random(&mut seed) % 64) as u8;
++        for (msg, expected) in [(vec![0xfa], 0), (vec![0xf2, spp, 0, 0xfb], i64::from(spp) * 6)] {
++            at += 20_833;
++            r.receive(&msg, at);
++            r.receive(&[0xf8], at);
++            assert_eq!(r.take(), Some(Action::Locate(expected)));
++            assert_eq!(r.take(), Some(Action::Play { pulse: expected, at }));
++            let origin = expected * 1000;
++            tx.send(Cmd::PlayClock { origin, render_from: origin }).unwrap();
++            st.fill(&mut vec![0.; 2 * (128 + (random(&mut seed) % 3700) as usize)], 2);
++            r.receive(&[0xfc], at + 1);
++            assert_eq!(r.take(), Some(Action::Stop));
++            tx.send(Cmd::Stop).unwrap();
++            st.fill(&mut [0.; 512], 2);
++            assert!(!counts.lock().unwrap().active);
++        }
++    }
++    let c = counts.lock().unwrap();
++    eprintln!("A5 plugin note_on={} explicit_off={} released_by_reset={} held_after_stop={}", c.on, c.off, c.by_reset, c.active);
++    assert_eq!(c.on, 100);
++    assert_eq!(c.on, c.off + c.by_reset);
++    assert_eq!(c.on, c.off, "literal note-off-for-every-note-on target");
++}
+diff --git a/crates/playback/src/mtc/scenario_c1_comparison.rs b/crates/playback/src/mtc/scenario_c1_comparison.rs
+new file mode 100644
+index 0000000..a3f1164
+--- /dev/null
++++ b/crates/playback/src/mtc/scenario_c1_comparison.rs
+@@ -0,0 +1,78 @@
++use super::*;
++use crate::mtc_input::{Reader, ChaseEvent};
++use soundcraft_time::SampleRate;
++const RATES: [FrameRate; 6] =
++    [FrameRate::Fps23_976, FrameRate::Fps24, FrameRate::Fps25, FrameRate::Fps29_97, FrameRate::Fps29_97Drop, FrameRate::Fps30];
++fn stamp(piece: i64, rate: FrameRate) -> i64 {
++    let (n, d) = rate.rational();
++    (piece as f64 * 1e6 * d as f64 / (4. * n as f64)).round() as i64
++}
++fn decode_group(r: &mut Reader, frame: i64, first_piece: i64, rate: FrameRate) -> Option<ChaseEvent> {
++    let group = quarters(frame, rate);
++    for (i, m) in group.iter().enumerate() {
++        let t = stamp(first_piece + i as i64, rate);
++        r.receive(m, t, t);
++    }
++    r.take(stamp(first_piece + 7, rate))
++}
++
++#[test]
++fn scenario_c1_c8_ten_minutes_six_rates() {
++    let mut total_differences = 0;
++    for rate in RATES {
++        let mut r = Reader::default();
++        r.options.rate = rate;
++        r.source = Some(0);
++        let mut stationary = Reader::default();
++        let mut max = 0;
++        let mut groups = 0;
++        let mut frames = 0;
++        let mut mismatches = 0;
++        let mut wrong = [0usize; 4];
++        let mut worst = 0u64;
++        let mut first = None;
++        let total = 600 * rate.rational().0 as i64 / rate.rational().1 as i64;
++        for frame in 0..total {
++            let ff = locate(frame, rate);
++            let t = stamp(frame * 4, rate);
++            stationary.receive(&ff, t, t);
++            let Some(ChaseEvent::Locate(pos)) = stationary.take(t) else { panic!("invalid literal frame {frame} {rate:?}") };
++            for (i, hz) in [44100, 48000, 96000, 192000].into_iter().enumerate() {
++                let sr = SampleRate::new(hz).unwrap();
++                let expected = rate.samples_at_frame(frame, sr);
++                let actual = pos.session_sample(rate, sr, 0, 0);
++                if actual != expected {
++                    wrong[i] += 1;
++                    worst = worst.max(actual.abs_diff(expected));
++                    first.get_or_insert((hz, frame, actual, expected));
++                }
++            }
++            frames += 1;
++            if frame % 2 != 0 {
++                continue;
++            }
++            let ev = decode_group(&mut r, frame, frame * 4, rate);
++            if frame > 0 {
++                let Some(ChaseEvent::Roll(p, _)) = ev else { panic!("no lock {rate:?} frame {frame}") };
++                for hz in [44100, 48000, 96000, 192000] {
++                    let sr = SampleRate::new(hz).unwrap();
++                    let expected = ((frame as f64 + 1.75) * rate.samples_per_frame(sr)).round() as i64;
++                    max = max.max(p.in_session_rate(rate).samples(sr).abs_diff(expected));
++                }
++                groups += 1;
++                mismatches += usize::from(r.incoming_status().1.is_some());
++            }
++        }
++        eprintln!(
++            "C-1/C-8 {rate:?} full_frames={frames} whole_mismatches_by_sample_rate={wrong:?} worst_whole_samples={worst} first={first:?} rolling_groups={groups} max_quarter_error_samples={max} rate_warnings={mismatches}"
++        );
++        total_differences += wrong.iter().sum::<usize>();
++        assert_eq!(mismatches, 0);
++        assert!(max <= 1);
++        r.options.rate = if rate == FrameRate::Fps25 { FrameRate::Fps30 } else { FrameRate::Fps25 };
++        assert!(r.incoming_status().1.is_some());
++    }
++    assert_eq!(total_differences, 0, "MTC locates must agree with Session Setup at whole frames");
++}
++
++
+diff --git a/crates/ui-egui/src/app/clock_follow/tests/performance_scenarios.rs b/crates/ui-egui/src/app/clock_follow/tests/performance_scenarios.rs
+new file mode 100644
+index 0000000..8afae86
+--- /dev/null
++++ b/crates/ui-egui/src/app/clock_follow/tests/performance_scenarios.rs
+@@ -0,0 +1,347 @@
++use super::*;
++use soundcraft_midi::{Note, Sequence};
++use soundcraft_model::{ChannelFormat, Clip, Insert, Session, SourceAudio, SourceId, TrackKind};
++use soundcraft_time::Range;
++use std::sync::Arc;
++
++// Render a known short PCM burst through the production sampler and mixer. Detect each
++// leading edge directly in the rendered signal, including double triggers or missing notes.
++fn render_onsets(grid: TempoMap, ticks: impl Iterator<Item = i64>, range: Range, rate: u32) -> Vec<i64> {
++    let pcm = render_stem(grid, ticks, range, rate);
++    edges(&pcm, range.start).into_iter().map(|hit| hit.0).collect()
++}
++fn render_stem(grid: TempoMap, ticks: impl Iterator<Item = i64>, range: Range, rate: u32) -> Vec<f32> {
++    let mut song = Session::default();
++    song.tempo = grid;
++    song.sample_rate = SampleRate::new(rate).unwrap();
++    let source = SourceId(200);
++    song.pool.insert(source, Arc::new(SourceAudio::new(craft_audio::AudioBuffer { sample_rate: rate, channels: vec![vec![0.8; 96]] })));
++    let id = song.add_track(TrackKind::Instrument, ChannelFormat::Stereo, None);
++    let clip_id = song.new_clip_id();
++    let tr = song.track_mut(id).unwrap();
++    let mut inst = Insert::new("sampler");
++    inst.sample = Some(source);
++    inst.params.insert("root_note".into(), 60.);
++    inst.params.insert("attack".into(), 0.);
++    tr.instrument = Some(inst);
++    let mut seq = Sequence::default();
++    for tick in ticks {
++        seq.notes.push(Note { start: tick, length: 80, pitch: 60, channel: 0, velocity: 110, release_velocity: 64 });
++    }
++    tr.playlist_mut().unwrap().clips.push(Clip::midi(clip_id, "hats", 0, range.end + i64::from(rate), seq));
++    soundcraft_mix::render_range(&song, range, 512).remove(0)
++}
++fn edges(pcm: &[f32], start: i64) -> Vec<(i64, i64)> {
++    let mut attack = 0;
++    let mut previous = false;
++    let mut hits = Vec::new();
++    for (i, &v) in pcm.iter().enumerate() {
++        let sounding = v.abs() > 0.001;
++        if sounding && !previous {
++            attack = start + i as i64;
++        } else if !sounding && previous {
++            hits.push((attack, start + i as i64));
++        }
++        previous = sounding;
++    }
++    hits
++}
++struct Run {
++    rate: u32,
++    grid: TempoMap,
++    expected: Vec<i64>,
++    max_change: f64,
++    settled_change: f64,
++    false_steps: usize,
++    state: State,
++    at_loss: Option<State>,
++    stop_sample: Option<i64>,
++}
++fn run(intervals: &[f64], jitter: i64, skipped: Option<std::ops::Range<usize>>, shift_us: f64, coast: bool, rate: u32) -> Run {
++    let feed_owner = MidiInputs::with_port_names(vec![], vec!["DJ".into()]);
++    let feed = feed_owner.feed();
++    let id = feed.ports().assign("DJ");
++    feed.set_clock_follow(Some(id), coast, 0, false);
++    let sr = SampleRate::new(rate).unwrap();
++    let mut grid = TempoMap::new(intervals[0], 4, 4).unwrap();
++    let mut expected = Vec::new();
++    let mut us = 20_000.;
++    let origin = us as i64;
++    let mut actions = Vec::new();
++    let mut previous = None;
++    let mut max_change = 0f64;
++    let mut settled_change = 0f64;
++    let mut recovering = false;
++    let mut false_steps = 0;
++    let mut seed = 42_u64;
++    let mut state = State::Waiting;
++    let mut at_loss = None;
++    let mut stop_sample = None;
++    feed.set_clock(origin);
++    feed.receive(id, &[0xfa]);
++    for (i, &bpm) in intervals.iter().enumerate() {
++        if i > 0 {
++            us += 2_500_000. / intervals[i - 1];
++        }
++        if skipped.as_ref().is_some_and(|r| i == r.end) {
++            us += shift_us;
++        }
++        if i % 12 == 0 {
++            expected.push(sr.samples((us - origin as f64) / 1e6));
++        }
++        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
++        let noise = if i == 0 { 0 } else { ((seed >> 32) % (2 * jitter + 1) as u64) as i64 - jitter };
++        let at = us.round() as i64 + noise;
++        feed.set_clock(at);
++        let missing = skipped.as_ref().is_some_and(|r| r.contains(&i));
++        if !missing {
++            feed.receive(id, &[0xf8]);
++        }
++        let s = feed.clock_follow_status(&mut actions);
++        for a in actions.drain(..) {
++            if matches!(a, Action::Stop) {
++                stop_sample = Some(sr.samples((at - origin) as f64 / 1e6));
++            }
++        }
++        state = s.state;
++        if missing {
++            at_loss = Some(state);
++        }
++        if s.recovering_tempo_step && !recovering {
++            false_steps += 1;
++        }
++        recovering = s.recovering_tempo_step;
++        if let Some(b) = s.bpm {
++            if let Some(p) = previous
++                && i >= 2
++            {
++                let change = f64::abs(b - p);
++                max_change = max_change.max(change);
++                if i >= 24 {
++                    settled_change = settled_change.max(change);
++                }
++            }
++            previous = Some(b);
++        }
++        update_grid(&mut grid, Some((0, origin)), 0, s, sr, sr.samples((at - origin) as f64 / 1e6 + 0.030));
++        let _ = bpm;
++    }
++    Run { rate, grid, expected, max_change, settled_change, false_steps, state, at_loss, stop_sample }
++}
++fn errors(r: &Run) -> Vec<f64> {
++    let end = r.expected.last().unwrap() + 24_000;
++    let hits = render_onsets(r.grid.clone(), (0..r.expected.len()).map(|i| i as i64 * 480), Range::new(0, r.stop_sample.unwrap_or(end)), r.rate);
++    if r.stop_sample.is_none() && r.at_loss.is_none() {
++        assert_eq!(hits.len(), r.expected.len(), "unexpected number of rendered attacks");
++    }
++    hits.iter().zip(&r.expected).map(|(a, b)| (a - b) as f64 * 1000. / f64::from(r.rate)).collect()
++}
++
++#[test]
++fn scenario_a1_pitch_fader_rendered_hats() {
++    let mut meets = true;
++    for (bars, delta) in [(16, 0.3), (32, 124. * 0.08), (32, -124. * 0.08)] {
++        let n = bars * 96;
++        let tempos: Vec<_> = (0..=2 * n).map(|i| 124. + delta * (1. - ((i as f64 / n as f64) - 1.).abs())).collect();
++        for jitter in [0, 1000, 2000] {
++            let r = run(&tempos, jitter, None, 0., true, 48000);
++            let e = errors(&r);
++            let peak = e.iter().fold(0f64, |a, b| a.max(b.abs()));
++            eprintln!(
++                "A1 bars={bars} delta={delta:.2} jitter_us={jitter} hats={} max_ms={peak:.3} bpm_change={:.3} bpm_change_after_beat1={:.3} recoveries={}",
++                e.len(),
++                r.max_change,
++                r.settled_change,
++                r.false_steps
++            );
++            meets &= peak <= 4. && r.max_change <= 0.1 && r.false_steps == 0;
++        }
++    }
++    assert!(meets, "A1 proposed performance target");
++}
++#[test]
++fn scenario_a2_drop_rendered_eighth_notes() {
++    let mut meets = true;
++    for (a, b) in [(128., 140.), (140., 128.)] {
++        for transition in [384, 396] {
++            for rate in [44_100, 48_000, 96_000, 192_000] {
++                let tempos: Vec<_> = (0..transition + 216).map(|p| if p < transition { a } else { b }).collect();
++                let r = run(&tempos, 0, None, 0., true, rate);
++                let all = errors(&r);
++                let first = transition / 12;
++                let e = &all[first..first + 17];
++                eprintln!("A2 {a}->{b} pulse={transition} rate={rate} rendered_ms={e:.3?}");
++                meets &= e[1].abs() <= 10. && e[2..].iter().all(|x| x.abs() <= 4.);
++            }
++        }
++    }
++    assert!(meets, "A2 proposed performance target");
++}
++#[test]
++fn scenario_a3_resume_pulses_without_start() {
++    let mut coast_ok = false;
++    for coast in [false, true] {
++        let mut tempos = vec![120.; 384];
++        tempos.resize(780, 128.);
++        let r = run(&tempos, 0, Some(384..398), 26_562.5, coast, 48000);
++        let e = errors(&r);
++        let tail = e.last().unwrap();
++        eprintln!(
++            "A3 coast={coast} gap_us=300000 state_at_loss={:?} final={:?} hats={} master_hats={} tail_ms={tail:.3} stop_sample={:?}",
++            r.at_loss,
++            r.state,
++            e.len(),
++            r.expected.len(),
++            r.stop_sample
++        );
++        if coast {
++            coast_ok = r.state == State::Locked && tail.abs() <= 4.;
++        } else {
++            assert_eq!(r.state, State::Stopped);
++        }
++    }
++    assert!(coast_ok, "A3 coast did not re-lock at the changed phase without a transport Start");
++}
++#[test]
++fn scenario_d2_local_loop_is_ignored_under_external_positioning() {
++    let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
++    app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DJ".into()]));
++    let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
++    let id = feed.ports().assign("DJ");
++    app.run("setup.midi_clock_follow", json!({"enabled":true,"input":"DJ"})).unwrap();
++    for spp in [6, 20] {
++        app.run("edit.select", json!({"start":24000,"end":60000})).unwrap();
++        app.run("options.loop_playback", json!({"value":true})).unwrap();
++        feed.receive(id, &[0xf2, spp, 0]);
++        app.service_clock_follow();
++        app.handle_transport(0.);
++        let origin = app.position();
++        feed.receive(id, &[0xfb, 0xf8]);
++        app.service_clock_follow();
++        app.handle_transport(0.);
++        assert!(app.is_playing());
++        assert!(app.play_loop.is_none());
++        assert!(app.engine.session().edit.loop_playback);
++        assert_eq!(origin, i64::from(spp) * 6000);
++        eprintln!("D2 SPP={spp} origin_samples={origin} local_option=true active_loop={:?}", app.play_loop);
++        feed.receive(id, &[0xfc]);
++        app.service_clock_follow();
++        app.handle_transport(0.);
++    }
++}
++#[test]
++#[ignore = "six-hour seeded DJ set"]
++fn scenario_a6_six_hours_of_seeded_steps() {
++    let src = MidiInputs::with_port_names(vec![], vec!["DJ".into()]);
++    let feed = src.feed();
++    let id = feed.ports().assign("DJ");
++    feed.set_clock_follow(Some(id), true, 0, false);
++    let mut grid = TempoMap::new(120., 4, 4).unwrap();
++    let sr = SampleRate::new(48000).unwrap();
++    let mut actions = Vec::new();
++    let mut bpm = 120.;
++    let mut us = 0f64;
++    let mut seed = 41_u64;
++    let mut next = 180_000_000.;
++    let mut changes = 0;
++    let mut events = 0;
++    let mut peakq = 0;
++    let mut retained = [0usize; 6];
++    let mut peak = [0.0_f64; 6];
++    let mut audible_probes = [(0_i64, 0_i64); 6];
++    let mut previous = 0.;
++    feed.set_clock(0);
++    feed.receive(id, &[0xfa]);
++    let mut p = 0;
++    while us < 21_600_000_000. {
++        seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
++        let at = if p == 0 { 0 } else { us.round() as i64 + ((seed >> 32) % 2001) as i64 - 1000 };
++        feed.set_clock(at);
++        feed.receive(id, &[0xf8]);
++        if p % 6 == 0 {
++            let s = feed.clock_follow_status(&mut actions);
++            peakq = peakq.max(actions.len());
++            actions.clear();
++            update_grid(&mut grid, Some((0, 0)), 0, s, sr, sr.samples(at as f64 / 1e6 + 0.030));
++            events = events.max(grid.tempos().len());
++            if us - previous > 5e6 {
++                let hour = (us / 3_600_000_000.) as usize;
++                retained[hour] = events;
++                if p % 24 == 0 {
++                    audible_probes[hour] = (p * TICKS_PER_PULSE, sr.samples(us / 1e6));
++                }
++                peak[hour] = peak[hour].max(grid.tick_to_samples(p * TICKS_PER_PULSE, sr).abs_diff(sr.samples(us / 1e6)) as f64 / 48.);
++            }
++        }
++        if us >= next {
++            previous = us;
++            bpm = 120. + ((seed >> 35) % 31) as f64;
++            next = us + (180. + ((seed >> 32) % 301) as f64) * 1e6;
++            changes += 1;
++        }
++        p += 1;
++        us += 2_500_000. / bpm;
++    }
++    let mut audible_ms = Vec::new();
++    for (tick, expected) in audible_probes {
++        let actual = render_onsets(grid.clone(), std::iter::once(tick), Range::new(expected - 8000, expected + 8000), 48000);
++        assert_eq!(actual.len(), 1);
++        audible_ms.push((actual[0] - expected) as f64 / 48.);
++    }
++    let bytes = events * size_of_val(&grid.tempos()[0]);
++    eprintln!(
++        "A6 pulses={p} changes={changes} grid_events={events} grid_event_payload_bytes={bytes} drained_queue_peak={peakq} grid_events_per_hour={retained:?} settled_peak_by_hour_ms={peak:.3?} rendered_hour_end_ms={audible_ms:.3?}"
++    );
++    assert!(peak.iter().all(|x| *x < 10.), "settled phase exceeded 10 ms");
++}
++
++#[test]
++fn scenario_edm_eighty_one_thirty_eighty_rendered() {
++    // A single 24-bar arrangement, one continuous Clock run, all stems on its tempo grid.
++    let mut tempos = vec![80.; 768];
++    tempos.extend(std::iter::repeat_n(130., 768));
++    tempos.extend(std::iter::repeat_n(80., 769));
++    let r = run(&tempos, 0, None, 0., true, 48000);
++    let range = Range::new(0, r.expected[192] + 48000);
++    let mut mixed = vec![0f32; range.len() as usize];
++    let mut last_release = 0;
++    let mut settled = true;
++    // Hats on eighths, kick on beats one and three, snare on beats two and four.
++    for (name, first, stride) in [("hat", 0, 1), ("kick", 0, 4), ("snare", 2, 4)] {
++        let indices: Vec<_> = (first..192).step_by(stride).collect();
++        let pcm = render_stem(r.grid.clone(), indices.iter().map(|&i| i as i64 * 480), range, 48000);
++        for (out, x) in mixed.iter_mut().zip(&pcm) {
++            *out += x / 3.;
++        }
++        let hits = edges(&pcm, range.start);
++        assert_eq!(hits.len(), indices.len(), "{name} count");
++        let last = hits.last().unwrap();
++        last_release = last_release.max(last.1);
++        for (section, chunk) in hits.chunks(64 / stride).enumerate() {
++            let ix = section * (64 / stride);
++            let err: Vec<_> = chunk.iter().zip(&indices[ix..]).map(|(hit, i)| (hit.0 - r.expected[*i]) as f64 / 48.).collect();
++            eprintln!(
++                "EDM section={} bpm={} stem={name} count={} first_ms={:.3} peak_abs_ms={:.3} final_ms={:.3}",
++                section + 1,
++                [80, 130, 80][section],
++                err.len(),
++                err[0],
++                err.iter().map(|x| x.abs()).fold(0f64, f64::max),
++                err.last().unwrap()
++            );
++            settled &= err.last().unwrap().abs() <= 4.;
++        }
++        eprintln!("EDM {name} final_attack_sample={} final_release_sample={} final_burst_samples={}", last.0, last.1, last.1 - last.0);
++    }
++    let mix = edges(&mixed, range.start);
++    assert_eq!(mix.len(), 192);
++    let end = r.expected[192];
++    assert!(last_release < end && mixed[end as usize..].iter().all(|v| v.abs() < 0.001));
++    eprintln!(
++        "EDM total_hats=192 total_kicks=48 total_snares=48 mixed_onsets={} song_end_sample={} final_attack_sample={} final_release_sample={last_release} silent_tail_checked_ms=1000",
++        mix.len(),
++        end,
++        mix.last().unwrap().0
++    );
++    assert!(settled, "all stems should settle to within 4 ms by each section's final hit");
++}
+diff --git a/crates/ui-egui/src/app/clock_follow/tests/scenario_studio.rs b/crates/ui-egui/src/app/clock_follow/tests/scenario_studio.rs
+new file mode 100644
+index 0000000..213da18
+--- /dev/null
++++ b/crates/ui-egui/src/app/clock_follow/tests/scenario_studio.rs
+@@ -0,0 +1,129 @@
++use super::*;
++use soundcraft_model::{Insert, Session, SourceAudio, SourceId, TrackKind};
++use soundcraft_time::Range;
++use std::path::PathBuf;
++use std::sync::Arc;
++
++struct Scratch(PathBuf);
++impl Scratch {
++    fn new() -> Self {
++        let path = std::env::temp_dir().join(format!("g11-studio-{}-{}", std::process::id(), std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
++        std::fs::create_dir(&path).unwrap();
++        Self(path)
++    }
++}
++impl Drop for Scratch { fn drop(&mut self) { let _ = std::fs::remove_dir_all(&self.0); } }
++
++struct Take { app: SoundApp, audio: TrackId, midi: TrackId, start: i64, length:i64, _dir: Scratch }
++fn take(offset: i64, changing: bool) -> Take {
++    let mut app = SoundApp::new(Default::default(),None,crate::Services::default());
++    let dir = Scratch::new();
++    let path = dir.0.join("Scenario.scraft");
++    app.run("session.save_as",json!({"path":path})).unwrap();
++    let audio = armed(&mut app,"audio");
++    let midi = armed(&mut app,"midi");
++    let (rec,mut capture) = Recorder::simulated_input();
++    app.recorder=Some(rec);
++    app.midi_inputs=Some(MidiInputs::with_port_names(vec![],vec!["DIN".into(),"Keys".into()]));
++    app.run("setup.midi_clock_follow",json!({"enabled":true,"input":"DIN","input_offset_samples":offset})).unwrap();
++    let feed=app.midi_inputs.as_ref().unwrap().feed().clone(); let port=feed.ports().assign("DIN"); let keys=feed.ports().assign("Keys");
++    let mut us=0;
++    for _ in 0..24 {feed.set_clock(us);feed.receive(port,&[0xf8]);us+=25000;}
++    feed.set_clock(us);feed.receive(port,&[0xf2,16,0]);app.service_clock_follow();app.handle_transport(0.);
++    feed.receive(port,&[0xfb,0xf8]);app.service_clock_follow();app.handle_transport(0.);
++    app.run("transport.record",json!({})).unwrap();app.handle_transport(0.);
++    let start=app.take_plan.as_ref().unwrap().start;
++    let mut len=0;
++    // The full take fits in the simulated input ring even if the writer thread has not run.
++    for pulse in 0..36 {
++        let frames=if changing && pulse>=18 {1000} else {1200};
++        let mut block=vec![0.;frames];
++        if [3,9,15,21,27,33].contains(&pulse) {block[0]=0.8;play_note(&mut app,keys,60);}
++        capture(&block);app.handle_transport(frames as f32/48000.);
++        len+=frames as i64;
++        us=600000+len*1000000/48000;feed.set_clock(us);feed.receive(port,&[0xf8]);app.service_clock_follow();
++    }
++    feed.receive(port,&[0xfc]);app.service_clock_follow();app.handle_transport(0.);
++    app.run("setup.midi_clock_follow",json!({"enabled":false})).unwrap();
++    app.run("session.save",json!({})).unwrap();
++    app.run("session.open",json!({"path":path})).unwrap();
++    Take{app,audio,midi,start,length:len,_dir:dir}
++}
++
++// Render one stem at a time. Give recorded MIDI notes a one-sample click instrument
++// for the measurement. Leave the recorded sequences, times and edited clips untouched.
++fn attacks(t:&Take,id:TrackId,end:i64)->Vec<i64>{
++    let mut s:Session=t.app.engine.session().clone();
++    s.tracks.retain(|tr| tr.id==id);
++    if id==t.midi {
++        let src=SourceId(30000);
++        let mut click=vec![0.;256]; click[0]=1.;
++        s.pool.insert(src,Arc::new(SourceAudio::new(craft_audio::AudioBuffer{sample_rate:48000,channels:vec![click]})));
++        let tr=s.track_mut(id).unwrap();
++        tr.kind=TrackKind::Instrument;
++        let mut ins=Insert::new("sampler"); ins.sample=Some(src); ins.params.insert("attack".into(),0.);ins.params.insert("root_note".into(),60.);
++        tr.instrument=Some(ins);
++    }
++    let y=soundcraft_mix::render_range(&s,Range::new(0,end),128);
++    y[0].iter().enumerate().filter(|(i,v)| v.abs()>1e-7 && (*i==0 || y[0][*i-1].abs()<=1e-7)).map(|(i,_)|i as i64).collect()
++}
++fn measure(t:&Take,stage:&str,end:i64,expected:usize)->bool{
++    let a=attacks(t,t.audio,end); let m=attacks(t,t.midi,end);
++    let delta:Vec<_>=a.iter().zip(&m).map(|(a,m)|m-a).collect();
++    eprintln!("STUDIO {stage} audio={a:?} midi={m:?} diff={delta:?}");
++    a.len()==expected && m.len()==expected && delta.iter().all(|v|v.abs()<=1)
++}
++#[test]
++fn scenario_b6_record_tempo_change_and_reopen(){
++    let t=take(0,true);
++    assert!(measure(&t,"B6",t.start+t.length,6));
++}
++#[test]
++fn scenario_d6_calibrated_recording_position(){
++    let mut starts=Vec::new();
++    for offset in [-12000,0,12000] {
++        let t=take(offset,false);
++        let a=attacks(&t,t.audio,t.start+t.length);
++        let m=attacks(&t,t.midi,t.start+t.length);
++        eprintln!("STUDIO D6 offset={offset} start={} a={a:?} m={m:?}",t.start);
++        assert_eq!(a.len(),6);assert_eq!(m.len(),6);
++        starts.push((a[0],m[0]));
++    }
++    assert_eq!((starts[0].0-starts[1].0,starts[0].1-starts[1].1),(12000,12000));
++    assert_eq!((starts[2].0-starts[1].0,starts[2].1-starts[1].1),(-12000,-12000));
++}
++#[test]
++fn scenario_d1_reopened_recording_survives_edits(){
++    let mut t=take(0,false);let start=t.start;let len=t.length;let end=start+len;let ids=[t.audio.0,t.midi.0];
++    let mut all=measure(&t,"reopen",end,6);
++    for (op,args,stage,until,n) in [
++       ("edit.separate",json!({"tracks":ids,"at":start+len/2}),"split",end,6),
++       ("edit.heal",json!({"tracks":ids,"start":start,"end":end}),"heal",end,6),
++       ("edit.copy",json!({"tracks":ids,"start":start,"end":end}),"copy",end,6),
++       ("edit.paste",json!({"tracks":ids,"at":end}),"paste",end+len,12),
++       ("edit.consolidate",json!({"tracks":ids,"start":start,"end":end+len}),"consolidate",end+len,12),
++    ] {
++        let result=t.app.run(op,args); eprintln!("STUDIO D1 {op} {result:?}");
++        all &= result.is_ok() && measure(&t,stage,until,n);
++    }
++    for id in [t.audio,t.midi] {
++        let cs=t.app.engine.session().track(id).unwrap().clips();
++        if cs.len()!=1 {eprintln!("STUDIO loop track has {} clips",cs.len());all=false;}
++        if let Some(c)=cs.first() {let result=t.app.run("clip.loop",json!({"clip":c.id.0,"count":2}));eprintln!("STUDIO loop {result:?}");all &=result.is_ok();}
++    }
++    all &= measure(&t,"loop",start+4*len,24);assert!(all);
++}
++
++#[test]
++fn scenario_c8_follow_offset_across_sample_rates() {
++    let mut host = SoundApp::new(Default::default(),None,crate::Services::default());
++    host.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
++    host.run("setup.midi_clock_follow", json!({"input":"DIN","input_offset_samples":4800})).unwrap();
++    for rate in [44100,48000,96000,192000] {
++        host.engine.session_mut().sample_rate = soundcraft_time::SampleRate::new(rate).unwrap();
++        let res = host.run("setup.midi_clock_follow", json!({})).unwrap();
++        let samples = res["input_offset_samples"].as_i64().unwrap();
++        eprintln!("C8 follow rate={rate} stored={samples} ms={:.3}",samples as f64*1000./rate as f64);
++        assert_eq!(samples,4800);
++    }
++}

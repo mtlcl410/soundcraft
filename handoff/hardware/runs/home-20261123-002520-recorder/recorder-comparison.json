@@ -1,0 +1,68 @@
+[
+  {
+    "roll": 1,
+    "qf": 8448,
+    "prior_full_frames": [],
+    "first_label": 2,
+    "first_output_ms": -13.1364,
+    "first_return_ms": 6.9881,
+    "first_two_samples": 24000,
+    "last_label": 2112,
+    "scheduled": 141,
+    "missing_output": [],
+    "missing_return": [],
+    "relocations": 0,
+    "max_callback_ms": 6.333,
+    "output_total_attacks": 141,
+    "output_unmatched_attacks": [],
+    "output_partial": 0
+  },
+  {
+    "roll": 2,
+    "qf": 8496,
+    "prior_full_frames": [
+      "f07f7f010160000000f7"
+    ],
+    "first_label": 2,
+    "first_output_ms": 197.454,
+    "first_return_ms": 217.4686,
+    "first_two_samples": 24000,
+    "last_label": 2124,
+    "scheduled": 142,
+    "missing_output": [
+      1.25
+    ],
+    "missing_return": [
+      1.25
+    ],
+    "relocations": 1,
+    "max_callback_ms": 6.2833,
+    "output_total_attacks": 141,
+    "output_unmatched_attacks": [],
+    "output_partial": 0
+  },
+  {
+    "roll": 3,
+    "qf": 8496,
+    "prior_full_frames": [
+      "f07f7f010160001e00f7"
+    ],
+    "first_label": 902,
+    "first_output_ms": 197.7634,
+    "first_return_ms": 218.8073,
+    "first_two_samples": 24000,
+    "last_label": 3024,
+    "scheduled": 142,
+    "missing_output": [
+      31.25
+    ],
+    "missing_return": [
+      31.25
+    ],
+    "relocations": 1,
+    "max_callback_ms": 6.2569,
+    "output_total_attacks": 141,
+    "output_unmatched_attacks": [],
+    "output_partial": 0
+  }
+]

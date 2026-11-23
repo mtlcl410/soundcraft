@@ -1,0 +1,61 @@
+From 10c72f7e9446387f45da460d15bb066a9f226a34 Mon Sep 17 00:00:00 2001
+From: mtlcl410 <2368091+mtlcl410@users.noreply.github.com>
+Date: Mon, 23 Nov 2026 06:21:40 +0800
+Subject: [PATCH 10/12] Join a live MTC group after missing multiple pieces at
+ startup
+
+---
+ crates/playback/src/mtc.rs       |  4 +++-
+ crates/playback/src/mtc/tests.rs | 21 +++++++++++++++++++++
+ 2 files changed, 24 insertions(+), 1 deletion(-)
+
+diff --git a/crates/playback/src/mtc.rs b/crates/playback/src/mtc.rs
+index 49ec5ac7..7ad884c0 100644
+--- a/crates/playback/src/mtc.rs
++++ b/crates/playback/src/mtc.rs
+@@ -96,7 +96,9 @@ impl SyncEncoder for Encoder {
+             // A worker normally wakes just after the requested first sample.
+             // A late attachment or remap well into the pass locates to the live frame.
+             let origin = block.origin as f64 + start;
+-            let recent_origin = !recovering && block.playing && (0. ..=0.1 * block.samples_per_second).contains(&(at - origin));
++            // When a worker first sees the roll several pieces late, locate to the
++            // live time and join the next complete quarter-frame group.
++            let recent_origin = !recovering && block.playing && (0. ..=quarter).contains(&(at - origin));
+             let first = if recent_origin { origin } else { at };
+             let frame = rate.frames_at(first.floor() as i64, sr);
+             let stamp = if recent_origin { block.instant_for(block.origin as f64) } else { now };
+diff --git a/crates/playback/src/mtc/tests.rs b/crates/playback/src/mtc/tests.rs
+index 9f8d0c80..f2f8a73d 100644
+--- a/crates/playback/src/mtc/tests.rs
++++ b/crates/playback/src/mtc/tests.rs
+@@ -40,6 +40,27 @@ fn block(at: Instant, position: i64, frames: i64, playing: bool, pass: u64) -> P
+     }
+ }
+ 
++#[test]
++fn slightly_late_first_presentation_never_bunches_quarter_frames() {
++    use crate::sync_clock::SyncEncoder;
++    let song = session(FrameRate::Fps30);
++    let first = Instant::now();
++    let mut b = block(first, 728, 48_000, true, 1);
++    b.origin = 0;
++    let mut mtc = Encoder::default();
++    let mut qfs = Vec::new();
++    for us in (0..=485_000).step_by(100) {
++        let now = first + Duration::from_micros(us);
++        mtc.update(b, now, &song, &mut |_, msg| {
++            if msg.first() == Some(&0xf1) {
++                qfs.push(us)
++            }
++        });
++    }
++    let min_qf = qfs.windows(2).map(|p| p[1] - p[0]).min().unwrap();
++    assert!(min_qf >= 8_100, "minimum QF spacing {min_qf} us");
++}
++
+ #[test]
+ fn all_six_rates_align_eight_wire_pieces_and_session_offset_to_presentation() {
+     for rate in [FrameRate::Fps23_976, FrameRate::Fps24, FrameRate::Fps25, FrameRate::Fps29_97, FrameRate::Fps29_97Drop, FrameRate::Fps30] {
+-- 
+2.55.0.windows.1
+

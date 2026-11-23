@@ -1,0 +1,1 @@
+Hardware and software verification for the G-11 stack is collected in one place, including the Model 12 signal paths, all eleven figures and the software PCM timing tables. [Measurement records on PR #1669](https://github.com/storytold/soundcraft/pull/1669#issuecomment-7072496268)

@@ -1,0 +1,37 @@
+{
+  "baseline": {
+    "samples": 375,
+    "median_gap_ms": 5.016,
+    "wire": 960,
+    "channels": {
+      "output1": {
+        "ms": -14.7804,
+        "epoch": "epoch-0",
+        "crossings": 22
+      },
+      "input9": {
+        "ms": 5.4779,
+        "epoch": "epoch-0",
+        "crossings": 22
+      }
+    }
+  },
+  "post-1": {
+    "samples": 8,
+    "median_gap_ms": 251.285,
+    "wire": 960,
+    "channels": {}
+  },
+  "post-2": {
+    "samples": 8,
+    "median_gap_ms": 251.356,
+    "wire": 960,
+    "channels": {}
+  },
+  "post-3": {
+    "samples": 8,
+    "median_gap_ms": 251.442,
+    "wire": 960,
+    "channels": {}
+  }
+}

@@ -1,0 +1,51 @@
+--- a/crates/playback/src/callback.rs
++++ b/crates/playback/src/callback.rs
+@@ -150,6 +150,10 @@
+ }
+ 
+ impl AudioState {
++    pub(crate) fn phase_probe_position(&self) -> Option<f64> {
++        self.playing.then_some(self.pos as f64 + self.read - self.pending_len as f64)
++    }
++
+     pub(crate) fn new(
+         rx: Receiver<Cmd>,
+         shared: Arc<Shared>,
+--- a/crates/playback/src/stream.rs
++++ b/crates/playback/src/stream.rs
+@@ -1,3 +1,6 @@
++mod phase_probe { include!("E:/soundcraft/compatibility-audit/g11-hardware/phase-probe-writer.rs");
++ pub(super) fn sender(p:std::path::PathBuf)->std::sync::mpsc::SyncSender<ProbeRecord>{probe_writer(p)}
++ pub(super) fn wall()->u64{utc_ns()} }
+ use super::callback::{AudioState, Fault, guarded_block};
+ use super::{Arc, AudioConfig, Cmd, Ordering, Plugin, Receiver, Sender, Shared, devices, mark_audio_thread};
+ 
+@@ -57,13 +60,27 @@
+     let mut scratch = vec![0.0f32; 8192 * frame];
+     let chunk = scratch.len();
+     let (failed, guard, gone) = (Arc::clone(fault), Arc::clone(shared), Arc::clone(fault));
++    let tx = std::env::var("SC_PHASE_PROBE").ok().map(|prefix|phase_probe::sender(format!("{}-{}.bin",prefix,phase_probe::wall()).into()));
++    let mut seq=0;
+     device.build_output_stream(
+         config,
+-        move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
++        move |data: &mut [T], info: &cpal::OutputCallbackInfo| {
++            let stamp=info.timestamp();
++            let wall=phase_probe::wall();
+             mark_audio_thread();
+             for out in data.chunks_mut(chunk) {
+                 let Some(s) = scratch.get_mut(..out.len()) else { return };
+                 guarded_block(&failed, &guard, s, |d| state.fill(d, channels));
++                if let (Some(tx), Some(end))=(&tx,state.phase_probe_position()) {
++                    // Diagnostic runs use the normal 480-frame device quantum.
++                    let n=s.len()/frame;
++                    let mut mono=[0.0f32;1024];
++                    if n<=mono.len() {
++                        for (x,v) in mono.iter_mut().zip(s.chunks_exact(frame)){*x=v.iter().sum::<f32>()/frame as f32;}
++                        let _=tx.try_send((stamp.callback.as_nanos() as u64,stamp.playback.as_nanos() as u64,wall,end,seq,n as u32,mono));
++                    }
++                    seq+=1;
++                }
+                 for (o, x) in out.iter_mut().zip(s.iter()) {
+                     *o = T::from_sample(*x);
+                 }

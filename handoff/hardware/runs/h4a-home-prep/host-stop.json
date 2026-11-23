@@ -1,0 +1,7 @@
+{
+  "time": "2026-11-22T23:59:53.7523118+08:00",
+  "source": "Microsoft-Windows-WER-SystemErrorReporting",
+  "id": 1001,
+  "stop": "0x0000010d (0x0000000000000005, 0x0000000000000000, 0x0000000000001203, 0xffff9401c35c5dd0)",
+  "dump": "C:\\WINDOWS\\Minidump\\112226-7640-01.dmp"
+}

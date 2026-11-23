@@ -1,0 +1,33 @@
+{
+  "complete_groups": 108002,
+  "first_address": 2,
+  "last_complete_address": 216004,
+  "non_two_frame_steps": 0,
+  "partial_groups_at_fc": [
+    {
+      "piece_indices": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "nibbles": [
+        6,
+        0,
+        0,
+        0,
+        0,
+        0,
+        2
+      ]
+    }
+  ],
+  "pieces_after_final_transport": 0,
+  "full_frame_addresses": [
+    0,
+    216007
+  ]
+}

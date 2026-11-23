@@ -1,0 +1,12 @@
+{
+  "training_seconds": 599.9997133,
+  "training_ppm": 38.96606378916978,
+  "held_out_seconds": 6000.0000277,
+  "observed_clock_excess": 12,
+  "observed_qf_excess": 29.0,
+  "prediction_extra_clock": 11.222226423090175,
+  "prediction_extra_qf": 28.055566057725436,
+  "clock_residual": 0.7777735769098246,
+  "qf_residual": 0.9444339422745642,
+  "device_excess_minus_prediction_ms": 0.4901426665219901
+}

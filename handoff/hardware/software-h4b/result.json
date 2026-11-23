@@ -1,0 +1,12 @@
+{
+  "head": "bab993121ab583b5916272907b1230e8a4f4bd91",
+  "observed_assertion": true,
+  "exit": 101,
+  "cases": 1,
+  "quarter_frames": 301,
+  "callback_count": 478,
+  "messages": [
+    "attacks us [477690, 977434, 1768022], relocates 1",
+    "test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 221 filtered out; finished in 0.01s"
+  ]
+}

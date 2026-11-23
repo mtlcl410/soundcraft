@@ -1,0 +1,6 @@
+[
+ "experiments/g11-hardware/chorus-direct-asio-buffers/smu-prewarm/fix.py",
+ "experiments/g11-hardware/chorus-direct-asio-buffers/smu-prewarm/instrument.py",
+ "experiments/g11-hardware/chorus-direct-asio-buffers/smu-prewarm/per-phase-diagnostics.patch",
+ "experiments/g11-hardware/chorus-direct-asio-buffers/smu-prewarm/s-mu2000-prewarm.patch"
+]

@@ -1,0 +1,22 @@
+--- a/crates/playback/src/tests.rs
++++ b/crates/playback/src/tests.rs
+@@ -257,6 +257,19 @@
+     assert!(!shared.playing.load(Ordering::Relaxed));
+     assert_eq!((fault.trouble(false), fault.trouble(false)), (Some(OutputTrouble::Bug), None));
+     assert_eq!(fault.beats.load(Ordering::Relaxed), 3);
++}
++
++#[test]
++fn sustained_slow_asio_callbacks_request_idle_recovery() {
++    // The existing watchdog only sees an advancing block count and transport state.
++    let gaps_us = [251415, 250779, 251056, 251436, 250864, 251117, 250825, 250922];
++    let mut seen = None;
++    let mut requested = false;
++    for (block, gap) in gaps_us.into_iter().enumerate() {
++        std::thread::sleep(std::time::Duration::from_micros(gap));
++        requested |= stalled(&mut seen, block as u64 + 1, false);
++    }
++    assert!(requested, "continuing quarter-second callbacks must request a rebuild when stopped");
+ }
+ 
+ #[test]

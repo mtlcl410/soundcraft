@@ -1,0 +1,10 @@
+{
+  "environment_valid": false,
+  "reasons": [
+    "Competing build, remote session or endpoint change during run",
+    "Measurement process exited 1",
+    "Environment changed",
+    "Missing actual driver settings: device-end.json"
+  ],
+  "command_exit": 1
+}

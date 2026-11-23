@@ -1,0 +1,110 @@
+{
+  "baseline": {
+    "callbacks": 1498,
+    "intervals": 1497,
+    "bins": [
+      0,
+      0,
+      1497,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "median_ms": 5.0117,
+    "min_ms": 4.7527,
+    "max_ms": 6.118,
+    "invalid_position": 0,
+    "position_jumps": 0,
+    "buffer_index_repeats": 0,
+    "qpc_ns": [
+      232661549611400,
+      232669541558500
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "post-1": {
+    "callbacks": 32,
+    "intervals": 31,
+    "bins": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      31,
+      0
+    ],
+    "median_ms": 250.9537,
+    "min_ms": 250.2889,
+    "max_ms": 251.6637,
+    "invalid_position": 0,
+    "position_jumps": 0,
+    "buffer_index_repeats": 0,
+    "qpc_ns": [
+      232874717354400,
+      232882709117000
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "post-2": {
+    "callbacks": 32,
+    "intervals": 31,
+    "bins": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      31,
+      0
+    ],
+    "median_ms": 251.1366,
+    "min_ms": 250.3183,
+    "max_ms": 252.2387,
+    "invalid_position": 0,
+    "position_jumps": 0,
+    "buffer_index_repeats": 0,
+    "qpc_ns": [
+      233027767458800,
+      233035759074400
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "post-3": {
+    "callbacks": 32,
+    "intervals": 31,
+    "bins": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      31,
+      0
+    ],
+    "median_ms": 251.0081,
+    "min_ms": 250.2754,
+    "max_ms": 251.8983,
+    "invalid_position": 0,
+    "position_jumps": 0,
+    "buffer_index_repeats": 0,
+    "qpc_ns": [
+      233110207930700,
+      233118199236200
+    ],
+    "qf": 960,
+    "wire_bound": true
+  }
+}

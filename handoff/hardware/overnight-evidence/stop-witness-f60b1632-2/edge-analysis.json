@@ -1,0 +1,41 @@
+{
+  "matched": 575,
+  "missing": 1,
+  "first_matched": 1,
+  "last_matched": 575,
+  "missing_inside_matched_span": 0,
+  "repeated_nearest_input": 1,
+  "equidistant": 0,
+  "outside_half_period": 0,
+  "outside_after_last": 0,
+  "median_matched_error_ms": 4.8747,
+  "reference": "120 BPM; independently nearest input within half a pulse. After long source gaps pulse identity is ambiguous.",
+  "first_clock_after_input_start_ms": 23.0544,
+  "last_clock_minus_input_stop_ms": -2.2228,
+  "first_qf_after_input_start_ms": 72.2505,
+  "last_qf_minus_input_stop_ms": 12.0271,
+  "first_qf_piece": 0,
+  "last_qf_piece": 7,
+  "qf_piece_discontinuities": 0,
+  "qf_qualification": "An entire eight-piece sequence may be missing without a piece-index discontinuity.",
+  "first_8_qf_intervals_ms": [
+    9.251,
+    7.6271,
+    8.7501,
+    7.7645,
+    8.7951,
+    7.772,
+    8.6632,
+    7.8739
+  ],
+  "first_8_clock_intervals_ms": [
+    20.1983,
+    20.4368,
+    19.9932,
+    20.1453,
+    19.5703,
+    20.6796,
+    20.5445,
+    19.2504
+  ]
+}

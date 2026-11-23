@@ -1,0 +1,508 @@
+{
+  "eligible": [
+    {
+      "path": "home-20261122-233258-din-30-forward",
+      "rate": "30",
+      "direction": "forward",
+      "environment_valid": true,
+      "passed": true,
+      "prior": {
+        "tx": {
+          "count": 10,
+          "median": 128.6555,
+          "spread": 5.105
+        },
+        "rx": {
+          "count": 10,
+          "median": 149.5319,
+          "spread": 5.0147
+        }
+      },
+      "current": {
+        "tx": {
+          "count": 10,
+          "median": 129.8019,
+          "spread": 2.0192
+        },
+        "rx": {
+          "count": 10,
+          "median": 150.7702,
+          "spread": 2.0038
+        }
+      },
+      "wire_equal": true,
+      "packet_differences": [],
+      "hard_relocates": 10,
+      "gap_bins": [
+        0,
+        1,
+        14971,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_callback_ms": 7.126,
+      "mean_callback_ms": 5.333
+    },
+    {
+      "path": "home-20261122-233258-din-30-reverse",
+      "rate": "30",
+      "direction": "reverse",
+      "environment_valid": true,
+      "passed": true,
+      "prior": {
+        "tx": {
+          "count": 10,
+          "median": 127.3313,
+          "spread": 5.2137
+        },
+        "rx": {
+          "count": 10,
+          "median": 147.7103,
+          "spread": 5.1054
+        }
+      },
+      "current": {
+        "tx": {
+          "count": 10,
+          "median": 129.7752,
+          "spread": 1.1509
+        },
+        "rx": {
+          "count": 10,
+          "median": 150.2176,
+          "spread": 1.5153
+        }
+      },
+      "wire_equal": true,
+      "packet_differences": [],
+      "hard_relocates": 10,
+      "gap_bins": [
+        0,
+        0,
+        14975,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_callback_ms": 6.3203,
+      "mean_callback_ms": 5.3331
+    },
+    {
+      "path": "home-20261122-234047-din-24-forward",
+      "rate": "24",
+      "direction": "forward",
+      "environment_valid": true,
+      "passed": true,
+      "prior": {
+        "tx": {
+          "count": 10,
+          "median": 158.8759,
+          "spread": 4.246
+        },
+        "rx": {
+          "count": 10,
+          "median": 179.6135,
+          "spread": 3.2931
+        }
+      },
+      "current": {
+        "tx": {
+          "count": 10,
+          "median": 161.2299,
+          "spread": 1.3567
+        },
+        "rx": {
+          "count": 10,
+          "median": 181.5562,
+          "spread": 1.3106
+        }
+      },
+      "wire_equal": true,
+      "packet_differences": [],
+      "hard_relocates": 10,
+      "gap_bins": [
+        0,
+        2,
+        14968,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_callback_ms": 7.2282,
+      "mean_callback_ms": 5.3331
+    },
+    {
+      "path": "home-20261122-234238-din-24-reverse",
+      "rate": "24",
+      "direction": "reverse",
+      "environment_valid": true,
+      "passed": true,
+      "prior": {
+        "tx": {
+          "count": 10,
+          "median": 158.4731,
+          "spread": 5.0079
+        },
+        "rx": {
+          "count": 10,
+          "median": 179.3184,
+          "spread": 4.9518
+        }
+      },
+      "current": {
+        "tx": {
+          "count": 10,
+          "median": 161.1261,
+          "spread": 2.0162
+        },
+        "rx": {
+          "count": 10,
+          "median": 181.6936,
+          "spread": 1.0671
+        }
+      },
+      "wire_equal": true,
+      "packet_differences": [],
+      "hard_relocates": 10,
+      "gap_bins": [
+        0,
+        0,
+        14973,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_callback_ms": 6.3816,
+      "mean_callback_ms": 5.333
+    },
+    {
+      "path": "home-20261122-234811-din-25-forward",
+      "rate": "25",
+      "direction": "forward",
+      "environment_valid": true,
+      "passed": true,
+      "prior": {
+        "tx": {
+          "count": 10,
+          "median": 151.9076,
+          "spread": 3.2532
+        },
+        "rx": {
+          "count": 10,
+          "median": 172.212,
+          "spread": 4.3021
+        }
+      },
+      "current": {
+        "tx": {
+          "count": 10,
+          "median": 155.1882,
+          "spread": 1.1303
+        },
+        "rx": {
+          "count": 10,
+          "median": 175.5815,
+          "spread": 0.2921
+        }
+      },
+      "wire_equal": true,
+      "packet_differences": [],
+      "hard_relocates": 10,
+      "gap_bins": [
+        0,
+        0,
+        14972,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_callback_ms": 6.1742,
+      "mean_callback_ms": 5.3331
+    },
+    {
+      "path": "home-20261122-235002-din-25-reverse",
+      "rate": "25",
+      "direction": "reverse",
+      "environment_valid": true,
+      "passed": true,
+      "prior": {
+        "tx": {
+          "count": 10,
+          "median": 153.2921,
+          "spread": 4.9916
+        },
+        "rx": {
+          "count": 10,
+          "median": 174.0452,
+          "spread": 3.974
+        }
+      },
+      "current": {
+        "tx": {
+          "count": 10,
+          "median": 154.8171,
+          "spread": 2.0057
+        },
+        "rx": {
+          "count": 10,
+          "median": 175.0998,
+          "spread": 2.0173
+        }
+      },
+      "wire_equal": true,
+      "packet_differences": [],
+      "hard_relocates": 10,
+      "gap_bins": [
+        0,
+        0,
+        14971,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_callback_ms": 6.1171,
+      "mean_callback_ms": 5.3332
+    },
+    {
+      "path": "home-20261122-235153-din-29.97df-forward",
+      "rate": "29.97df",
+      "direction": "forward",
+      "environment_valid": true,
+      "passed": true,
+      "prior": {
+        "tx": {
+          "count": 10,
+          "median": 128.5115,
+          "spread": 4.1654
+        },
+        "rx": {
+          "count": 10,
+          "median": 148.8462,
+          "spread": 4.2855
+        }
+      },
+      "current": {
+        "tx": {
+          "count": 10,
+          "median": 129.8053,
+          "spread": 1.7108
+        },
+        "rx": {
+          "count": 10,
+          "median": 150.3639,
+          "spread": 1.1927
+        }
+      },
+      "wire_equal": true,
+      "packet_differences": [],
+      "hard_relocates": 10,
+      "gap_bins": [
+        0,
+        0,
+        14990,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_callback_ms": 6.3468,
+      "mean_callback_ms": 5.3331
+    },
+    {
+      "path": "home-20261122-235345-din-29.97df-reverse",
+      "rate": "29.97df",
+      "direction": "reverse",
+      "environment_valid": true,
+      "passed": true,
+      "prior": {
+        "tx": {
+          "count": 10,
+          "median": 127.4605,
+          "spread": 4.9464
+        },
+        "rx": {
+          "count": 10,
+          "median": 147.7908,
+          "spread": 4.1264
+        }
+      },
+      "current": {
+        "tx": {
+          "count": 10,
+          "median": 130.2118,
+          "spread": 1.5842
+        },
+        "rx": {
+          "count": 10,
+          "median": 150.6754,
+          "spread": 1.2241
+        }
+      },
+      "wire_equal": true,
+      "packet_differences": [],
+      "hard_relocates": 10,
+      "gap_bins": [
+        0,
+        0,
+        14989,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_callback_ms": 6.2754,
+      "mean_callback_ms": 5.3332
+    },
+    {
+      "path": "home-20261123-003704-din-29.97nd-forward",
+      "rate": "29.97nd",
+      "direction": "forward",
+      "environment_valid": true,
+      "passed": true,
+      "prior": {
+        "tx": {
+          "count": 10,
+          "median": 127.6347,
+          "spread": 4.9675
+        },
+        "rx": {
+          "count": 10,
+          "median": 148.4749,
+          "spread": 5.8574
+        }
+      },
+      "current": {
+        "tx": {
+          "count": 10,
+          "median": 130.2759,
+          "spread": 1.23
+        },
+        "rx": {
+          "count": 10,
+          "median": 150.6259,
+          "spread": 1.0402
+        }
+      },
+      "wire_equal": true,
+      "packet_differences": [],
+      "hard_relocates": 10,
+      "gap_bins": [
+        0,
+        0,
+        14991,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_callback_ms": 6.2133,
+      "mean_callback_ms": 5.3332
+    },
+    {
+      "path": "home-20261123-003853-din-29.97nd-reverse",
+      "rate": "29.97nd",
+      "direction": "reverse",
+      "environment_valid": true,
+      "passed": true,
+      "prior": {
+        "tx": {
+          "count": 10,
+          "median": 127.6548,
+          "spread": 4.9309
+        },
+        "rx": {
+          "count": 10,
+          "median": 148.4674,
+          "spread": 4.8388
+        }
+      },
+      "current": {
+        "tx": {
+          "count": 10,
+          "median": 129.8147,
+          "spread": 1.3475
+        },
+        "rx": {
+          "count": 10,
+          "median": 150.526,
+          "spread": 1.0961
+        }
+      },
+      "wire_equal": true,
+      "packet_differences": [],
+      "hard_relocates": 10,
+      "gap_bins": [
+        0,
+        0,
+        14992,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "max_callback_ms": 6.245,
+      "mean_callback_ms": 5.333
+    }
+  ],
+  "excluded": [
+    [
+      "home-20261122-233258-din-24-forward",
+      "[{\"tag\": \"take-4:locate-frame-48\", \"sent\": \"f07f7f010100000200f7\", \"received\": \"f07f7f01010000020000f7\"}]\uff1b\u56de\u9001\u6975\u5dee 177.9154 ms"
+    ],
+    [
+      "home-20261122-233258-din-24-reverse",
+      "Busy system during run (77.1%)\uff1b\u56de\u9001\u6975\u5dee 0.3846 ms"
+    ],
+    [
+      "home-20261122-234429-din-25-forward",
+      "[{\"tag\": \"take-10:stopped-frame-250\", \"sent\": \"f07f7f010120000a00f7\", \"received\": \"f07f7f00010120000a00f7\"}]\uff1b\u56de\u9001\u6975\u5dee 1.1078 ms"
+    ],
+    [
+      "home-20261122-234620-din-25-forward",
+      "[{\"tag\": \"take-8:locate-frame-50\", \"sent\": \"f07f7f010120000200f7\", \"received\": \"f07f7f01012000020000f7\"}]\uff1b\u56de\u9001\u6975\u5dee 170.9904 ms"
+    ],
+    [
+      "home-20261122-235535-din-29.97nd-forward",
+      "[{\"tag\": \"take-10:stopped-frame-300\", \"sent\": \"f07f7f010160000a00f7\", \"received\": \"f07f7f00010160000a00f7\"}]\uff1b\u56de\u9001\u6975\u5dee 6.3261 ms"
+    ],
+    [
+      "home-20261122-235726-din-29.97nd-forward",
+      "\u74b0\u5883\u7d00\u9304\u7121\u6cd5\u89e3\u78bc\uff0c\u539f\u6a94\u4fdd\u7559\u3002"
+    ],
+    [
+      "home-20261122-235917-din-29.97nd-forward",
+      "\u64f7\u53d6\u672a\u5b8c\u6210\uff0c\u7f3a\u5c11\u7d50\u675f\u74b0\u5883\u8207\u6709\u6548\u91cf\u6e2c\u3002"
+    ],
+    [
+      "home-20261123-001752-din-29.97nd-forward",
+      "Measurement process exited 120\uff1b\u56de\u9001\u6975\u5dee 1.2046 ms"
+    ]
+  ]
+}

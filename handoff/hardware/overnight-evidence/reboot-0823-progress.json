@@ -1,0 +1,13 @@
+{
+  "phase": "measured",
+  "updated": "2026-11-23 10:24:24 +0800",
+  "environment_exit": 0,
+  "strict_counts_exit": 1,
+  "clock": 345601,
+  "qf": 864024,
+  "dropouts": 0,
+  "first_phase_ms": -0.917,
+  "last_phase_ms": -1.458,
+  "interior_extra_clock": 0,
+  "interior_extra_qf": 27.0
+}

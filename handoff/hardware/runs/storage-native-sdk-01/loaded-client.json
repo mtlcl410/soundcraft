@@ -1,0 +1,15 @@
+{
+  "pid": 33228,
+  "host": "E:\\soundcraft\\compatibility-audit\\g11-hw-acceptance\\audio\\build\\storage-sdk\\storage-sdk.exe",
+  "matching_modules": [
+    {
+      "ModuleName": "storage-sdk.exe",
+      "FileName": "E:\\soundcraft\\compatibility-audit\\g11-hw-acceptance\\audio\\build\\storage-sdk\\storage-sdk.exe"
+    },
+    {
+      "ModuleName": "us_asio.dll",
+      "FileName": "c:\\program files\\tascam\\modelmixer\\x64\\us_asio.dll"
+    }
+  ],
+  "soundcraft_processes": []
+}

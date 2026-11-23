@@ -1,0 +1,184 @@
+[
+  {
+    "seconds": 891.3590462,
+    "observed_seconds": [
+      891.1003194,
+      892.1068993
+    ],
+    "max_send_late_us": [
+      4666,
+      16519
+    ],
+    "delta_send_count": 170,
+    "histogram_difference": [
+      107,
+      47,
+      7,
+      3,
+      3,
+      3,
+      0
+    ],
+    "max_cb_gap_us": [
+      6212,
+      7781
+    ],
+    "catchup_delta": 0
+  },
+  {
+    "seconds": 891.4206979,
+    "observed_seconds": [
+      891.1003194,
+      892.1068993
+    ],
+    "max_send_late_us": [
+      4666,
+      16519
+    ],
+    "delta_send_count": 170,
+    "histogram_difference": [
+      107,
+      47,
+      7,
+      3,
+      3,
+      3,
+      0
+    ],
+    "max_cb_gap_us": [
+      6212,
+      7781
+    ],
+    "catchup_delta": 0
+  },
+  {
+    "seconds": 1810.6425864,
+    "observed_seconds": [
+      1810.2738441,
+      1811.2792721
+    ],
+    "max_send_late_us": [
+      16519,
+      16519
+    ],
+    "delta_send_count": 169,
+    "histogram_difference": [
+      109,
+      50,
+      9,
+      0,
+      1,
+      0,
+      0
+    ],
+    "max_cb_gap_us": [
+      13445,
+      13445
+    ],
+    "catchup_delta": 0
+  },
+  {
+    "seconds": 3043.9271888,
+    "observed_seconds": [
+      3043.4704186,
+      3044.4754654
+    ],
+    "max_send_late_us": [
+      16519,
+      16519
+    ],
+    "delta_send_count": 169,
+    "histogram_difference": [
+      125,
+      38,
+      5,
+      0,
+      1,
+      0,
+      0
+    ],
+    "max_cb_gap_us": [
+      13779,
+      13779
+    ],
+    "catchup_delta": 0
+  },
+  {
+    "seconds": 3229.5220445,
+    "observed_seconds": [
+      3228.68326,
+      3229.6893431
+    ],
+    "max_send_late_us": [
+      16519,
+      16519
+    ],
+    "delta_send_count": 170,
+    "histogram_difference": [
+      117,
+      42,
+      6,
+      3,
+      1,
+      1,
+      0
+    ],
+    "max_cb_gap_us": [
+      13779,
+      28575
+    ],
+    "catchup_delta": 0
+  },
+  {
+    "seconds": 3747.2319573,
+    "observed_seconds": [
+      3746.9967984,
+      3748.0030207
+    ],
+    "max_send_late_us": [
+      16519,
+      16519
+    ],
+    "delta_send_count": 170,
+    "histogram_difference": [
+      127,
+      31,
+      10,
+      1,
+      1,
+      0,
+      0
+    ],
+    "max_cb_gap_us": [
+      28575,
+      28575
+    ],
+    "catchup_delta": 0
+  },
+  {
+    "seconds": 6309.5319685,
+    "observed_seconds": [
+      6308.9893712,
+      6309.995756
+    ],
+    "max_send_late_us": [
+      16519,
+      16519
+    ],
+    "delta_send_count": 169,
+    "histogram_difference": [
+      122,
+      35,
+      12,
+      0,
+      0,
+      0,
+      0
+    ],
+    "max_cb_gap_us": [
+      28575,
+      28575
+    ],
+    "catchup_delta": 0
+  }
+]

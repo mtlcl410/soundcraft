@@ -1,0 +1,20 @@
+{
+  "phase": "finished",
+  "timestamp": "2026-11-23 03:33:15 +0800",
+  "results": {
+    "h10-boundary-acceptance": 1,
+    "dedicated-source-control": 0,
+    "source-control-analysis": 0,
+    "beat_head": "56260049b350659a093326cd9c8a2177957d1aa2",
+    "final-beat-playback": 0,
+    "mtc_head": "4036fd9bd8d4c9f3e59e9b23f5f0024a8a6a041a",
+    "final-mtc-playback": 0,
+    "follow_head": "3e8b94dc30295c7dc3cefb772f43ffb422742fc1",
+    "final-follow-playback": 101,
+    "product-physical-connectors": 0,
+    "final-+-clock-scenarios": 0,
+    "winmm-named-connector": 0,
+    "actual-guide-three-real-rolls": 0,
+    "actual-guide-six-fresh-din": 0
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "windows": [
+    {
+      "window": "first",
+      "samples": 597,
+      "phase_samples": 597,
+      "median_signed_phase_us": -2917,
+      "p95_abs_phase_us": 3896,
+      "median_private_bytes": 514347008,
+      "median_rss": 235335680,
+      "max_drain_q": 0
+    },
+    {
+      "window": "last",
+      "samples": 597,
+      "phase_samples": 597,
+      "median_signed_phase_us": -2729,
+      "p95_abs_phase_us": 3625,
+      "median_private_bytes": 515956736,
+      "median_rss": 237174784,
+      "max_drain_q": 0
+    }
+  ],
+  "start_end_medians_method": "Ten elapsed minutes from first/last locked snapshot. Host status sampled about once per second.",
+  "max_observed_drain_q": 0,
+  "relay_q_available": false,
+  "private_bytes_first": 512827392,
+  "private_bytes_last": 515989504
+}

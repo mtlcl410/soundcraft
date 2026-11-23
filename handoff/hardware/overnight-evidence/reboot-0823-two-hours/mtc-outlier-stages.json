@@ -1,0 +1,107 @@
+[
+  {
+    "group": 13369,
+    "seconds_after_start": 891.3590462,
+    "res_ms": -18.566226159350663,
+    "preceding_wire_gap_ms": 84.7702,
+    "next_wire_gap_ms": 61.6517,
+    "ms_from_nearest_long_callback_end": -372112.5664,
+    "max_adjacent_gaps_ms": {
+      "source_f8": 21.1959,
+      "physical_in_f8": 33.0378,
+      "virtual_in_f8": 51.7502,
+      "physical_return_f8": 55.6171,
+      "physical_return_qf": 23.4762
+    }
+  },
+  {
+    "group": 13370,
+    "seconds_after_start": 891.4206979,
+    "res_ms": -13.563574475710993,
+    "preceding_wire_gap_ms": 61.6517,
+    "next_wire_gap_ms": 54.0067,
+    "ms_from_nearest_long_callback_end": -372050.9147,
+    "max_adjacent_gaps_ms": {
+      "source_f8": 21.1959,
+      "physical_in_f8": 33.0378,
+      "virtual_in_f8": 51.7502,
+      "physical_return_f8": 55.6171,
+      "physical_return_qf": 23.4762
+    }
+  },
+  {
+    "group": 27159,
+    "seconds_after_start": 1810.6425864,
+    "res_ms": -5.230867828004193,
+    "preceding_wire_gap_ms": 71.7345,
+    "next_wire_gap_ms": 61.1385,
+    "ms_from_nearest_long_callback_end": -202223.6773,
+    "max_adjacent_gaps_ms": {
+      "source_f8": 21.0696,
+      "physical_in_f8": 21.1119,
+      "virtual_in_f8": 21.1344,
+      "physical_return_f8": 22.6444,
+      "physical_return_qf": 12.8999
+    }
+  },
+  {
+    "group": 45659,
+    "seconds_after_start": 3043.9271888,
+    "res_ms": -5.2202962392584595,
+    "preceding_wire_gap_ms": 71.541,
+    "next_wire_gap_ms": 61.4169,
+    "ms_from_nearest_long_callback_end": -185577.5435,
+    "max_adjacent_gaps_ms": {
+      "source_f8": 21.1633,
+      "physical_in_f8": 21.1334,
+      "virtual_in_f8": 21.1311,
+      "physical_return_f8": 22.1036,
+      "physical_return_qf": 13.4182
+    }
+  },
+  {
+    "group": 48443,
+    "seconds_after_start": 3229.5220445,
+    "res_ms": -7.7435400444301195,
+    "preceding_wire_gap_ms": 74.4923,
+    "next_wire_gap_ms": 59.5049,
+    "ms_from_nearest_long_callback_end": 17.3122,
+    "max_adjacent_gaps_ms": {
+      "source_f8": 21.084,
+      "physical_in_f8": 21.1411,
+      "virtual_in_f8": 21.1539,
+      "physical_return_f8": 40.6827,
+      "physical_return_qf": 23.4552
+    }
+  },
+  {
+    "group": 56209,
+    "seconds_after_start": 3747.2319573,
+    "res_ms": -5.001652267310419,
+    "preceding_wire_gap_ms": 71.2364,
+    "next_wire_gap_ms": 62.0055,
+    "ms_from_nearest_long_callback_end": 517727.225,
+    "max_adjacent_gaps_ms": {
+      "source_f8": 21.1484,
+      "physical_in_f8": 21.2577,
+      "virtual_in_f8": 21.2643,
+      "physical_return_f8": 22.7596,
+      "physical_return_qf": 13.4991
+    }
+  },
+  {
+    "group": 94645,
+    "seconds_after_start": 6309.5319685,
+    "res_ms": -7.1345549331454094,
+    "preceding_wire_gap_ms": 72.9487,
+    "next_wire_gap_ms": 59.8722,
+    "ms_from_nearest_long_callback_end": 3080027.2362,
+    "max_adjacent_gaps_ms": {
+      "source_f8": 21.0807,
+      "physical_in_f8": 21.1469,
+      "virtual_in_f8": 21.1601,
+      "physical_return_f8": 30.757,
+      "physical_return_qf": 31.8804
+    }
+  }
+]

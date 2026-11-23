@@ -1,0 +1,36 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling soundcraft-dsp v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-mtc-replay\crates\dsp)
+   Compiling soundcraft-model v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-mtc-replay\crates\model)
+   Compiling soundcraft-time v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-mtc-replay\crates\time)
+   Compiling soundcraft-midi v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-mtc-replay\crates\midi)
+   Compiling soundcraft-au-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-mtc-replay\crates\au-host)
+   Compiling soundcraft-vst3-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-mtc-replay\crates\vst3-host)
+   Compiling soundcraft-clap-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-mtc-replay\crates\clap-host)
+   Compiling soundcraft-mix v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-mtc-replay\crates\mix)
+   Compiling soundcraft-playback v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-mtc-replay\crates\playback)
+    Finished `test` profile [optimized + debuginfo] target(s) in 56.66s
+     Running unittests src\lib.rs (E:/soundcraft/compatibility-audit/g11-hw-acceptance/target-follow-confirm\debug\build\soundcraft-playback/02c6748131393de9\out\soundcraft_playback-02c6748131393de9.exe)
+
+running 1 test
+PAIR,roll1,rolling,268699,0,[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+PAIR,roll1,located,480521,0,[1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+
+thread 'mtc::tests::silent_lead_replay::replay_same_wire_with_and_without_stopped_locate' (1532) panicked at E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-evidence\silence_replay.rs:53:13:
+stopped locate changes first onset by 211822 us
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test mtc::tests::silent_lead_replay::replay_same_wire_with_and_without_stopped_locate ... FAILED
+
+failures:
+
+failures:
+    mtc::tests::silent_lead_replay::replay_same_wire_with_and_without_stopped_locate
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 273 filtered out; finished in 0.05s
+
+error: test failed, to rerun pass `-p soundcraft-playback --lib`

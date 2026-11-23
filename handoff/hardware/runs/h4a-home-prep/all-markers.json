@@ -1,0 +1,2440 @@
+[
+  {
+    "group": "h4a-integration-24-forward-01",
+    "take": 1,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1553
+  },
+  {
+    "group": "h4a-integration-24-forward-01",
+    "take": 2,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1284
+  },
+  {
+    "group": "h4a-integration-24-forward-01",
+    "take": 3,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1245
+  },
+  {
+    "group": "h4a-integration-24-forward-01",
+    "take": 4,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1197
+  },
+  {
+    "group": "h4a-integration-24-forward-01",
+    "take": 5,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.239
+  },
+  {
+    "group": "h4a-integration-24-forward-01",
+    "take": 6,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1537
+  },
+  {
+    "group": "h4a-integration-24-forward-01",
+    "take": 7,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1663
+  },
+  {
+    "group": "h4a-integration-24-forward-01",
+    "take": 8,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1669
+  },
+  {
+    "group": "h4a-integration-24-forward-01",
+    "take": 9,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1583
+  },
+  {
+    "group": "h4a-integration-24-forward-01",
+    "take": 10,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1446
+  },
+  {
+    "group": "h4a-integration-24-reverse-01",
+    "take": 1,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1576
+  },
+  {
+    "group": "h4a-integration-24-reverse-01",
+    "take": 2,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1496
+  },
+  {
+    "group": "h4a-integration-24-reverse-01",
+    "take": 3,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1361
+  },
+  {
+    "group": "h4a-integration-24-reverse-01",
+    "take": 4,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.157
+  },
+  {
+    "group": "h4a-integration-24-reverse-01",
+    "take": 5,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1507
+  },
+  {
+    "group": "h4a-integration-24-reverse-01",
+    "take": 6,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1284
+  },
+  {
+    "group": "h4a-integration-24-reverse-01",
+    "take": 7,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1566
+  },
+  {
+    "group": "h4a-integration-24-reverse-01",
+    "take": 8,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1341
+  },
+  {
+    "group": "h4a-integration-24-reverse-01",
+    "take": 9,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1195
+  },
+  {
+    "group": "h4a-integration-24-reverse-01",
+    "take": 10,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": [
+          [
+            181174,
+            0.2823
+          ],
+          [
+            205174,
+            0.2339
+          ],
+          [
+            229174,
+            0.3146
+          ],
+          [
+            253174,
+            0.2662
+          ],
+          [
+            277174,
+            0.3307
+          ],
+          [
+            301174,
+            0.2823
+          ],
+          [
+            325174,
+            0.2501
+          ],
+          [
+            349174,
+            0.2501
+          ],
+          [
+            373174,
+            0.2823
+          ]
+        ]
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1231
+  },
+  {
+    "group": "h4a-integration-25-forward-01",
+    "take": 1,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1125
+  },
+  {
+    "group": "h4a-integration-25-forward-01",
+    "take": 2,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1184
+  },
+  {
+    "group": "h4a-integration-25-forward-01",
+    "take": 3,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.132
+  },
+  {
+    "group": "h4a-integration-25-forward-01",
+    "take": 4,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1255
+  },
+  {
+    "group": "h4a-integration-25-forward-01",
+    "take": 5,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1797
+  },
+  {
+    "group": "h4a-integration-25-forward-01",
+    "take": 6,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1428
+  },
+  {
+    "group": "h4a-integration-25-forward-01",
+    "take": 7,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1657
+  },
+  {
+    "group": "h4a-integration-25-forward-01",
+    "take": 8,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1291
+  },
+  {
+    "group": "h4a-integration-25-forward-01",
+    "take": 9,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1456
+  },
+  {
+    "group": "h4a-integration-25-forward-01",
+    "take": 10,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.6935
+  },
+  {
+    "group": "h4a-integration-25-reverse-01",
+    "take": 1,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.134
+  },
+  {
+    "group": "h4a-integration-25-reverse-01",
+    "take": 2,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1142
+  },
+  {
+    "group": "h4a-integration-25-reverse-01",
+    "take": 3,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1626
+  },
+  {
+    "group": "h4a-integration-25-reverse-01",
+    "take": 4,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1514
+  },
+  {
+    "group": "h4a-integration-25-reverse-01",
+    "take": 5,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2182
+  },
+  {
+    "group": "h4a-integration-25-reverse-01",
+    "take": 6,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1293
+  },
+  {
+    "group": "h4a-integration-25-reverse-01",
+    "take": 7,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1596
+  },
+  {
+    "group": "h4a-integration-25-reverse-01",
+    "take": 8,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1623
+  },
+  {
+    "group": "h4a-integration-25-reverse-01",
+    "take": 9,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1551
+  },
+  {
+    "group": "h4a-integration-25-reverse-01",
+    "take": 10,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1498
+  },
+  {
+    "group": "h4a-integration-29.97df-forward-01",
+    "take": 1,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2191
+  },
+  {
+    "group": "h4a-integration-29.97df-forward-01",
+    "take": 2,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.5265
+  },
+  {
+    "group": "h4a-integration-29.97df-forward-01",
+    "take": 3,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2948
+  },
+  {
+    "group": "h4a-integration-29.97df-forward-01",
+    "take": 4,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2063
+  },
+  {
+    "group": "h4a-integration-29.97df-forward-01",
+    "take": 5,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2341
+  },
+  {
+    "group": "h4a-integration-29.97df-forward-01",
+    "take": 6,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1917
+  },
+  {
+    "group": "h4a-integration-29.97df-forward-01",
+    "take": 7,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2629
+  },
+  {
+    "group": "h4a-integration-29.97df-forward-01",
+    "take": 8,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.223
+  },
+  {
+    "group": "h4a-integration-29.97df-forward-01",
+    "take": 9,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2171
+  },
+  {
+    "group": "h4a-integration-29.97df-forward-01",
+    "take": 10,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2205
+  },
+  {
+    "group": "h4a-integration-29.97df-reverse-01",
+    "take": 1,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1794
+  },
+  {
+    "group": "h4a-integration-29.97df-reverse-01",
+    "take": 2,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2127
+  },
+  {
+    "group": "h4a-integration-29.97df-reverse-01",
+    "take": 3,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1492
+  },
+  {
+    "group": "h4a-integration-29.97df-reverse-01",
+    "take": 4,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1274
+  },
+  {
+    "group": "h4a-integration-29.97df-reverse-01",
+    "take": 5,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1882
+  },
+  {
+    "group": "h4a-integration-29.97df-reverse-01",
+    "take": 6,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1543
+  },
+  {
+    "group": "h4a-integration-29.97df-reverse-01",
+    "take": 7,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1108
+  },
+  {
+    "group": "h4a-integration-29.97df-reverse-01",
+    "take": 8,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2147
+  },
+  {
+    "group": "h4a-integration-29.97df-reverse-01",
+    "take": 9,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1363
+  },
+  {
+    "group": "h4a-integration-29.97df-reverse-01",
+    "take": 10,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.3994
+  },
+  {
+    "group": "h4a-integration-29.97nd-forward-01",
+    "take": 1,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1442
+  },
+  {
+    "group": "h4a-integration-29.97nd-forward-01",
+    "take": 2,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1307
+  },
+  {
+    "group": "h4a-integration-29.97nd-forward-01",
+    "take": 3,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1818
+  },
+  {
+    "group": "h4a-integration-29.97nd-forward-01",
+    "take": 4,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1288
+  },
+  {
+    "group": "h4a-integration-29.97nd-forward-01",
+    "take": 5,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2317
+  },
+  {
+    "group": "h4a-integration-29.97nd-forward-01",
+    "take": 6,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1576
+  },
+  {
+    "group": "h4a-integration-29.97nd-forward-01",
+    "take": 7,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 7.2559
+  },
+  {
+    "group": "h4a-integration-29.97nd-forward-01",
+    "take": 8,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1501
+  },
+  {
+    "group": "h4a-integration-29.97nd-forward-01",
+    "take": 9,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.3281
+  },
+  {
+    "group": "h4a-integration-29.97nd-forward-01",
+    "take": 10,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1852
+  },
+  {
+    "group": "h4a-integration-29.97nd-reverse-01",
+    "take": 1,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2456
+  },
+  {
+    "group": "h4a-integration-29.97nd-reverse-01",
+    "take": 2,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1326
+  },
+  {
+    "group": "h4a-integration-29.97nd-reverse-01",
+    "take": 3,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.121
+  },
+  {
+    "group": "h4a-integration-29.97nd-reverse-01",
+    "take": 4,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": [
+          [
+            277038,
+            0.3307
+          ],
+          [
+            301038,
+            0.2823
+          ],
+          [
+            325038,
+            0.2501
+          ],
+          [
+            349038,
+            0.2501
+          ],
+          [
+            373038,
+            0.2823
+          ]
+        ]
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1291
+  },
+  {
+    "group": "h4a-integration-29.97nd-reverse-01",
+    "take": 5,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1104
+  },
+  {
+    "group": "h4a-integration-29.97nd-reverse-01",
+    "take": 6,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1747
+  },
+  {
+    "group": "h4a-integration-29.97nd-reverse-01",
+    "take": 7,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1665
+  },
+  {
+    "group": "h4a-integration-29.97nd-reverse-01",
+    "take": 8,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.165
+  },
+  {
+    "group": "h4a-integration-29.97nd-reverse-01",
+    "take": 9,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1376
+  },
+  {
+    "group": "h4a-integration-29.97nd-reverse-01",
+    "take": 10,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2403
+  },
+  {
+    "group": "h4a-integration-30-forward-01",
+    "take": 1,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1701
+  },
+  {
+    "group": "h4a-integration-30-forward-01",
+    "take": 2,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": [
+          [
+            51993,
+            0.225
+          ],
+          [
+            61139,
+            0.7108
+          ]
+        ]
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1599
+  },
+  {
+    "group": "h4a-integration-30-forward-01",
+    "take": 3,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1256
+  },
+  {
+    "group": "h4a-integration-30-forward-01",
+    "take": 4,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2093
+  },
+  {
+    "group": "h4a-integration-30-forward-01",
+    "take": 5,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1891
+  },
+  {
+    "group": "h4a-integration-30-forward-01",
+    "take": 6,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2314
+  },
+  {
+    "group": "h4a-integration-30-forward-01",
+    "take": 7,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": [
+          [
+            181016,
+            0.2339
+          ],
+          [
+            205016,
+            0.2501
+          ],
+          [
+            229016,
+            0.2985
+          ],
+          [
+            253016,
+            0.2501
+          ],
+          [
+            277016,
+            0.2823
+          ],
+          [
+            301016,
+            0.2339
+          ],
+          [
+            325016,
+            0.3146
+          ],
+          [
+            349016,
+            0.2662
+          ],
+          [
+            373016,
+            0.3307
+          ]
+        ]
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2382
+  },
+  {
+    "group": "h4a-integration-30-forward-01",
+    "take": 8,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1692
+  },
+  {
+    "group": "h4a-integration-30-forward-01",
+    "take": 9,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1714
+  },
+  {
+    "group": "h4a-integration-30-forward-01",
+    "take": 10,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1622
+  },
+  {
+    "group": "h4a-integration-30-reverse-01",
+    "take": 1,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1284
+  },
+  {
+    "group": "h4a-integration-30-reverse-01",
+    "take": 2,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1867
+  },
+  {
+    "group": "h4a-integration-30-reverse-01",
+    "take": 3,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.156
+  },
+  {
+    "group": "h4a-integration-30-reverse-01",
+    "take": 4,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2726
+  },
+  {
+    "group": "h4a-integration-30-reverse-01",
+    "take": 5,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.174
+  },
+  {
+    "group": "h4a-integration-30-reverse-01",
+    "take": 6,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2935
+  },
+  {
+    "group": "h4a-integration-30-reverse-01",
+    "take": 7,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.3357
+  },
+  {
+    "group": "h4a-integration-30-reverse-01",
+    "take": 8,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          156000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1909
+  },
+  {
+    "group": "h4a-integration-30-reverse-01",
+    "take": 9,
+    "first_expected": 12000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [
+          60000
+        ],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.2791
+  },
+  {
+    "group": "h4a-integration-30-reverse-01",
+    "take": 10,
+    "first_expected": 108000,
+    "expected": 16,
+    "channels": {
+      "0": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      },
+      "1": {
+        "missing": [],
+        "extra": [],
+        "unidentified": []
+      }
+    },
+    "hard_relocates": 1,
+    "gaps_ge_200": 0,
+    "max_gap_ms": 6.1227
+  }
+]

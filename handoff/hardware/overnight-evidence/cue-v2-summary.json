@@ -1,0 +1,173 @@
+[
+  {
+    "label": "cue-v2-1",
+    "hardware_seconds": 24,
+    "environment_valid": true,
+    "output_clock": 1147,
+    "expected_clock": 1152,
+    "qf": 2875,
+    "expected_qf": 2880,
+    "transport": [
+      "f20000",
+      "f07f7f010160000000f7",
+      "f20100",
+      "fb",
+      "f07f7f010160000000f7",
+      "fc",
+      "f07f7f010160001800f7"
+    ],
+    "detail": {
+      "matched": 1146,
+      "missing": 6,
+      "first_matched": 6,
+      "last_matched": 1151,
+      "missing_inside_matched_span": 0,
+      "repeated_nearest_input": 0,
+      "equidistant": 0,
+      "outside_half_period": 1,
+      "outside_after_last": 1,
+      "median_matched_error_ms": 3.4227,
+      "reference": "120 BPM; independently nearest input within half a pulse. After long source gaps pulse identity is ambiguous.",
+      "first_clock_after_input_start_ms": 128.7891,
+      "last_clock_minus_input_stop_ms": 3.4306,
+      "first_qf_after_input_start_ms": 71.1497,
+      "last_qf_minus_input_stop_ms": 20.6922,
+      "first_qf_piece": 0,
+      "last_qf_piece": 2,
+      "qf_piece_discontinuities": 0,
+      "qf_qualification": "An entire eight-piece sequence may be missing without a piece-index discontinuity.",
+      "first_8_qf_intervals_ms": [
+        8.1723,
+        8.6469,
+        7.7429,
+        8.7217,
+        8.1133,
+        8.9504,
+        7.909,
+        8.9459
+      ],
+      "first_8_clock_intervals_ms": [
+        22.4319,
+        19.3804,
+        21.1132,
+        19.7846,
+        22.5838,
+        19.8698,
+        20.9396,
+        20.3887
+      ]
+    }
+  },
+  {
+    "label": "cue-v2-2",
+    "hardware_seconds": 24,
+    "environment_valid": true,
+    "output_clock": 1153,
+    "expected_clock": 1152,
+    "qf": 2874,
+    "expected_qf": 2880,
+    "transport": [
+      "fa",
+      "f07f7f010160000000f7",
+      "fc",
+      "f07f7f010160001800f7"
+    ],
+    "detail": {
+      "matched": 1150,
+      "missing": 2,
+      "first_matched": 1,
+      "last_matched": 1151,
+      "missing_inside_matched_span": 1,
+      "repeated_nearest_input": 1,
+      "equidistant": 0,
+      "outside_half_period": 2,
+      "outside_after_last": 1,
+      "median_matched_error_ms": 3.1502,
+      "reference": "120 BPM; independently nearest input within half a pulse. After long source gaps pulse identity is ambiguous.",
+      "first_clock_after_input_start_ms": 19.3811,
+      "last_clock_minus_input_stop_ms": 2.3717,
+      "first_qf_after_input_start_ms": 70.9946,
+      "last_qf_minus_input_stop_ms": 12.0397,
+      "first_qf_piece": 0,
+      "last_qf_piece": 1,
+      "qf_piece_discontinuities": 0,
+      "qf_qualification": "An entire eight-piece sequence may be missing without a piece-index discontinuity.",
+      "first_8_qf_intervals_ms": [
+        8.5651,
+        7.675,
+        8.8239,
+        8.3329,
+        8.6675,
+        7.9373,
+        8.4695,
+        7.7015
+      ],
+      "first_8_clock_intervals_ms": [
+        20.1213,
+        20.9002,
+        19.9525,
+        19.5496,
+        20.4955,
+        19.4697,
+        20.8862,
+        19.8649
+      ]
+    }
+  },
+  {
+    "label": "cue-v2-3",
+    "hardware_seconds": 24,
+    "environment_valid": true,
+    "output_clock": 1153,
+    "expected_clock": 1152,
+    "qf": 2874,
+    "expected_qf": 2880,
+    "transport": [
+      "fa",
+      "f07f7f010160000000f7",
+      "fc",
+      "f07f7f010160001800f7"
+    ],
+    "detail": {
+      "matched": 1151,
+      "missing": 1,
+      "first_matched": 1,
+      "last_matched": 1151,
+      "missing_inside_matched_span": 0,
+      "repeated_nearest_input": 1,
+      "equidistant": 0,
+      "outside_half_period": 1,
+      "outside_after_last": 1,
+      "median_matched_error_ms": 3.951,
+      "reference": "120 BPM; independently nearest input within half a pulse. After long source gaps pulse identity is ambiguous.",
+      "first_clock_after_input_start_ms": 21.0436,
+      "last_clock_minus_input_stop_ms": 3.9432,
+      "first_qf_after_input_start_ms": 72.1647,
+      "last_qf_minus_input_stop_ms": 13.0468,
+      "first_qf_piece": 0,
+      "last_qf_piece": 1,
+      "qf_piece_discontinuities": 0,
+      "qf_qualification": "An entire eight-piece sequence may be missing without a piece-index discontinuity.",
+      "first_8_qf_intervals_ms": [
+        7.6415,
+        9.0426,
+        7.6935,
+        9.0907,
+        7.7349,
+        9.0553,
+        7.312,
+        8.7673
+      ],
+      "first_8_clock_intervals_ms": [
+        20.181,
+        19.963,
+        19.7365,
+        20.8814,
+        19.998,
+        19.8677,
+        19.7851,
+        20.9879
+      ]
+    }
+  }
+]

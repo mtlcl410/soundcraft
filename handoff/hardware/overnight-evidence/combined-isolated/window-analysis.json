@@ -1,0 +1,123 @@
+{
+  "seconds": 64,
+  "strict_pass": false,
+  "expected_clock": 3072,
+  "clock": 3067,
+  "expected_qf": 7680,
+  "qf": 7675,
+  "qf_discontinuities": 0,
+  "observed_dropouts": 0,
+  "counted_window_pulses": 1485,
+  "first_output_closest_ingress_index": 6,
+  "phase_head_ms": {
+    "p50": 1.3711,
+    "p99": 3.2355,
+    "minimum": -0.2428,
+    "maximum": 3.6274
+  },
+  "phase_tail_ms": {
+    "p50": -0.1322,
+    "p99": 1.8823,
+    "minimum": -1.6732,
+    "maximum": 2.9586
+  },
+  "drift_median_ms": -1.5033,
+  "private_bytes_first_window_median": 514600960.0,
+  "private_bytes_last_window_median": 515047424.0,
+  "private_bytes_delta": 446464.0,
+  "max_egress_observer_queue": 0,
+  "relay_delay_ms": {
+    "median": 0.1329,
+    "p99": 0.2057,
+    "maximum": 0.3388
+  },
+  "counts_match": false,
+  "physical_gap_distributions": {
+    "sender": {
+      "p50_ms": 20.8788,
+      "p99_ms": 21.2593,
+      "max_ms": 21.4151,
+      "over_150ms": 0,
+      "index_of_largest": 2941
+    },
+    "din": {
+      "p50_ms": 20.8682,
+      "p99_ms": 21.2915,
+      "max_ms": 21.4711,
+      "over_150ms": 0,
+      "index_of_largest": 1501
+    },
+    "software_ingress": {
+      "p50_ms": 20.8672,
+      "p99_ms": 21.2883,
+      "max_ms": 21.5119,
+      "over_150ms": 0,
+      "index_of_largest": 1501
+    },
+    "return_clock": {
+      "p50_ms": 20.8058,
+      "p99_ms": 22.5792,
+      "max_ms": 23.285,
+      "over_150ms": 0,
+      "index_of_largest": 2713
+    },
+    "return_qf": {
+      "p50_ms": 8.3342,
+      "p99_ms": 9.3559,
+      "max_ms": 10.0931,
+      "over_150ms": 0,
+      "index_of_largest": 2891
+    }
+  },
+  "reference_max_dispatch_late_ms": 0.6308,
+  "largest_source_gap_by_stage": [
+    {
+      "ordinal": 2941,
+      "sender_ms": 21.4151,
+      "din_ms": 21.3628,
+      "ingress_ms": 21.3613
+    },
+    {
+      "ordinal": 126,
+      "sender_ms": 21.3718,
+      "din_ms": 21.3458,
+      "ingress_ms": 21.3394
+    },
+    {
+      "ordinal": 3016,
+      "sender_ms": 21.357,
+      "din_ms": 21.3102,
+      "ingress_ms": 21.2856
+    },
+    {
+      "ordinal": 1501,
+      "sender_ms": 21.3421,
+      "din_ms": 21.4711,
+      "ingress_ms": 21.5119
+    },
+    {
+      "ordinal": 346,
+      "sender_ms": 21.333,
+      "din_ms": 21.2904,
+      "ingress_ms": 21.285
+    },
+    {
+      "ordinal": 589,
+      "sender_ms": 21.3174,
+      "din_ms": 21.3253,
+      "ingress_ms": 21.3352
+    },
+    {
+      "ordinal": 1474,
+      "sender_ms": 21.3167,
+      "din_ms": 21.3775,
+      "ingress_ms": 21.3602
+    },
+    {
+      "ordinal": 1059,
+      "sender_ms": 21.314,
+      "din_ms": 21.3627,
+      "ingress_ms": 21.3664
+    }
+  ]
+}

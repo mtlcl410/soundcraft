@@ -1,0 +1,342 @@
+{
+  "baseline": {
+    "bounds": [
+      1944922508200,
+      1952922572600
+    ],
+    "segments": [
+      {
+        "epoch": "epoch-0",
+        "callbacks": 1500,
+        "rate": 48000,
+        "buffer": 256,
+        "sample_jumps": 0,
+        "seq_skips": 0,
+        "peak": [
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "intervals": 1499,
+    "bins": [
+      0,
+      0,
+      1499,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "mean": 5.332866711140761,
+    "median": 5.0168
+  },
+  "play-baseline": {
+    "bounds": [
+      1953951616800,
+      1961952057800
+    ],
+    "segments": [
+      {
+        "epoch": "epoch-0",
+        "callbacks": 1500,
+        "rate": 48000,
+        "buffer": 256,
+        "sample_jumps": 0,
+        "seq_skips": 0,
+        "peak": [
+          0.025191068649291992,
+          0.025309205055236816
+        ]
+      }
+    ],
+    "intervals": 1499,
+    "bins": [
+      0,
+      0,
+      1499,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "mean": 5.332847498332222,
+    "median": 5.016
+  },
+  "slow-1": {
+    "bounds": [
+      2041715479200,
+      2049716007100
+    ],
+    "segments": [
+      {
+        "epoch": "epoch-0",
+        "callbacks": 32,
+        "rate": 48000,
+        "buffer": 256,
+        "sample_jumps": 0,
+        "seq_skips": 0,
+        "peak": [
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "intervals": 31,
+    "bins": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      31,
+      0
+    ],
+    "mean": 250.96925806451614,
+    "median": 250.8809
+  },
+  "idle-1-0": {
+    "bounds": [
+      2051945786400,
+      2059945942700
+    ],
+    "segments": [
+      {
+        "epoch": "epoch-1",
+        "callbacks": 1426,
+        "rate": 48000,
+        "buffer": 256,
+        "sample_jumps": 0,
+        "seq_skips": 0,
+        "peak": [
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "intervals": 1425,
+    "bins": [
+      0,
+      0,
+      1425,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "mean": 5.333231087719299,
+    "median": 5.0158
+  },
+  "play-1": {
+    "bounds": [
+      2060975565200,
+      2068975924700
+    ],
+    "segments": [
+      {
+        "epoch": "epoch-1",
+        "callbacks": 1500,
+        "rate": 48000,
+        "buffer": 256,
+        "sample_jumps": 0,
+        "seq_skips": 0,
+        "peak": [
+          0.025191068649291992,
+          0.025309205055236816
+        ]
+      }
+    ],
+    "intervals": 1499,
+    "bins": [
+      0,
+      0,
+      1499,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "mean": 5.33284563042028,
+    "median": 5.0165
+  },
+  "slow-2": {
+    "bounds": [
+      2120201071400,
+      2128201533900
+    ],
+    "segments": [
+      {
+        "epoch": "epoch-1",
+        "callbacks": 32,
+        "rate": 48000,
+        "buffer": 256,
+        "sample_jumps": 0,
+        "seq_skips": 0,
+        "peak": [
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "intervals": 31,
+    "bins": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      31,
+      0
+    ],
+    "mean": 250.94631935483872,
+    "median": 250.9674
+  },
+  "idle-2-0": {
+    "bounds": [
+      2130429967700,
+      2138430497400
+    ],
+    "segments": [
+      {
+        "epoch": "epoch-2",
+        "callbacks": 1411,
+        "rate": 48000,
+        "buffer": 256,
+        "sample_jumps": 0,
+        "seq_skips": 0,
+        "peak": [
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "intervals": 1410,
+    "bins": [
+      0,
+      0,
+      1410,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "mean": 5.3332388652482265,
+    "median": 5.021100000000001
+  },
+  "play-2": {
+    "bounds": [
+      2139468087600,
+      2147468248600
+    ],
+    "segments": [
+      {
+        "epoch": "epoch-2",
+        "callbacks": 1500,
+        "rate": 48000,
+        "buffer": 256,
+        "sample_jumps": 0,
+        "seq_skips": 0,
+        "peak": [
+          0.025191068649291992,
+          0.025309205055236816
+        ]
+      }
+    ],
+    "intervals": 1499,
+    "bins": [
+      0,
+      0,
+      1499,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "mean": 5.332872581721148,
+    "median": 5.0211
+  },
+  "idle-3-0": {
+    "bounds": [
+      2195657567900,
+      2203657791500
+    ],
+    "segments": [
+      {
+        "epoch": "epoch-3",
+        "callbacks": 1500,
+        "rate": 48000,
+        "buffer": 256,
+        "sample_jumps": 0,
+        "seq_skips": 0,
+        "peak": [
+          0.0,
+          0.0
+        ]
+      }
+    ],
+    "intervals": 1499,
+    "bins": [
+      0,
+      0,
+      1499,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "mean": 5.332873382254837,
+    "median": 5.019
+  },
+  "play-3": {
+    "bounds": [
+      2204704684500,
+      2212705223500
+    ],
+    "segments": [
+      {
+        "epoch": "epoch-3",
+        "callbacks": 1500,
+        "rate": 48000,
+        "buffer": 256,
+        "sample_jumps": 0,
+        "seq_skips": 0,
+        "peak": [
+          0.025191068649291992,
+          0.025309205055236816
+        ]
+      }
+    ],
+    "intervals": 1499,
+    "bins": [
+      0,
+      0,
+      1499,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "mean": 5.332872648432288,
+    "median": 5.0174
+  }
+}

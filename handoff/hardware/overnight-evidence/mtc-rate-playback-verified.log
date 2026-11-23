@@ -1,0 +1,253 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling soundcraft-dsp v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-mtc-rate-proof\crates\dsp)
+   Compiling soundcraft-model v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-mtc-rate-proof\crates\model)
+   Compiling soundcraft-midi v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-mtc-rate-proof\crates\midi)
+   Compiling soundcraft-time v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-mtc-rate-proof\crates\time)
+   Compiling soundcraft-clap-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-mtc-rate-proof\crates\clap-host)
+   Compiling soundcraft-au-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-mtc-rate-proof\crates\au-host)
+   Compiling soundcraft-vst3-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-mtc-rate-proof\crates\vst3-host)
+   Compiling soundcraft-mix v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-mtc-rate-proof\crates\mix)
+   Compiling soundcraft-playback v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-mtc-rate-proof\crates\playback)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1m 11s
+     Running unittests src\lib.rs (E:\soundcraft\compatibility-audit\g11-verify-mtc-target\debug\build\soundcraft-playback/02c6748131393de9\out\soundcraft_playback-02c6748131393de9.exe)
+
+running 230 tests
+test beat_clock::tests::between_blocks_clock_advances_once_then_waits_for_the_audio_device ... ok
+test beat_clock::tests::a_tempo_change_halves_the_rate_without_restarting ... ok
+test beat_clock::tests::delayed_start_stays_silent_until_zero_and_stop_cancels_it ... ok
+test beat_clock::tests::editing_elapsed_beats_resyncs_once_and_a_future_tempo_change_does_not ... ok
+test beat_clock::tests::in_flight_audio_and_contended_publication_do_not_undo_play_or_locate ... ok
+test beat_clock::tests::late_first_clock_keeps_all_pulses_without_squeezing_the_next_interval ... ok
+test beat_clock::tests::musical_clock_counts_pulses_and_relocates_before_continuing ... ok
+test beat_clock::tests::one_missed_pulse_advances_without_restarting_external_transport ... ok
+test beat_clock::tests::out_of_range_relocation_stops_once_and_recovers_back_in_range ... ok
+test beat_clock::tests::review_launch_at_a_rounded_pulse_boundary_does_not_send_two_clocks ... ok
+test beat_clock::tests::review_stopped_range_warning_persists_until_the_next_locate ... ok
+test beat_clock::tests::stopped_locates_announce_the_same_position_as_play_without_starting ... ok
+test beat_clock::tests::wrap_inside_block_matches_generation_of_next_callback ... ok
+test devices::tests::a_default_format_the_streams_cannot_convert_uses_a_supported_one_at_the_same_rate ... ok
+test devices::tests::a_default_format_with_no_usable_same_rate_stream_falls_back_to_the_session_rate ... ok
+test devices::tests::buffer_sizes_follow_the_device_range ... ok
+test devices::tests::config_round_trips_and_tolerates_missing_fields ... ok
+test beat_clock::tests::receiver_plays_the_pulse_identified_by_spp_at_the_correct_sample ... ok
+test devices::tests::only_a_dead_stream_is_reported ... ok
+test devices::tests::unknown_systems_and_devices_fall_back_to_the_defaults ... ok
+test midi::tests::a_connection_that_is_closed_marks_its_port_even_when_the_name_stays ... ok
+test midi::tests::a_full_input_queue_marks_the_port_and_counts_the_drop ... ok
+test midi::tests::a_full_recorded_queue_is_counted_and_leaves_a_lost_entry ... ok
+test midi::tests::a_full_ring_drops_new_events_and_recovers ... ok
+test midi::tests::a_loss_from_a_full_queue_is_written_into_the_queue_where_it_happened ... ok
+test midi::tests::a_port_keeps_its_name_when_another_with_the_same_name_goes_away ... ok
+test midi::tests::malformed_messages_from_a_device_are_dropped_or_masked ... ok
+test midi::tests::port_names_lose_addresses_and_repeated_client_names ... ok
+test midi::tests::ports_that_close_are_told_apart_from_ports_that_stay_or_were_never_open ... ok
+test midi::tests::recorded_events_come_back_with_their_position ... ok
+test midi::tests::review_channel_event_stamp_follows_the_recording_cutoff ... ok
+test midi::tests::review_closing_mtc_port_calls_host_wakeup_outside_the_writer_lock ... ok
+test midi::tests::the_feed_passes_channel_messages_in_order_and_drops_the_rest ... ok
+test midi::tests::what_a_connection_delivers_while_it_closes_never_follows_the_loss ... ok
+test mtc::tests::all_six_rates_align_eight_wire_pieces_and_session_offset_to_presentation ... ok
+test mtc::tests::anchored_start::anchored_start_preserves_attack_phase_across_device_buffers ... ok
+test mtc::tests::external_lock_starts_and_runs_at_unity_without_repaints ... ok
+test mtc::tests::external_timecode_before_session_start_preserves_the_cursor_and_recovers ... ok
+test mtc::tests::first_integer_sample_of_an_even_fractional_frame_emits_its_quarter_group ... ok
+test mtc::tests::generated_timecode_counts_audio_samples_when_device_and_host_clocks_differ ... ok
+test mtc::tests::going_offline_before_ui_observes_roll_stops_chase_and_permits_record ... ok
+test devices::tests::enumeration_does_not_fail ... ok
+test mtc::tests::jam_sync_audio_free_runs_for_ten_seconds_and_seeks_only_on_the_second_new_group ... ok
+test mtc::tests::mtc_chase_waits_for_observed_lead_before_testing_presentation_drift ... ok
+test mtc::tests::only_mtc_transitions_wake_the_host ... ok
+test mtc::tests::recording_request_is_ignored_while_waiting_for_external_timecode ... ok
+test mtc::tests::silent_preroll::a_dry_lead_in_starts_the_same_pcm_with_a_locate_or_a_rolling_join ... ok
+test mtc::tests::silent_preroll::a_silent_guide_can_join_at_presentation_but_every_channel_protects_its_attack ... ok
+test mtc::tests::silent_preroll::bounded_prefix_cost_when_a_dry_stereo_guide_fills_the_scan_budget ... ignored, opt-in timing profile; wall-clock quantiles depend on host load
+test mtc::tests::silent_preroll::live_inputs_instruments_and_click_retain_the_located_start ... ok
+test mtc::tests::slightly_late_first_presentation_never_bunches_quarter_frames ... ok
+test mtc::tests::stopped_locates_drop_frame_labels_and_delayed_worker_resumes_a_whole_group ... ok
+test mtc::tests::ui_stop_from_an_earlier_lock_cannot_restart_the_new_roll ... ok
+test mtc_input::dropout_tests::diagnostic_percentiles_match_sorted_prefixes_with_ties_and_outliers ... ok
+test mtc_input::dropout_tests::freewheel_at_configured_rate_and_jam_still_obey_explicit_stop ... ok
+test mtc_input::dropout_tests::incompatible_rate_code_reports_a_mismatch ... ok
+test mtc_input::dropout_tests::jam_sync_runs_on_internal_clock_and_only_accepts_a_corroborated_seek ... ok
+test mtc_input::dropout_tests::matching_rate_with_jitter_never_reports_a_mismatch ... ignored, ten simulated minutes for each of four rate settings
+test mtc_input::dropout_tests::none_stops_on_missing_or_discontinuous_code_without_coasting ... ok
+test mtc_input::dropout_tests::ntsc_speed_mismatch_is_reported_within_30_seconds ... ok
+test mtc_input::dropout_tests::one_lost_quarter_does_not_stop_or_change_phase ... ok
+test mtc_input::dropout_tests::reader_reports_the_latest_absolute_incoming_timecode_and_rate ... ok
+test mtc_input::tests::all_wire_rates_roll_across_midnight_and_reverse_never_starts_playback ... ok
+test mtc_input::tests::arrival_delay_uses_the_selected_input_and_remains_readable_after_stop ... ok
+test mtc_input::tests::framing_adjacent_full_frame_rewind_crosses_to_the_previous_day ... ok
+test mtc_input::tests::framing_generator_and_chase_keep_midnight_session_samples_continuous ... ok
+test mtc_input::tests::framing_ignores_incomplete_and_oversized_timecode_then_accepts_fresh_locate ... ok
+test mtc_input::tests::framing_selected_port_accepts_interleaved_realtime_and_split_quarter_frames ... ok
+test mtc_input::tests::full_frame_locate_matches_fractional_rate_session_start ... ok
+test mtc_input::tests::full_frame_validates_drop_labels_and_does_not_lock ... ok
+test mtc_input::tests::locate_only_anchors_the_matching_first_roll ... ok
+test mtc_input::tests::rolling_requires_two_sequential_forward_cycles_and_expires ... ok
+test mtc_input::tests::selected_feed_separates_chase_from_channel_recording_and_closed_callbacks ... ok
+test mtc_input::tests::short_dropout_across_midnight_keeps_the_locked_reader_day ... ok
+test record::ring_tests::monitor_converts_input_rate_to_session_rate ... ok
+test record::ring_tests::monitor_decimates_when_input_is_faster ... ok
+test record::ring_tests::monitor_passes_through_at_equal_rates ... ok
+test record::ring_tests::monitor_silences_nan_and_infinite_input ... ok
+test record::ring_tests::monitor_underrun_is_silence ... ok
+test record::tests::a_bug_a_stall_or_a_lost_device_is_trouble ... ok
+test mtc::tests::locked_device_tracks_and_stops_during_a_ui_stall ... ok
+test record::tests::a_full_ring_owes_the_lost_samples_as_silence ... ok
+test record::tests::a_take_sums_itself_up_for_drawing_while_it_records ... ok
+test record::tests::a_take_that_fills_its_file_goes_on_in_the_next ... ok
+test record::tests::a_failed_write_is_trouble_while_still_recording ... ok
+test record::tests::input_config_prefers_the_best_format_then_more_channels_at_the_chosen_rate ... ok
+test record::tests::nan_and_infinite_input_records_as_silence ... ok
+test record::tests::a_take_whose_next_file_cannot_be_made_stops_there ... ok
+test stream_recovery::tests::active_transport_cancels_a_prepared_probe_and_device_failure_does_not_swap ... ok
+test stream_recovery::tests::callback_panic_latched_after_service_check_prevents_handoff ... ok
+test stream_recovery::tests::exhausted_recovery_can_reopen_an_endpoint_that_never_disappears ... ok
+test stream_recovery::tests::handoff_keeps_the_graph_and_a_silent_probe_never_consumes_a_command ... ok
+test stream_recovery::tests::legal_final_lead_then_invalid_requests_a_new_stream_and_requires_its_own_reports ... ok
+test stream_recovery::tests::only_an_identifiable_wasapi_endpoint_gets_the_handoff_callback ... ok
+test stream_recovery::tests::repeated_faults_cannot_reopen_storm_and_long_storage_does_not_exhaust_the_budget ... ok
+test stream_recovery::tests::timing_recovery_bounds_device_enumeration_after_exhaustion ... ok
+test stream_recovery::tests::timing_recovery_keeps_the_graph_available_after_poisoning ... ok
+test sync_input::tests::driver_time_keeps_its_epoch_across_a_transport_pause ... ok
+test sync_input::tests::driver_time_retains_spacing_in_a_late_batch_and_recovers_after_reset ... ok
+test sync_input::tests::timestamp_mapping_tracks_both_directions_of_clock_drift_for_an_hour ... ok
+test sync_input::tests::windowed_fit_handles_host_uptime_jitter_and_discontinuities ... ok
+test sync_output::mtc_on_shared_port::a_burst_of_external_locates_queues_one_transport_refresh ... ok
+test sync_output::mtc_on_shared_port::an_mtc_route_is_cached_only_after_the_worker_accepts_it ... ok
+test sync_output::mtc_on_shared_port::both_encoders_use_one_connection_and_the_same_offset ... ok
+test record::tests::takes_stream_into_their_files ... ok
+test sync_output::mtc_on_shared_port::generator_waits_for_observed_presentation_only_when_compensation_is_enabled ... ok
+test sync_output::mtc_on_shared_port::generator_and_slave_agree_on_heard_time_after_acquisition ... ok
+test sync_output::mtc_on_shared_port::mtc_rate_and_start_change_at_the_first_rendered_block_of_the_new_generation ... ok
+test sync_output::mtc_on_shared_port::mtc_quarters_use_the_mixer_delay_and_report_limited_negative_advances ... ok
+test sync_output::mtc_on_shared_port::recovered_mtc_locates_live_and_starts_a_complete_quarter_frame_group ... ok
+test sync_output::ports::tests::duplicate_calibrations_follow_the_saved_endpoints_after_reopen_and_unplug ... ok
+test sync_output::ports::tests::duplicate_calibrations_reserve_literal_names_and_reject_indistinguishable_ids ... ok
+test sync_output::ports::tests::review_unnameable_output_with_the_same_id_never_opens_its_named_sibling ... ok
+test sync_output::tests::a_missed_timing_gap_invalidates_only_the_compensated_route_queue ... ok
+test sync_output::tests::a_failed_stop_on_route_removal_reports_and_reconnects ... ok
+test sync_output::tests::a_single_client_port_is_shared_and_send_errors_trigger_reconnect ... ok
+test sync_output::tests::a_stop_cancels_clock_repayment_and_a_new_pass_starts_normally ... ok
+test sync_output::tests::a_wrap_at_the_buffer_limit_waits_for_the_next_snapshot ... ok
+test sync_output::tests::beat_clock_reaches_a_virtual_midi_receiver ... ignored, requires an OS MIDI loopback driver
+test sync_output::tests::compensation_includes_the_mixer_system_delay_when_delay_compensation_is_on ... ok
+test sync_output::tests::a_non_grid_start_published_before_the_worker_reads_wake_does_not_time_out ... ok
+test sync_output::tests::destination_stamp_includes_device_lead_and_signed_port_offset_once ... ok
+test sync_output::tests::diagnostics_use_fixed_lateness_buckets_and_ignore_callback_subchunks ... ok
+test sync_output::tests::extended_sync_messages_are_delivered_and_oversized_messages_are_reported ... ok
+test sync_output::tests::fractional_limits_never_overshoot_the_next_buffer_and_a_stall_is_capped ... ok
+test sync_output::tests::future_messages_wait_in_the_port_queue_without_blocking_other_ports ... ok
+test sync_output::tests::connected_worker_accepts_control_and_shuts_down_while_a_future_message_is_pending ... ok
+test sync_output::tests::input_wakes_reread_an_idle_timeline_without_periodic_polling ... ok
+test sync_output::tests::late_worker_catches_up_with_spaced_clocks_or_resumes_once_at_the_next_spp ... ok
+test sync_output::tests::mtc_sync_route_warns_only_with_an_open_chase_source ... ok
+test sync_output::tests::negative_offset_is_limited_to_the_output_lead_and_reported ... ok
+test sync_output::tests::output_stream_lead_gates_only_compensated_midi_until_a_timestamp_is_available ... ok
+test sync_output::tests::output_stream_lead_is_unknown_for_a_new_output_until_the_first_valid_report ... ok
+test sync_output::tests::output_stream_lead_survives_bad_callbacks_and_updates_on_recovery ... ok
+test sync_output::tests::output_stream_lead_wakes_a_parked_worker_after_the_first_valid_report ... ok
+test sync_output::tests::paired_and_periodic_buffers_preserve_grid_without_relocations ... ok
+test sync_output::tests::idle_worker_starts_the_device_when_play_publishes_after_a_long_buffer ... ok
+test sync_output::tests::paused_timeline_sleeps_between_locates_and_keeps_a_future_start ... ok
+test sync_output::tests::receiver_recovers_grid_through_jitter_quantised_wakes_and_worker_stalls ... ok
+test sync_output::tests::recovered_clock_repays_missing_ticks_evenly_within_one_beat ... ok
+test sync_output::tests::repeating_beat_settings_starts_a_worker_that_failed_to_start ... ok
+test sync_output::tests::reported_lead_is_bounded_and_shared_chunk_offsets_are_monotonic ... ok
+test sync_output::tests::review_a_stall_beyond_the_repayment_beat_relocates_to_the_current_position ... ok
+test sync_output::tests::review_delay_uses_rate_of_the_audible_callback_after_an_edit ... ok
+test sync_output::tests::review_failed_transport_stop_is_retried_before_new_pass_start ... ok
+test sync_output::tests::review_superseded_pass_discards_locates_both_before_and_at_their_deadline ... ok
+test sync_output::tests::review_unavailable_generation_never_encodes_another_sessions_tempo ... ok
+test sync_output::tests::saved_external_offset_is_bounded_at_each_session_rate ... ok
+test sync_output::tests::stopping_an_already_stopped_presentation_does_not_expect_another_transition ... ok
+test sync_output::tests::tempo_change_relocates_when_the_new_map_becomes_audible ... ok
+test sync_output::tests::timing_warning_follows_the_compensated_destinations ... ok
+test sync_output::tests::unavailable_session_generations_are_ineligible_and_report_backlog_drops ... ok
+test tests::a_block_that_panics_goes_silent_and_is_reported_once ... ok
+test tests::a_channel_count_change_takes_the_new_stereo_peaks ... ok
+test tests::a_close_met_through_the_mark_of_an_earlier_overflow_is_not_a_second_loss_when_its_flag_comes ... ok
+test tests::a_config_that_fails_to_build_falls_through_to_the_next ... ok
+test tests::a_full_midi_queue_releases_the_held_note_and_the_pedal_of_its_port_only ... ok
+test tests::a_loop_pass_says_where_it_stopped_with_its_answer_not_where_the_engine_is_later ... ok
+test tests::a_loop_pass_stopped_at_the_end_of_the_loop_does_not_start_another_round ... ok
+test tests::a_loss_in_a_pass_begun_while_the_queue_is_being_read_is_written_into_the_take ... ok
+test tests::a_loss_met_in_the_queue_is_not_taken_for_a_second_loss_by_the_next_callback ... ok
+test tests::a_loss_told_by_the_ports_flag_is_not_written_again_when_its_mark_arrives ... ok
+test tests::a_lost_or_stalled_device_is_reported_once ... ok
+test tests::a_midi_keyboard_plays_and_records_through_a_record_enabled_instrument ... ok
+test tests::a_note_on_queued_before_lost_events_is_not_played_after_the_release ... ok
+test tests::a_note_played_before_the_transport_stop_is_in_the_take_when_the_end_of_the_pass_comes_a_callback_later ... ok
+test tests::a_note_played_just_before_stop_is_in_the_take_and_the_end_of_the_pass_is_acknowledged ... ok
+test tests::a_note_that_arrives_between_the_queue_being_read_and_the_stop_is_in_the_take ... ok
+test tests::a_pass_begun_while_the_queue_is_being_read_records_from_when_it_began ... ok
+test tests::a_pass_started_and_ended_by_the_commands_of_one_callback_keeps_what_was_played_in_it ... ok
+test tests::a_pass_stays_owed_through_a_stalled_callback_whatever_the_devices_do ... ok
+test tests::a_port_closed_after_its_overflow_keeps_a_mark_for_each_loss ... ok
+test tests::a_refused_state_is_kept_until_the_editor_opens ... ok
+test tests::a_release_taken_by_a_shorter_callback_is_not_played_before_its_note_on ... ok
+test tests::a_session_at_another_sample_rate_is_rendered_at_that_rate_from_the_callback_that_installs_it ... ok
+test tests::a_short_loop_that_goes_round_several_times_in_a_callback_marks_one_round_between_two_events_a_round_apart ... ok
+test tests::a_speed_change_during_a_callback_does_not_split_what_it_renders_at_from_what_it_keeps ... ok
+test tests::a_spike_in_one_block_among_quiet_ones_reaches_the_ui ... ok
+test tests::a_spike_rendered_while_the_ui_holds_the_meters_arrives_later ... ok
+test tests::a_state_marked_changed_while_loading_is_not_a_change ... ok
+test tests::a_stopped_locate_while_monitoring_publishes_the_transport_position ... ok
+test tests::a_stream_that_will_not_start_is_reported_as_failed ... ok
+test tests::a_take_without_new_blocks_still_drops_deleted_tracks ... ok
+test tests::an_overflow_before_stop_is_in_the_take_when_the_port_closes_after_it ... ok
+test tests::an_overflow_before_stop_whose_mark_never_came_is_in_the_take_though_an_older_mark_shows_a_later_close ... ok
+test tests::armed_tracks_are_heard_and_metered_after_playback_stops ... ok
+test tests::audio_state_plays_and_stops_at_end ... ok
+test tests::changed_states_are_reported_once_and_read_for_the_session ... ok
+test tests::gain_reduction_keeps_its_maximum_until_taken ... ok
+test tests::instances_arrive_with_the_session_and_leave_through_the_return_channel ... ok
+test tests::interpolation_overflow_between_huge_samples_never_reaches_the_device ... ok
+test tests::keys_held_while_nothing_listens_or_the_port_closes_do_not_stay_on ... ok
+test tests::live_midi_keeps_its_order_and_its_time_at_another_device_rate ... ok
+test tests::locate_while_playing_drops_the_old_position_audio ... ok
+test tests::loop_recording_says_in_the_take_where_the_loop_went_round ... ok
+test tests::looping_wraps ... ok
+test tests::lost_midi_input_is_written_into_the_take ... ok
+test tests::mono_device_averages_stereo_before_clipping ... ok
+test tests::mono_device_contains_overflow_from_opposite_surround_sides ... ok
+test tests::mono_device_preserves_centered_mono_level_and_includes_surround_right_channels ... ok
+test tests::more_events_than_a_callback_can_play_are_still_all_recorded ... ok
+test tests::no_config_that_starts_yields_none_so_the_caller_falls_back_to_a_silent_clock ... ok
+test tests::one_ports_loss_does_not_take_along_what_another_port_sent_before_it ... ok
+test tests::output_config_prefers_format_over_channels_and_needs_stereo_within_the_cap ... ok
+test tests::output_config_uses_the_first_requested_rate_the_device_offers ... ok
+test tests::plugin_states_are_read_without_the_audio_thread ... ok
+test tests::rejected_online_recording_cannot_leak_a_tentative_note_into_the_next_take ... ok
+test tests::replaced_sessions_are_freed_on_the_ui_thread ... ok
+test tests::resampling_at_a_short_block_edge_does_not_mix_in_stale_frames ... ok
+test tests::retained_audio_keeps_its_session_generation_until_the_first_new_rendered_frame ... ok
+test tests::retained_audio_uses_its_render_rate_until_the_generation_boundary ... ok
+test tests::reusable_meter_snapshot_updates_and_drops_stale_tracks ... ok
+test tests::short_device_callbacks_render_short_mix_blocks ... ok
+test tests::side_creates_each_missing_instance_once ... ok
+test tests::stopping_zeroes_meters_in_place_and_removed_tracks_are_pruned ... ok
+test tests::surround_main_maps_to_device_channels_or_folds_down ... ok
+test tests::the_age_of_a_midi_event_is_counted_at_the_transport_speed ... ok
+test tests::the_callback_publishes_system_delay_only_while_delay_compensation_is_enabled ... ok
+test tests::the_first_config_that_starts_wins_and_later_ones_are_not_tried ... ok
+test tests::the_last_device_going_away_during_a_record_pass_is_written_into_the_take ... ok
+test tests::the_late_answer_to_an_earlier_pass_does_not_end_the_wait_for_a_later_one ... ok
+test tests::the_recorded_position_does_not_move_with_the_size_of_later_callbacks ... ok
+test tests::the_stop_cutoff_holds_before_the_stop_command_arrives ... ok
+test tests::two_overflows_of_one_port_in_one_callback_each_keep_their_mark ... ok
+test tests::what_a_port_sends_after_it_lost_input_is_kept_and_follows_the_loss_in_the_take ... ok
+test tests::what_is_played_after_record_is_in_the_take_before_the_audio_thread_hears_of_the_pass ... ok
+test tests::what_is_played_after_stop_is_not_in_the_take_however_late_the_audio_thread_hears_of_it ... ok
+test tests::what_is_played_as_playback_runs_to_its_end_is_in_the_take_and_what_follows_is_not ... ok
+test tests::what_was_played_before_record_stays_out_of_the_take_when_it_is_taken_in_after_the_start_command ... ok
+test sync_output::tests::parked_worker_handles_control_and_shutdown_without_a_new_audio_block ... ok
+
+test result: ok. 227 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 7.34s
+

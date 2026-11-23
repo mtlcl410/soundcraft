@@ -1,0 +1,137 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling soundcraft-playback v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\h4a-phase-replay\crates\playback)
+    Finished `test` profile [optimized + debuginfo] target(s) in 18.15s
+     Running unittests src\lib.rs (E:/soundcraft/compatibility-audit/g11-follow-r3-target\debug\build\soundcraft-playback/02c6748131393de9\out\soundcraft_playback-02c6748131393de9.exe)
+
+running 1 test
+TRACE,h4a-integration-24-forward-01,0,160973,160.972
+TRACE,h4a-integration-24-forward-01,1,159940,159.9396
+TRACE,h4a-integration-24-forward-01,2,159925,159.9243
+TRACE,h4a-integration-24-forward-01,3,159897,159.8967
+TRACE,h4a-integration-24-forward-01,4,158911,158.9099
+TRACE,h4a-integration-24-forward-01,5,158842,158.8418
+TRACE,h4a-integration-24-forward-01,6,158808,158.8084
+TRACE,h4a-integration-24-forward-01,7,157784,157.7838
+TRACE,h4a-integration-24-forward-01,8,157753,157.7523
+TRACE,h4a-integration-24-forward-01,9,156727,156.726
+TRACE,h4a-integration-24-reverse-01,0,159049,159.0493
+TRACE,h4a-integration-24-reverse-01,1,158990,158.9898
+TRACE,h4a-integration-24-reverse-01,2,159046,159.0465
+TRACE,h4a-integration-24-reverse-01,3,157957,157.9563
+TRACE,h4a-integration-24-reverse-01,4,157921,157.921
+TRACE,h4a-integration-24-reverse-01,5,156897,156.8967
+TRACE,h4a-integration-24-reverse-01,6,156868,156.8671
+TRACE,h4a-integration-24-reverse-01,7,156855,156.855
+TRACE,h4a-integration-24-reverse-01,8,161863,161.8629
+TRACE,h4a-integration-24-reverse-01,9,160811,160.8105
+TRACE,h4a-integration-25-forward-01,0,153033,153.033
+TRACE,h4a-integration-25-forward-01,1,153016,153.0159
+TRACE,h4a-integration-25-forward-01,2,152994,152.9944
+TRACE,h4a-integration-25-forward-01,3,151971,151.971
+TRACE,h4a-integration-25-forward-01,4,151940,151.9397
+TRACE,h4a-integration-25-forward-01,5,151876,151.8754
+TRACE,h4a-integration-25-forward-01,6,150900,150.8999
+TRACE,h4a-integration-25-forward-01,7,150846,150.8454
+TRACE,h4a-integration-25-forward-01,8,149831,149.8301
+TRACE,h4a-integration-25-forward-01,9,149780,149.7798
+TRACE,h4a-integration-25-reverse-01,0,151032,151.0325
+TRACE,h4a-integration-25-reverse-01,1,150970,150.9705
+TRACE,h4a-integration-25-reverse-01,2,150987,150.9864
+TRACE,h4a-integration-25-reverse-01,3,149963,149.9628
+TRACE,h4a-integration-25-reverse-01,4,154955,154.9544
+TRACE,h4a-integration-25-reverse-01,5,154887,154.886
+TRACE,h4a-integration-25-reverse-01,6,153875,153.8751
+TRACE,h4a-integration-25-reverse-01,7,153976,153.9759
+TRACE,h4a-integration-25-reverse-01,8,153810,153.809
+TRACE,h4a-integration-25-reverse-01,9,152775,152.7752
+TRACE,h4a-integration-29.97df-forward-01,0,130210,130.2098
+TRACE,h4a-integration-29.97df-forward-01,1,127124,127.1238
+TRACE,h4a-integration-29.97df-forward-01,2,129167,129.1674
+TRACE,h4a-integration-29.97df-forward-01,3,126109,126.109
+TRACE,h4a-integration-29.97df-forward-01,4,129122,129.1222
+TRACE,h4a-integration-29.97df-forward-01,5,126045,126.0444
+TRACE,h4a-integration-29.97df-forward-01,6,128127,128.1261
+TRACE,h4a-integration-29.97df-forward-01,7,129974,129.9736
+TRACE,h4a-integration-29.97df-forward-01,8,126963,126.9622
+TRACE,h4a-integration-29.97df-forward-01,9,128897,128.8969
+TRACE,h4a-integration-29.97df-reverse-01,0,127043,127.0423
+TRACE,h4a-integration-29.97df-reverse-01,1,129030,129.0305
+TRACE,h4a-integration-29.97df-reverse-01,2,126023,126.0223
+TRACE,h4a-integration-29.97df-reverse-01,3,127988,127.9877
+TRACE,h4a-integration-29.97df-reverse-01,4,124995,124.9944
+TRACE,h4a-integration-29.97df-reverse-01,5,127879,127.8786
+TRACE,h4a-integration-29.97df-reverse-01,6,129941,129.9408
+TRACE,h4a-integration-29.97df-reverse-01,7,126849,126.8488
+TRACE,h4a-integration-29.97df-reverse-01,8,128952,128.9517
+TRACE,h4a-integration-29.97df-reverse-01,9,125812,125.8115
+TRACE,h4a-integration-29.97nd-forward-01,0,128239,128.2381
+TRACE,h4a-integration-29.97nd-forward-01,1,125145,125.1451
+TRACE,h4a-integration-29.97nd-forward-01,2,127150,127.1499
+TRACE,h4a-integration-29.97nd-forward-01,3,130113,130.1126
+TRACE,h4a-integration-29.97nd-forward-01,4,127088,127.0873
+TRACE,h4a-integration-29.97nd-forward-01,5,129039,129.0383
+TRACE,h4a-integration-29.97nd-forward-01,6,126043,126.0426
+TRACE,h4a-integration-29.97nd-forward-01,7,128120,128.1195
+TRACE,h4a-integration-29.97nd-forward-01,8,124997,130.0148
+TRACE,h4a-integration-29.97nd-forward-01,9,126989,126.9889
+TRACE,h4a-integration-29.97nd-reverse-01,0,129282,129.282
+TRACE,h4a-integration-29.97nd-reverse-01,1,126230,126.2291
+TRACE,h4a-integration-29.97nd-reverse-01,2,128352,128.3519
+TRACE,h4a-integration-29.97nd-reverse-01,3,125195,125.1953
+TRACE,h4a-integration-29.97nd-reverse-01,4,127208,127.2074
+TRACE,h4a-integration-29.97nd-reverse-01,5,130126,130.1262
+TRACE,h4a-integration-29.97nd-reverse-01,6,127214,127.2134
+TRACE,h4a-integration-29.97nd-reverse-01,7,129116,129.1162
+TRACE,h4a-integration-29.97nd-reverse-01,8,126074,126.0741
+TRACE,h4a-integration-29.97nd-reverse-01,9,128097,128.0962
+TRACE,h4a-integration-30-forward-01,0,125742,125.7424
+TRACE,h4a-integration-30-forward-01,1,130847,130.8474
+TRACE,h4a-integration-30-forward-01,2,124713,129.7405
+TRACE,h4a-integration-30-forward-01,3,129682,129.6821
+TRACE,h4a-integration-30-forward-01,4,129657,129.6571
+TRACE,h4a-integration-30-forward-01,5,128691,128.6909
+TRACE,h4a-integration-30-forward-01,6,128606,128.6055
+TRACE,h4a-integration-30-forward-01,7,128620,128.6201
+TRACE,h4a-integration-30-forward-01,8,127561,127.5607
+TRACE,h4a-integration-30-forward-01,9,127516,127.5158
+TRACE,h4a-integration-30-reverse-01,0,128393,128.3932
+TRACE,h4a-integration-30-reverse-01,1,127364,127.3636
+TRACE,h4a-integration-30-reverse-01,2,127299,127.299
+TRACE,h4a-integration-30-reverse-01,3,127376,127.3755
+TRACE,h4a-integration-30-reverse-01,4,126287,126.2865
+TRACE,h4a-integration-30-reverse-01,5,126316,126.315
+TRACE,h4a-integration-30-reverse-01,6,125252,125.2511
+TRACE,h4a-integration-30-reverse-01,7,125090,125.0897
+TRACE,h4a-integration-30-reverse-01,8,130304,130.3034
+TRACE,h4a-integration-30-reverse-01,9,130134,130.1332
+PHASE_US,5313
+SPREAD_US,h4a-integration-24-forward-01,4246
+SPREAD_US,h4a-integration-24-reverse-01,5008
+SPREAD_US,h4a-integration-25-forward-01,3253
+SPREAD_US,h4a-integration-25-reverse-01,4992
+SPREAD_US,h4a-integration-29.97df-forward-01,4165
+SPREAD_US,h4a-integration-29.97df-reverse-01,4946
+SPREAD_US,h4a-integration-29.97nd-forward-01,5116
+SPREAD_US,h4a-integration-29.97nd-reverse-01,4931
+SPREAD_US,h4a-integration-30-forward-01,6134
+SPREAD_US,h4a-integration-30-reverse-01,5214
+
+thread 'mtc::tests::phase_probe::anchored_phase_replay_matrix' (26916) panicked at crates\playback\src\mtc\tests\phase_probe.rs:67:5:
+one-sample phase sweep: 5313 us
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test mtc::tests::phase_probe::anchored_phase_replay_matrix ... FAILED
+
+failures:
+
+failures:
+    mtc::tests::phase_probe::anchored_phase_replay_matrix
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 221 filtered out; finished in 0.69s
+
+error: test failed, to rerun pass `-p soundcraft-playback --lib`

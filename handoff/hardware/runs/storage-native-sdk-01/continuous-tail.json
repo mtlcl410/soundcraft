@@ -1,0 +1,9 @@
+{
+  "from_first_gap_ge_200_to_end_of_post_3": true,
+  "intervals": 1141,
+  "slow": 1141,
+  "duration_s": 286.0676414,
+  "min_ms": 249.6624,
+  "max_ms": 252.417,
+  "first_qpc": 2328322783222
+}

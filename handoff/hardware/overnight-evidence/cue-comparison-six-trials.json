@@ -1,0 +1,470 @@
+{
+  "cue-v1-1": {
+    "streams": {
+      "clock": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 1.8616,
+          "p05": 8.166535,
+          "p50": 20.8659,
+          "p95": 21.415125,
+          "p99": 21.602865,
+          "maximum": 21.6498
+        },
+        "steady_gaps": {
+          "n": 1056,
+          "minimum": 15.8584,
+          "p05": 19.4421,
+          "p50": 20.8673,
+          "p95": 22.099050000000002,
+          "p99": 22.565165,
+          "maximum": 25.45
+        },
+        "steady_absolute_error": {
+          "n": 1056,
+          "minimum": 0.0010666666666665492,
+          "p05": 0.045241666666666625,
+          "p50": 0.5343499999999999,
+          "p95": 1.472883333333331,
+          "p99": 1.750606666666667,
+          "maximum": 4.9749333333333325
+        }
+      },
+      "qf": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 0.6417,
+          "p05": 0.854535,
+          "p50": 7.4873,
+          "p95": 9.23857,
+          "p99": 9.470354,
+          "maximum": 9.5283
+        },
+        "steady_gaps": {
+          "n": 2640,
+          "minimum": 3.8256,
+          "p05": 7.59007,
+          "p50": 8.3391,
+          "p95": 9.181505,
+          "p99": 9.304604999999999,
+          "maximum": 12.5591
+        },
+        "steady_absolute_error": {
+          "n": 2640,
+          "minimum": 0.001866666666666461,
+          "p05": 0.08792000000000044,
+          "p50": 0.4124166666666653,
+          "p95": 0.8809716666666658,
+          "p99": 1.139356333333334,
+          "maximum": 4.507733333333334
+        }
+      }
+    },
+    "stop": {
+      "physical_to_virtual_fc_ms": 0.1168,
+      "virtual_fc_to_returned_fc_ms": 17.3756,
+      "clock": {
+        "last_minus_virtual_fc_ms": 1.3875,
+        "received_between_virtual_and_returned_fc": 1,
+        "received_after_returned_fc": 0
+      },
+      "qf": {
+        "last_minus_virtual_fc_ms": 10.057,
+        "received_between_virtual_and_returned_fc": 2,
+        "received_after_returned_fc": 0
+      }
+    }
+  },
+  "cue-v1-2": {
+    "streams": {
+      "clock": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 1.5442,
+          "p05": 7.256620000000001,
+          "p50": 20.4939,
+          "p95": 21.714314999999996,
+          "p99": 21.836142999999996,
+          "maximum": 21.8666
+        },
+        "steady_gaps": {
+          "n": 1056,
+          "minimum": 19.1821,
+          "p05": 19.437025,
+          "p50": 20.863,
+          "p95": 22.07245,
+          "p99": 22.52456,
+          "maximum": 22.942
+        },
+        "steady_absolute_error": {
+          "n": 1056,
+          "minimum": 0.0011666666666663161,
+          "p05": 0.028616666666665402,
+          "p50": 0.49288333333333156,
+          "p95": 1.4805666666666681,
+          "p99": 1.691226666666667,
+          "maximum": 2.108666666666668
+        }
+      },
+      "qf": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 0.6391,
+          "p05": 0.867335,
+          "p50": 8.040099999999999,
+          "p95": 8.768115,
+          "p99": 8.771783000000001,
+          "maximum": 8.7727
+        },
+        "steady_gaps": {
+          "n": 2640,
+          "minimum": 3.9825,
+          "p05": 7.5937,
+          "p50": 8.33235,
+          "p95": 9.1515,
+          "p99": 9.275076000000002,
+          "maximum": 12.7607
+        },
+        "steady_absolute_error": {
+          "n": 2640,
+          "minimum": 0.0009333333333341187,
+          "p05": 0.074113333333334,
+          "p50": 0.41316666666666535,
+          "p95": 0.8669966666666664,
+          "p99": 1.0610453333333338,
+          "maximum": 4.427366666666666
+        }
+      }
+    },
+    "stop": {
+      "physical_to_virtual_fc_ms": 0.1521,
+      "virtual_fc_to_returned_fc_ms": 21.0168,
+      "clock": {
+        "last_minus_virtual_fc_ms": 3.9191,
+        "received_between_virtual_and_returned_fc": 1,
+        "received_after_returned_fc": 0
+      },
+      "qf": {
+        "last_minus_virtual_fc_ms": 12.4088,
+        "received_between_virtual_and_returned_fc": 2,
+        "received_after_returned_fc": 0
+      }
+    }
+  },
+  "cue-v1-3": {
+    "streams": {
+      "clock": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 1.621,
+          "p05": 8.081475000000001,
+          "p50": 20.477449999999997,
+          "p95": 21.671225000000003,
+          "p99": 21.778885,
+          "maximum": 21.8058
+        },
+        "steady_gaps": {
+          "n": 1056,
+          "minimum": 18.8747,
+          "p05": 19.4449,
+          "p50": 20.8719,
+          "p95": 22.115,
+          "p99": 22.580344999999998,
+          "maximum": 23.0603
+        },
+        "steady_absolute_error": {
+          "n": 1056,
+          "minimum": 0.0013666666666694027,
+          "p05": 0.04281666666666872,
+          "p50": 0.5040333333333322,
+          "p95": 1.4929083333333315,
+          "p99": 1.875783333333334,
+          "maximum": 2.2269666666666694
+        }
+      },
+      "qf": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 0.6149,
+          "p05": 0.8472999999999999,
+          "p50": 8.2456,
+          "p95": 8.728475000000001,
+          "p99": 8.758575,
+          "maximum": 8.7661
+        },
+        "steady_gaps": {
+          "n": 2640,
+          "minimum": 6.045,
+          "p05": 7.584535,
+          "p50": 8.35975,
+          "p95": 9.183715,
+          "p99": 9.302308,
+          "maximum": 10.273
+        },
+        "steady_absolute_error": {
+          "n": 2640,
+          "minimum": 0.0018333333333337976,
+          "p05": 0.07631833333333402,
+          "p50": 0.4121666666666659,
+          "p95": 0.8938750000000008,
+          "p99": 1.1541233333333338,
+          "maximum": 2.288333333333334
+        }
+      }
+    },
+    "stop": {
+      "physical_to_virtual_fc_ms": 0.12,
+      "virtual_fc_to_returned_fc_ms": 17.2772,
+      "clock": {
+        "last_minus_virtual_fc_ms": 1.3297,
+        "received_between_virtual_and_returned_fc": 1,
+        "received_after_returned_fc": 0
+      },
+      "qf": {
+        "last_minus_virtual_fc_ms": 11.4683,
+        "received_between_virtual_and_returned_fc": 2,
+        "received_after_returned_fc": 0
+      }
+    }
+  },
+  "cue-v2-1": {
+    "streams": {
+      "clock": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 19.3804,
+          "p05": 19.52187,
+          "p50": 20.66415,
+          "p95": 22.530635000000004,
+          "p99": 22.573166999999998,
+          "maximum": 22.5838
+        },
+        "steady_gaps": {
+          "n": 1056,
+          "minimum": 18.9947,
+          "p05": 19.463825,
+          "p50": 20.85615,
+          "p95": 22.120924999999996,
+          "p99": 22.593855000000005,
+          "maximum": 22.8155
+        },
+        "steady_absolute_error": {
+          "n": 1056,
+          "minimum": 0.0011666666666663161,
+          "p05": 0.05635833333333462,
+          "p50": 0.49708333333333243,
+          "p95": 1.4813916666666662,
+          "p99": 1.771231666666668,
+          "maximum": 1.982166666666668
+        }
+      },
+      "qf": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 7.7429,
+          "p05": 7.801035,
+          "p50": 8.409600000000001,
+          "p95": 8.948825,
+          "p99": 8.950085,
+          "maximum": 8.9504
+        },
+        "steady_gaps": {
+          "n": 2640,
+          "minimum": 6.1651,
+          "p05": 7.577990000000001,
+          "p50": 8.30785,
+          "p95": 9.17736,
+          "p99": 9.315957000000001,
+          "maximum": 10.2695
+        },
+        "steady_absolute_error": {
+          "n": 2640,
+          "minimum": 3.3333333334439885e-05,
+          "p05": 0.08396499999999865,
+          "p50": 0.4262666666666659,
+          "p95": 0.9119166666666666,
+          "p99": 1.1277323333333342,
+          "maximum": 2.168233333333334
+        }
+      }
+    },
+    "stop": {
+      "physical_to_virtual_fc_ms": 0.1214,
+      "virtual_fc_to_returned_fc_ms": 21.0182,
+      "clock": {
+        "last_minus_virtual_fc_ms": 3.4306,
+        "received_between_virtual_and_returned_fc": 1,
+        "received_after_returned_fc": 0
+      },
+      "qf": {
+        "last_minus_virtual_fc_ms": 20.6922,
+        "received_between_virtual_and_returned_fc": 3,
+        "received_after_returned_fc": 0
+      }
+    }
+  },
+  "cue-v2-2": {
+    "streams": {
+      "clock": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 19.4697,
+          "p05": 19.497665,
+          "p50": 20.036900000000003,
+          "p95": 20.895300000000002,
+          "p99": 20.89922,
+          "maximum": 20.9002
+        },
+        "steady_gaps": {
+          "n": 1056,
+          "minimum": 18.8865,
+          "p05": 19.488025,
+          "p50": 20.854799999999997,
+          "p95": 22.1281,
+          "p99": 22.536195,
+          "maximum": 22.8779
+        },
+        "steady_absolute_error": {
+          "n": 1056,
+          "minimum": 0.0017666666666684705,
+          "p05": 0.04991666666666905,
+          "p50": 0.48274999999999935,
+          "p95": 1.483766666666666,
+          "p99": 1.7321416666666687,
+          "maximum": 2.044566666666668
+        }
+      },
+      "qf": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 7.675,
+          "p05": 7.684275,
+          "p50": 8.4012,
+          "p95": 8.76916,
+          "p99": 8.812952000000001,
+          "maximum": 8.8239
+        },
+        "steady_gaps": {
+          "n": 2640,
+          "minimum": 6.6659,
+          "p05": 7.554385,
+          "p50": 8.305250000000001,
+          "p95": 9.193330000000001,
+          "p99": 9.321019999999999,
+          "maximum": 10.1923
+        },
+        "steady_absolute_error": {
+          "n": 2640,
+          "minimum": 0.00016666666666687036,
+          "p05": 0.08287999999999976,
+          "p50": 0.4306666666666654,
+          "p95": 0.9303566666666668,
+          "p99": 1.1233076666666668,
+          "maximum": 1.8589666666666655
+        }
+      }
+    },
+    "stop": {
+      "physical_to_virtual_fc_ms": 0.1336,
+      "virtual_fc_to_returned_fc_ms": 18.3522,
+      "clock": {
+        "last_minus_virtual_fc_ms": 2.3717,
+        "received_between_virtual_and_returned_fc": 1,
+        "received_after_returned_fc": 0
+      },
+      "qf": {
+        "last_minus_virtual_fc_ms": 12.0397,
+        "received_between_virtual_and_returned_fc": 2,
+        "received_after_returned_fc": 0
+      }
+    }
+  },
+  "cue-v2-3": {
+    "streams": {
+      "clock": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 19.7365,
+          "p05": 19.75351,
+          "p50": 19.9805,
+          "p95": 20.950625,
+          "p99": 20.980445,
+          "maximum": 20.9879
+        },
+        "steady_gaps": {
+          "n": 1056,
+          "minimum": 19.1181,
+          "p05": 19.464375,
+          "p50": 20.8641,
+          "p95": 22.11095,
+          "p99": 22.65097,
+          "maximum": 22.9586
+        },
+        "steady_absolute_error": {
+          "n": 1056,
+          "minimum": 0.0018666666666682374,
+          "p05": 0.03989166666666666,
+          "p50": 0.5082833333333312,
+          "p95": 1.455658333333334,
+          "p99": 1.817636666666668,
+          "maximum": 2.1252666666666684
+        }
+      },
+      "qf": {
+        "technical_unit": "ms",
+        "first_8_gaps": {
+          "n": 8,
+          "minimum": 7.312,
+          "p05": 7.427325000000001,
+          "p50": 8.251100000000001,
+          "p95": 9.07831,
+          "p99": 9.088222,
+          "maximum": 9.0907
+        },
+        "steady_gaps": {
+          "n": 2640,
+          "minimum": 3.992,
+          "p05": 7.562995,
+          "p50": 8.319700000000001,
+          "p95": 9.175035000000001,
+          "p99": 9.325610000000001,
+          "maximum": 12.3131
+        },
+        "steady_absolute_error": {
+          "n": 2640,
+          "minimum": 0.00023333333333397377,
+          "p05": 0.0690333333333335,
+          "p50": 0.42616666666666614,
+          "p95": 0.8978650000000004,
+          "p99": 1.1149976666666668,
+          "maximum": 4.341333333333334
+        }
+      }
+    },
+    "stop": {
+      "physical_to_virtual_fc_ms": 0.1225,
+      "virtual_fc_to_returned_fc_ms": 19.9177,
+      "clock": {
+        "last_minus_virtual_fc_ms": 3.9432,
+        "received_between_virtual_and_returned_fc": 1,
+        "received_after_returned_fc": 0
+      },
+      "qf": {
+        "last_minus_virtual_fc_ms": 13.0468,
+        "received_between_virtual_and_returned_fc": 2,
+        "received_after_returned_fc": 0
+      }
+    }
+  }
+}

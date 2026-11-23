@@ -1,0 +1,19 @@
+test_clock_follow_stayed_locked_after_acquisition (__main__.CombinedCounts.test_clock_follow_stayed_locked_after_acquisition) ... ok
+test_every_input_clock_reached_the_software_ingress (__main__.CombinedCounts.test_every_input_clock_reached_the_software_ingress) ... ok
+test_mtc_quarter_frame_count_includes_start_and_stop_boundaries (__main__.CombinedCounts.test_mtc_quarter_frame_count_includes_start_and_stop_boundaries) ... FAIL
+test_no_qf_piece_discontinuity_within_the_run (__main__.CombinedCounts.test_no_qf_piece_discontinuity_within_the_run) ... ok
+test_output_count_includes_start_and_stop_boundaries (__main__.CombinedCounts.test_output_count_includes_start_and_stop_boundaries) ... ok
+
+======================================================================
+FAIL: test_mtc_quarter_frame_count_includes_start_and_stop_boundaries (__main__.CombinedCounts.test_mtc_quarter_frame_count_includes_start_and_stop_boundaries)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-evidence\test_combined_counts.py", line 14, in test_mtc_quarter_frame_count_includes_start_and_stop_boundaries
+    self.assertEqual(self.status['received_qf'],self.status['expected_qf'])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 864023 != 864000
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.007s
+
+FAILED (failures=1)

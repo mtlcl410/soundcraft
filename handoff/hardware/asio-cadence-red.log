@@ -1,0 +1,37 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling soundcraft-dsp v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\asio-cadence-main\crates\dsp)
+   Compiling soundcraft-model v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\asio-cadence-main\crates\model)
+   Compiling soundcraft-midi v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\asio-cadence-main\crates\midi)
+   Compiling soundcraft-time v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\asio-cadence-main\crates\time)
+   Compiling soundcraft-clap-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\asio-cadence-main\crates\clap-host)
+   Compiling soundcraft-vst3-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\asio-cadence-main\crates\vst3-host)
+   Compiling soundcraft-au-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\asio-cadence-main\crates\au-host)
+   Compiling soundcraft-mix v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\asio-cadence-main\crates\mix)
+   Compiling soundcraft-playback v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\asio-cadence-main\crates\playback)
+    Finished `test` profile [optimized + debuginfo] target(s) in 39.44s
+     Running unittests src\lib.rs (E:/soundcraft/compatibility-audit/g11-follow-r3-target\debug\build\soundcraft-playback/e627134f8c62bd57\out\soundcraft_playback-e627134f8c62bd57.exe)
+
+running 1 test
+test tests::sustained_slow_asio_callbacks_request_idle_recovery ... FAILED
+
+failures:
+
+---- tests::sustained_slow_asio_callbacks_request_idle_recovery stdout ----
+
+thread 'tests::sustained_slow_asio_callbacks_request_idle_recovery' (2628) panicked at crates\playback\src\tests.rs:273:5:
+continuing quarter-second callbacks must request a rebuild when stopped
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    tests::sustained_slow_asio_callbacks_request_idle_recovery
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 105 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p soundcraft-playback --lib`

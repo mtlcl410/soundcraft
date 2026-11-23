@@ -1,0 +1,31 @@
+{
+  "method": "single logical CPU, warmed 500,000 polls, second 500,000 timed; ABBA four times",
+  "logical_cpu": 11,
+  "ns_per_poll": {
+    "before": [
+      75.011,
+      75.175,
+      75.539,
+      75.224,
+      75.015,
+      76.438,
+      75.084,
+      75.004
+    ],
+    "after": [
+      34.683,
+      34.586,
+      34.628,
+      34.907,
+      34.584,
+      34.613,
+      34.641,
+      34.649
+    ]
+  },
+  "median_ns": {
+    "before": 75.12950000000001,
+    "after": 34.6345
+  },
+  "relative_saving_percent": 53.90026554149835
+}

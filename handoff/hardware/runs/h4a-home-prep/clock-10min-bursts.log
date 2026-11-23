@@ -1,0 +1,30 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+warning: variable does not need to be mutable
+   --> crates\engine\src\autosave.rs:481:13
+    |
+481 |         let mut builder = std::fs::DirBuilder::new();
+    |             ----^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: `soundcraft-engine` (lib) generated 1 warning (run `cargo fix --lib -p soundcraft-engine` to apply 1 suggestion)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.58s
+     Running unittests src\lib.rs (E:/soundcraft/compatibility-audit/g11-follow-r3-target\debug\build\soundcraft-ui-egui/c84836957a48c4d7\out\soundcraft_ui_egui-c84836957a48c4d7.exe)
+
+running 1 test
+CASE A4-3 missing=0 extra=0 damaged=0 dropouts=0 early_steps=0 confirmations=0 first=None
+CASE A4-4 missing=0 extra=0 damaged=0 dropouts=0 early_steps=0 confirmations=0 first=None
+CASE A4-5 missing=0 extra=0 damaged=0 dropouts=0 early_steps=0 confirmations=0 first=None
+CASE A4-3to5 missing=0 extra=0 damaged=0 dropouts=0 early_steps=0 confirmations=0 first=None
+test app::clock_follow::tests::packet_steps::ten_minutes_of_coalesced_delivery_do_not_confirm_a_tempo_step ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 445 filtered out; finished in 5.93s
+

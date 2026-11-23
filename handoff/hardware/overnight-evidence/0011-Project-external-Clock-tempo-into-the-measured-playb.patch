@@ -1,0 +1,221 @@
+From b949a92dfcb186d1001955b757b042962f5b874a Mon Sep 17 00:00:00 2001
+From: mtlcl410 <2368091+mtlcl410@users.noreply.github.com>
+Date: Mon, 23 Nov 2026 06:21:52 +0800
+Subject: [PATCH 11/12] Project external Clock tempo into the measured playback
+ sample clock
+
+---
+ crates/playback/src/lib.rs                    |   9 ++
+ crates/playback/src/sync_clock.rs             |   8 ++
+ crates/playback/src/sync_output.rs            |   3 +
+ crates/ui-egui/src/app/clock_follow.rs        |   7 +-
+ .../src/app/clock_follow/device_time.rs       | 108 ++++++++++++++++++
+ 5 files changed, 134 insertions(+), 1 deletion(-)
+ create mode 100644 crates/ui-egui/src/app/clock_follow/device_time.rs
+
+diff --git a/crates/playback/src/lib.rs b/crates/playback/src/lib.rs
+index a78948a5..bd9477f8 100644
+--- a/crates/playback/src/lib.rs
++++ b/crates/playback/src/lib.rs
+@@ -820,6 +820,15 @@ impl Player {
+         }
+         self.position()
+     }
++    /// Last timed normal-speed render block as (transport pass, presentation time, session sample).
++    pub fn clock_follow_sample(&self) -> Option<(u64, std::time::Instant, f64)> {
++        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++        {
++            self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).clock_follow_sample()
++        }
++        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
++        None
++    }
+     /// Latest clock destination or synchronization error for the setup dialog.
+     pub fn midi_clock_error(&self) -> Option<String> {
+         #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+diff --git a/crates/playback/src/sync_clock.rs b/crates/playback/src/sync_clock.rs
+index f754518d..a2596707 100644
+--- a/crates/playback/src/sync_clock.rs
++++ b/crates/playback/src/sync_clock.rs
+@@ -174,6 +174,14 @@ impl Default for Timeline {
+     }
+ }
+ impl Timeline {
++    pub(crate) fn clock_follow_sample(&self) -> Option<(u64, Instant, f64)> {
++        let b = self.blocks.back()?;
++        (self.timed_blocks > 0 && b.playing && b.lead.is_some() && b.looped.is_none()
++            && b.samples_per_second == b.sample_rate.as_f64()
++            && b.heard_at.elapsed() < Duration::from_millis(250))
++            .then_some((b.pass, b.heard_at, b.sample))
++    }
++
+     /// Called by the control thread, never by the audio callback.
+     pub(crate) fn register(&mut self, revision: SessionRevision, active: bool) -> bool {
+         if !active {
+diff --git a/crates/playback/src/sync_output.rs b/crates/playback/src/sync_output.rs
+index 1c94b1c8..0802f6b7 100644
+--- a/crates/playback/src/sync_output.rs
++++ b/crates/playback/src/sync_output.rs
+@@ -316,6 +316,9 @@ impl Output {
+         let now = Instant::now();
+         self.view.lock().unwrap_or_else(std::sync::PoisonError::into_inner).read(now, true, 0).0.map(|b| b.sample_index_at(now))
+     }
++    pub(crate) fn clock_follow_sample(&self) -> Option<(u64, Instant, f64)> {
++        self.view.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clock_follow_sample()
++    }
+     pub(crate) fn timing_issue(&self) -> Option<crate::OutputTimingIssue> {
+         let clock = self.compensated && !self.beat.is_empty();
+         let encoder = self.additional.as_ref().is_some_and(|(_, _, compensated)| *compensated);
+diff --git a/crates/ui-egui/src/app/clock_follow.rs b/crates/ui-egui/src/app/clock_follow.rs
+index 3c2fcbf0..fb763575 100644
+--- a/crates/ui-egui/src/app/clock_follow.rs
++++ b/crates/ui-egui/src/app/clock_follow.rs
+@@ -4,6 +4,7 @@ use soundcraft_playback::clock_follow::{Action, Snapshot, State};
+ use soundcraft_time::{SampleRate, TICKS_PER_QUARTER, TempoMap};
+ 
+ mod history;
++mod device_time;
+ 
+ const TICKS_PER_PULSE: i64 = TICKS_PER_QUARTER / 24;
+ 
+@@ -24,6 +25,7 @@ pub(crate) struct Host {
+     waiting_start: Option<(i64, i64)>,
+     // Fixed pulse and device timestamp at Start/Continue; later edits preserve this origin.
+     anchor: Option<(i64, i64)>,
++    device_time: device_time::DeviceTime,
+ }
+ 
+ impl crate::UiState {
+@@ -310,11 +312,14 @@ impl SoundApp {
+         }
+         self.clock_follow.actions = events;
+         if let Some(grid) = self.engine.playback_tempo.as_mut() {
++            let device_snapshot = self.clock_follow.device_time.project(s, self.clock_follow.anchor, sr, || {
++                self.player.as_ref().and_then(|player| player.clock_follow_sample())
++            });
+             self.clock_follow.grid_dirty |= update_grid(
+                 grid,
+                 self.clock_follow.anchor,
+                 self.clock_follow.waiting_tick,
+-                s,
++                device_snapshot,
+                 sr,
+                 self.player.as_ref().filter(|p| p.is_playing()).map_or(0, |p| {
+                     // Leave at least one external pulse and one device buffer for delivery.
+diff --git a/crates/ui-egui/src/app/clock_follow/device_time.rs b/crates/ui-egui/src/app/clock_follow/device_time.rs
+new file mode 100644
+index 00000000..3d9a76c8
+--- /dev/null
++++ b/crates/ui-egui/src/app/clock_follow/device_time.rs
+@@ -0,0 +1,108 @@
++use super::{SampleRate, Snapshot};
++use std::time::Instant;
++
++/// Compare the physical playback clock with monotonic time over one continuous pass.
++/// The MIDI reader's tempo and the recorded audio samples remain in their original domains.
++#[derive(Default)]
++pub(super) struct DeviceTime {
++    first: Option<(u64, Instant, f64)>,
++    next_us: Option<i64>,
++    ratio: Option<f64>,
++}
++
++impl DeviceTime {
++    pub(super) fn project(
++        &mut self,
++        mut wire: Snapshot,
++        anchor: Option<(i64, i64)>,
++        sr: SampleRate,
++        observation: impl FnOnce() -> Option<(u64, Instant, f64)>,
++    ) -> Snapshot {
++        let Some((_, origin_us)) = anchor else {
++            *self = Self::default();
++            return wire;
++        };
++        if self.next_us.is_none_or(|at| wire.now_us >= at) {
++            self.next_us = Some(wire.now_us.saturating_add(1_000_000));
++            if let Some((pass, time, sample)) = observation() {
++                if let Some((first_pass, start, base)) = self.first
++                    && pass == first_pass
++                    && time >= start
++                {
++                    let elapsed = time.duration_since(start).as_secs_f64();
++                    if elapsed >= 20. {
++                        let ratio = (sample - base) / (elapsed * sr.as_f64());
++                        if (ratio - 1.).abs() <= 0.001 {
++                            self.ratio = Some(ratio);
++                        } else {
++                            // An unusable stamp cannot undo the accumulated correction
++                            // in the same roll. Start a fresh observation window.
++                            self.first = Some((pass, time, sample));
++                        }
++                    }
++                } else {
++                    self.first = Some((pass, time, sample));
++                    self.ratio = None;
++                }
++            }
++        }
++        let Some(ratio) = self.ratio else { return wire };
++        let delta = wire.stamp_us.saturating_sub(origin_us);
++        wire.stamp_us = wire.stamp_us.saturating_add((delta as f64 * (ratio - 1.)).round() as i64);
++        wire.bpm = wire.bpm.map(|v| v / ratio);
++        wire.phase_grid_bpm = wire.phase_grid_bpm.map(|v| v / ratio);
++        wire.brake_grid_bpm = wire.brake_grid_bpm.map(|v| v / ratio);
++        wire
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use crate::app::clock_follow::{State, TICKS_PER_PULSE, TempoMap, update_grid};
++    use std::time::Duration;
++
++    #[test]
++    fn missing_observations_do_not_reset_the_grid_midpass_or_leak_into_a_new_start() {
++        let mut device = DeviceTime::default();
++        let start = Instant::now();
++        let rate = SampleRate::HZ_48000;
++        let wire = |s| Snapshot { bpm: Some(120.), stamp_us: s * 1_000_000, now_us: s * 1_000_000, ..Snapshot::default() };
++        let cue = Some((0, 0));
++        device.project(wire(0), cue, rate, || Some((1, start, 0.)));
++        let projected = device.project(wire(30), cue, rate, || Some((1, start + Duration::from_secs(30), 1_440_144.)));
++        assert_eq!(projected.stamp_us, 30_003_000);
++        let missing = device.project(wire(40), cue, rate, || None);
++        assert_eq!(missing.stamp_us, 40_004_000);
++        let stopped = device.project(wire(41), None, rate, || panic!("stopped transport cannot supply an observation"));
++        assert_eq!(stopped.stamp_us, 41_000_000);
++        let next = device.project(wire(42), Some((0, 42_000_000)), rate, || Some((2, start + Duration::from_secs(42), 0.)));
++        assert_eq!(next.bpm, Some(120.));
++    }
++
++    #[test]
++    fn next_external_downbeat_uses_physical_samples_over_a_two_hour_pass() {
++        let rate = SampleRate::HZ_48000;
++        for ppm in [39., -40., 0.] {
++            let mut device = DeviceTime::default();
++            let mut grid = TempoMap::new(120., 4, 4).unwrap();
++            let start = Instant::now();
++            let actual_rate = 48_000. * (1. + ppm / 1e6);
++            let mut max_ms = 0_f64;
++            for seconds in 0..=7200_i64 {
++                let pulse = seconds * 48;
++                let stamp = seconds * 1_000_000;
++                let wire = Snapshot { state: State::Locked, pulse, now_us: stamp, stamp_us: stamp, bpm: Some(120.), ..Snapshot::default() };
++                let actual_sample = actual_rate * seconds as f64;
++                let measured =
++                    device.project(wire, Some((0, 0)), rate, || Some((1, start + Duration::from_secs(seconds as u64), actual_sample.round())));
++                update_grid(&mut grid, Some((0, 0)), 0, measured, rate, actual_sample as i64 + 1440);
++                let scheduled = grid.tick_to_samples((pulse + 24) * TICKS_PER_PULSE, rate);
++                let error = (scheduled as f64 / actual_rate - seconds as f64 - 0.5) * 1000.;
++                max_ms = max_ms.max(error.abs());
++            }
++            eprintln!("physical oscillator {ppm:+} ppm; maximum musical grid error {max_ms:.3} ms");
++            assert!(max_ms < 4., "{ppm} ppm, {max_ms:.3} ms");
++        }
++    }
++}
+-- 
+2.55.0.windows.1
+

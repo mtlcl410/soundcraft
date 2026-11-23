@@ -1,0 +1,190 @@
+[
+  {
+    "clients": 1,
+    "observers_agree": null,
+    "direction": "forward",
+    "profile": "locates",
+    "ports": {
+      "receive": "Model 12 MIDI 1",
+      "send": "UM-ONE 1"
+    },
+    "locates_sent": 200,
+    "locates_received": 200,
+    "all_bytes_equal": false,
+    "differences": [
+      {
+        "index": 33,
+        "sent": "f07f7f010100000200f7",
+        "received": "f07f7f01010000000200f7"
+      },
+      {
+        "index": 71,
+        "sent": "f07f7f010120000a00f7",
+        "received": "f07f7f010120000a0000f7"
+      },
+      {
+        "index": 148,
+        "sent": "f07f7f010100000000f7",
+        "received": "f07f7f01010000000000f7"
+      },
+      {
+        "index": 186,
+        "sent": "f07f7f010120000800f7",
+        "received": "f07f7f01012000080000f7"
+      }
+    ],
+    "unexpected_full_shapes": {
+      "f07f7f01010000000200f7": 1,
+      "f07f7f010120000a0000f7": 1,
+      "f07f7f01010000000000f7": 1,
+      "f07f7f01012000080000f7": 1
+    }
+  },
+  {
+    "clients": 1,
+    "observers_agree": null,
+    "direction": "forward",
+    "profile": "quarter-frames-and-locates",
+    "ports": {
+      "receive": "Model 12 MIDI 1",
+      "send": "UM-ONE 1"
+    },
+    "locates_sent": 120,
+    "locates_received": 120,
+    "all_bytes_equal": false,
+    "differences": [
+      {
+        "index": 39,
+        "sent": "f07f7f010120000a00f7",
+        "received": "f07f7f00010120000a00f7"
+      },
+      {
+        "index": 83,
+        "sent": "f07f7f010120000a00f7",
+        "received": "f07f7f0101200000000a00f7"
+      }
+    ],
+    "unexpected_full_shapes": {
+      "f07f7f00010120000a00f7": 1,
+      "f07f7f0101200000000a00f7": 1
+    }
+  },
+  {
+    "clients": 2,
+    "observers_agree": true,
+    "direction": "forward",
+    "profile": "locates",
+    "ports": {
+      "receive": "Model 12 MIDI 1",
+      "send": "UM-ONE 1"
+    },
+    "locates_sent": 200,
+    "locates_received": 200,
+    "all_bytes_equal": false,
+    "differences": [
+      {
+        "index": 95,
+        "sent": "f07f7f010120000a00f7",
+        "received": "f07f7f01012000000a00f7"
+      },
+      {
+        "index": 133,
+        "sent": "f07f7f010100000200f7",
+        "received": "f07f7f01010000020000f7"
+      }
+    ],
+    "unexpected_full_shapes": {
+      "f07f7f01012000000a00f7": 1,
+      "f07f7f01010000020000f7": 1
+    }
+  },
+  {
+    "clients": 2,
+    "observers_agree": true,
+    "direction": "forward",
+    "profile": "quarter-frames-and-locates",
+    "ports": {
+      "receive": "Model 12 MIDI 1",
+      "send": "UM-ONE 1"
+    },
+    "locates_sent": 120,
+    "locates_received": 120,
+    "all_bytes_equal": false,
+    "differences": [
+      {
+        "index": 48,
+        "sent": "f07f7f010100000000f7",
+        "received": "f07f7f0101000000000000f7"
+      },
+      {
+        "index": 92,
+        "sent": "f07f7f010100000000f7",
+        "received": "f07f7f01010000000000f7"
+      }
+    ],
+    "unexpected_full_shapes": {
+      "f07f7f0101000000000000f7": 1,
+      "f07f7f01010000000000f7": 1
+    }
+  },
+  {
+    "clients": 1,
+    "observers_agree": null,
+    "direction": "reverse",
+    "profile": "locates",
+    "ports": {
+      "receive": "UM-ONE 0",
+      "send": "Model 12 MIDI 2"
+    },
+    "locates_sent": 200,
+    "locates_received": 200,
+    "all_bytes_equal": true,
+    "differences": [],
+    "unexpected_full_shapes": {}
+  },
+  {
+    "clients": 1,
+    "observers_agree": null,
+    "direction": "reverse",
+    "profile": "quarter-frames-and-locates",
+    "ports": {
+      "receive": "UM-ONE 0",
+      "send": "Model 12 MIDI 2"
+    },
+    "locates_sent": 120,
+    "locates_received": 120,
+    "all_bytes_equal": true,
+    "differences": [],
+    "unexpected_full_shapes": {}
+  },
+  {
+    "clients": 2,
+    "observers_agree": true,
+    "direction": "reverse",
+    "profile": "locates",
+    "ports": {
+      "receive": "UM-ONE 0",
+      "send": "Model 12 MIDI 2"
+    },
+    "locates_sent": 200,
+    "locates_received": 200,
+    "all_bytes_equal": true,
+    "differences": [],
+    "unexpected_full_shapes": {}
+  },
+  {
+    "clients": 2,
+    "observers_agree": true,
+    "direction": "reverse",
+    "profile": "quarter-frames-and-locates",
+    "ports": {
+      "receive": "UM-ONE 0",
+      "send": "Model 12 MIDI 2"
+    },
+    "locates_sent": 120,
+    "locates_received": 120,
+    "all_bytes_equal": true,
+    "differences": [],
+    "unexpected_full_shapes": {}
+  }
+]

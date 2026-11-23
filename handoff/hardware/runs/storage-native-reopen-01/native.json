@@ -1,0 +1,1 @@
+{"device":"Model Mixer ASIO","sample_rate":48000,"preferred":256,"buffer_frames":256,"inputs":12,"outputs_open":2,"format":17,"qpc_hz":10000000,"input_latency":304,"output_latency":728}

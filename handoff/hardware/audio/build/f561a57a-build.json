@@ -1,0 +1,6 @@
+{
+  "head": "f561a57aecf451bd53024b084aa84559809de8cf",
+  "exe": "E:\\soundcraft\\compatibility-audit\\g11-hw-acceptance\\audio\\build\\soundcraft-f561a57a.exe",
+  "sha256": "3d0283fa5993b142bcfc3bde6c077339c1809b54a292a3f33c343a5fdbffb56c",
+  "overlay": "asio-sys witness only"
+}

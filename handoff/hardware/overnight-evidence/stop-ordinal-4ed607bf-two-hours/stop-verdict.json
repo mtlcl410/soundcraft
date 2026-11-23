@@ -1,0 +1,63 @@
+{
+  "started": "2026-11-23T12:23:24+08:00",
+  "completed": "2026-11-23T14:23:51+08:00",
+  "valid": {
+    "environment_valid": true,
+    "reasons": [],
+    "command_exit": 0
+  },
+  "strict_exit": 1,
+  "source": 345600,
+  "physical_input": 345600,
+  "captured_input": 345600,
+  "output": 345600,
+  "qf": 864023,
+  "dropouts": 0,
+  "qf_piece_discontinuities": 0,
+  "sends_after_output_stop": 0,
+  "native_stops": [
+    [
+      7204615038701,
+      7204615205201,
+      7204616583001,
+      7204596852101,
+      7204596971301,
+      7204632236501,
+      7204632397901
+    ]
+  ],
+  "suppressions": [
+    [
+      "7204617367801",
+      "3",
+      "345600",
+      "345599"
+    ]
+  ],
+  "asio": {
+    "buffer": 256,
+    "rate": 48000,
+    "count": 1351039,
+    "min_ms": 0.0951,
+    "mean_ms": 5.333152874752598,
+    "median_ms": 5.0135,
+    "p99_ms": 6.0807,
+    "p999_ms": 6.1137,
+    "max_ms": 21.3226,
+    "position_discontinuities": 0,
+    "serial_discontinuities": 0,
+    "invalid_samplepos": 0,
+    "unexpected_buffer": 0,
+    "negative_intervals": 0,
+    "histogram": {
+      "[0, 4)": 10,
+      "[4, 7)": 1351019,
+      "[7, 10)": 2,
+      "[10, 20)": 5,
+      "[20, 100)": 2,
+      "[100, 200)": 0,
+      "[200, 300)": 0,
+      "[300, inf)": 0
+    }
+  }
+}

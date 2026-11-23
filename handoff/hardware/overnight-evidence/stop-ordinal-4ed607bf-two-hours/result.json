@@ -1,0 +1,161 @@
+{
+  "seconds": 7200,
+  "expected_clock": 345600,
+  "source": 345600,
+  "physical_input": 345600,
+  "relayed_input": 345600,
+  "received_clock": 345600,
+  "expected_qf": 864000,
+  "received_qf": 864023,
+  "status": {
+    "audio_device_open": true,
+    "clock_follow": {
+      "arrival_residual_us": 59,
+      "dropouts": 0,
+      "enabled": true,
+      "estimated_bpm": 119.99936606688148,
+      "input": "SC G11 0C73B7 Out",
+      "input_offset_samples": 0,
+      "jitter_us": 0.0,
+      "loss_policy": "coast",
+      "phase_error_us": null,
+      "state": "Stopped"
+    },
+    "mtc_chase": {
+      "arrival_delay_p95_us": 0,
+      "elapsed_frames": 0,
+      "freewheel_entries": 0,
+      "freewheel_state": "waiting",
+      "hard_relocates": 0,
+      "incoming_rate": null,
+      "incoming_timecode": null,
+      "input_jitter_p95_us": 0,
+      "limit_frames": 8,
+      "locks": 0,
+      "losses": 0,
+      "rate_mismatch": null,
+      "state": "Offline"
+    },
+    "output": {
+      "callback_gap_max_us": 21283,
+      "callback_gaps_over_two_buffers": 7,
+      "catch_up_sends": 23,
+      "error": null,
+      "lateness_buckets": [
+        873104,
+        243096,
+        93160,
+        238,
+        27,
+        3,
+        0
+      ],
+      "lateness_max_us": 14512,
+      "lateness_p50_us": 500,
+      "lateness_p95_us": 2000,
+      "lead_clamps": 0,
+      "lead_source": "reported",
+      "oversized_dropped": 0,
+      "pending_transition_timeouts": 0,
+      "ports": {
+        "UM-ONE": {
+          "advance_limited": false,
+          "beat_clock_enabled": true,
+          "beat_clock_total_us": 15166,
+          "connected": true,
+          "device_lead_us": 15166,
+          "effective_total_us": 15166,
+          "lead_source": "reported",
+          "mtc_enabled": true,
+          "mtc_total_us": 15166,
+          "offset_samples": 0,
+          "requested_offset_samples": 0,
+          "system_delay_samples": 0
+        }
+      },
+      "priority": "raised",
+      "relaunches": 3,
+      "reported_lead_us": 15166,
+      "sent": 1209628,
+      "session_backlog_drops": 0,
+      "stale_dropped": 0
+    },
+    "settings": {
+      "compensation": {
+        "beat_clock": true,
+        "mtc": true,
+        "notes": false
+      },
+      "enabled": true,
+      "port_ids": {
+        "UM-ONE": "\\\\?\\usb#vid_0582&pid_0168&mi_00#8&256da864&0&0000#{6994ad04-93ef-11d0-a3cc-00a0c9223196}\\global"
+      },
+      "ports": {
+        "UM-ONE": {
+          "enabled": true,
+          "in_offset_samples": 0,
+          "out_offset_samples": 0
+        }
+      }
+    }
+  },
+  "din_in_ms": {
+    "median": 0.6495,
+    "p99": 0.7736,
+    "maximum": 16.634
+  },
+  "relay_dispatch_ms": {
+    "median": 0.0312,
+    "p99": 0.0422,
+    "maximum": 0.121
+  },
+  "virtual_ms": {
+    "median": 0.0953,
+    "p99": 0.1215,
+    "maximum": 0.2708
+  },
+  "added_ms": {
+    "median": 0.1263,
+    "p99": 0.1591,
+    "maximum": 0.3508
+  },
+  "discontinuous_qf_pieces": 0,
+  "controls": [
+    {
+      "at_ns": "14628865157100",
+      "hex": "fa"
+    },
+    {
+      "at_ns": "14628868700500",
+      "hex": "f07f7f010160000000f7"
+    },
+    {
+      "at_ns": "21828860418900",
+      "hex": "fc"
+    },
+    {
+      "at_ns": "21828863672700",
+      "hex": "f07f7f010162000007f7"
+    }
+  ],
+  "dropout_count": 0,
+  "states": [
+    "Locked",
+    "Stopped",
+    "Waiting"
+  ],
+  "private_bytes_first": 512827392,
+  "private_bytes_last": 515989504,
+  "relay_queue_max": null,
+  "output_capture_queue_max": 0,
+  "ingress_to_egress_first_ms": {
+    "median": 3.72885,
+    "p99": 5.3521019999999995,
+    "maximum": 22.3622
+  },
+  "ingress_to_egress_last_ms": {
+    "median": 3.4043,
+    "p99": 5.019912999999998,
+    "maximum": 6.373
+  }
+}

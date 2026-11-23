@@ -1,0 +1,61 @@
+Traceback (most recent call last):
+  File "E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-evidence\source_process.py", line 17, in <module>
+    sleep_until(deadline);sent[i]=time.perf_counter_ns();tx.send_message([248])
+                                                         ~~~~~~~~~~~~~~~^^^^^^^
+  File "_rtmidi.pyx", line 1106, in _rtmidi.MidiOut.send_message
+  File "_rtmidi.pyx", line 218, in _rtmidi._cb_error_func
+  File "_rtmidi.pyx", line 403, in _rtmidi._default_error_handler
+_rtmidi.SystemError: MidiOutWinMM::sendMessage: error sending MIDI message.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-evidence\source_process.py", line 20, in <module>
+    tx.send_message([252])
+    ~~~~~~~~~~~~~~~^^^^^^^
+  File "_rtmidi.pyx", line 1106, in _rtmidi.MidiOut.send_message
+  File "_rtmidi.pyx", line 218, in _rtmidi._cb_error_func
+  File "_rtmidi.pyx", line 403, in _rtmidi._default_error_handler
+_rtmidi.SystemError: MidiOutWinMM::sendMessage: error sending MIDI message.
+Traceback (most recent call last):
+  File "E:\soundcraft\compatibility-audit\g11-hw-acceptance\midi\midi_path.py", line 62, in live_midi
+    yield tx, inbox, ports
+  File "E:\soundcraft\compatibility-audit\g11-hw-acceptance\soak_relay.py", line 67, in soak
+    finally:
+    
+RuntimeError: source exited 1
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-evidence\pilot3.py", line 17, in <module>
+    exec(compile(src,str(d/'soak_relay.py'),'exec'))
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "E:\soundcraft\compatibility-audit\g11-hw-acceptance\soak_relay.py", line 107, in <module>
+  File "E:\soundcraft\compatibility-audit\g11-hw-acceptance\soak_relay.py", line 12, in soak
+    with contextlib.ExitStack() as stack:
+         ~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Stephen9\AppData\Local\Programs\Python\Python313\Lib\contextlib.py", line 619, in __exit__
+    raise exc
+  File "C:\Users\Stephen9\AppData\Local\Programs\Python\Python313\Lib\contextlib.py", line 604, in __exit__
+    if cb(*exc_details):
+       ~~^^^^^^^^^^^^^^
+  File "C:\Users\Stephen9\AppData\Local\Programs\Python\Python313\Lib\contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "E:\soundcraft\compatibility-audit\g11-hw-acceptance\midi\midi_path.py", line 42, in live_midi
+    with contextlib.ExitStack() as stack:
+         ~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Stephen9\AppData\Local\Programs\Python\Python313\Lib\contextlib.py", line 619, in __exit__
+    raise exc
+  File "C:\Users\Stephen9\AppData\Local\Programs\Python\Python313\Lib\contextlib.py", line 604, in __exit__
+    if cb(*exc_details):
+       ~~^^^^^^^^^^^^^^
+  File "C:\Users\Stephen9\AppData\Local\Programs\Python\Python313\Lib\contextlib.py", line 482, in _exit_wrapper
+    callback(*args, **kwds)
+    ~~~~~~~~^^^^^^^^^^^^^^^
+  File "_rtmidi.pyx", line 876, in _rtmidi.MidiIn.close_port
+  File "_rtmidi.pyx", line 660, in _rtmidi.MidiBase.close_port
+  File "_rtmidi.pyx", line 218, in _rtmidi._cb_error_func
+  File "_rtmidi.pyx", line 403, in _rtmidi._default_error_handler
+_rtmidi.SystemError: MidiInWinMM::openPort: error closing Windows MM MIDI input port (midiInUnprepareHeader).

@@ -1,0 +1,35 @@
+{
+  "h4a-integration-24-forward-01": [],
+  "h4a-integration-24-reverse-01": [],
+  "h4a-integration-25-forward-01": [],
+  "h4a-integration-25-reverse-01": [],
+  "h4a-integration-29.97df-forward-01": [],
+  "h4a-integration-29.97df-reverse-01": [],
+  "h4a-integration-29.97nd-forward-01": [],
+  "h4a-integration-29.97nd-reverse-01": [],
+  "h4a-integration-30-forward-01": [
+    {
+      "take": 2,
+      "t": 3.25,
+      "original_rx": {
+        "index": 687827,
+        "score": 0.710838,
+        "ms": 4.4573
+      },
+      "matched": {
+        "score": 0.99994898968831,
+        "gain": 1.004738961138002,
+        "lag": 993,
+        "other_max": 0.3472686748833492
+      },
+      "shifted_control": {
+        "score": 0.014558824685667682,
+        "gain": 0.0001328857826006989,
+        "lag": 996,
+        "other_max": 0.0368799558528547
+      },
+      "accepted": true
+    }
+  ],
+  "h4a-integration-30-reverse-01": []
+}

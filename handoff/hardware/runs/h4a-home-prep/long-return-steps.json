@@ -1,0 +1,122 @@
+{
+  "matrix": {
+    "h4a-integration-24-forward-01": [],
+    "h4a-integration-24-reverse-01": [
+      {
+        "previous": [
+          10,
+          5.25
+        ],
+        "next": [
+          10,
+          5.75
+        ],
+        "before": 991,
+        "after": 985,
+        "delta": -6
+      }
+    ],
+    "h4a-integration-25-forward-01": [],
+    "h4a-integration-25-reverse-01": [],
+    "h4a-integration-29.97df-forward-01": [
+      {
+        "previous": [
+          2,
+          9.75
+        ],
+        "next": [
+          3,
+          0.25
+        ],
+        "before": 992,
+        "after": 986,
+        "delta": -6
+      }
+    ],
+    "h4a-integration-29.97df-reverse-01": [],
+    "h4a-integration-29.97nd-forward-01": [],
+    "h4a-integration-29.97nd-reverse-01": [
+      {
+        "previous": [
+          4,
+          7.25
+        ],
+        "next": [
+          4,
+          7.75
+        ],
+        "before": 991,
+        "after": 985,
+        "delta": -6
+      }
+    ],
+    "h4a-integration-30-forward-01": [
+      {
+        "previous": [
+          7,
+          3.25
+        ],
+        "next": [
+          7,
+          3.75
+        ],
+        "before": 993,
+        "after": 987,
+        "delta": -6
+      }
+    ],
+    "h4a-integration-30-reverse-01": [
+      {
+        "previous": [
+          9,
+          7.75
+        ],
+        "next": [
+          10,
+          2.25
+        ],
+        "before": 992,
+        "after": 986,
+        "delta": -6
+      }
+    ]
+  },
+  "sd_output": [],
+  "usb_input_output": [
+    {
+      "previous": 43,
+      "next": 44,
+      "before": 981,
+      "after": 969,
+      "delta": -12
+    },
+    {
+      "previous": 55,
+      "next": 56,
+      "before": 969,
+      "after": 963,
+      "delta": -6
+    },
+    {
+      "previous": 64,
+      "next": 65,
+      "before": 963,
+      "after": 957,
+      "delta": -6
+    },
+    {
+      "previous": 75,
+      "next": 76,
+      "before": 957,
+      "after": 951,
+      "delta": -6
+    },
+    {
+      "previous": 413,
+      "next": 414,
+      "before": 951,
+      "after": 945,
+      "delta": -6
+    }
+  ]
+}

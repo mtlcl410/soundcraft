@@ -1,0 +1,14 @@
+{
+  "physical_to_virtual_fc_ms": 0.1336,
+  "virtual_fc_to_returned_fc_ms": 18.3522,
+  "clock": {
+    "last_minus_virtual_fc_ms": 2.3717,
+    "received_between_virtual_and_returned_fc": 1,
+    "received_after_returned_fc": 0
+  },
+  "qf": {
+    "last_minus_virtual_fc_ms": 12.0397,
+    "received_between_virtual_and_returned_fc": 2,
+    "received_after_returned_fc": 0
+  }
+}

@@ -1,0 +1,28 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling soundcraft-playback v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-publication-red\crates\playback)
+    Finished `test` profile [optimized + debuginfo] target(s) in 49.67s
+     Running unittests src\lib.rs (E:\soundcraft\compatibility-audit\g11-follow-target\debug\build\soundcraft-playback/02c6748131393de9\out\soundcraft_playback-02c6748131393de9.exe)
+
+running 1 test
+
+thread 'midi::tests::clock_status_polls_publish_only_when_the_render_horizon_expires' (26060) panicked at crates\playback\src\midi.rs:1250:9:
+assertion `left == right` failed: unchanged host polls republished the audio horizon
+  left: 2068
+ right: 68
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test midi::tests::clock_status_polls_publish_only_when_the_render_horizon_expires ... FAILED
+
+failures:
+
+failures:
+    midi::tests::clock_status_polls_publish_only_when_the_render_horizon_expires
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 282 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p soundcraft-playback --lib`

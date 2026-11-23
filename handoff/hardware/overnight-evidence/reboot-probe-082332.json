@@ -1,0 +1,30 @@
+{
+  "time": "2026-11-23 08:23:32 +0800",
+  "inputs": [
+    "UM-ONE 0",
+    "Model 12 MIDI 1",
+    "MIDIIN2 (Model 12 MIDI) 2"
+  ],
+  "outputs": [
+    "Microsoft GS Wavetable Synth 0",
+    "UM-ONE 1",
+    "Model 12 MIDI 2",
+    "MIDIOUT2 (Model 12 MIDI) 3"
+  ],
+  "tests": [
+    {
+      "tx": "Model 12 MIDI 2",
+      "rx": "UM-ONE",
+      "sent": 8,
+      "received": 8,
+      "ok": true
+    },
+    {
+      "tx": "UM-ONE",
+      "rx": "Model 12 MIDI 1",
+      "sent": 8,
+      "received": 8,
+      "ok": true
+    }
+  ]
+}

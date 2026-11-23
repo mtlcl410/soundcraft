@@ -1,0 +1,20 @@
+{
+  "rate": "29.97nd",
+  "direction": "reverse",
+  "onsets_ms": [
+    150.5667,
+    149.7153,
+    150.4028,
+    150.8114,
+    150.8033,
+    150.7545,
+    150.6827,
+    150.4227,
+    150.4299,
+    150.4853
+  ],
+  "spread_ms": 1.0961,
+  "locate_mismatches": [],
+  "quarter_frame_mismatches": [],
+  "criteria_met": true
+}

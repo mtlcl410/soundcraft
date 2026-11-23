@@ -1,0 +1,214 @@
+[
+  {
+    "label": "stop-ordinal-4ed607bf-on-0",
+    "valid": true,
+    "mode": "on",
+    "advance_ms": 0,
+    "input": 576,
+    "output": 576,
+    "valid_prefix": true,
+    "omitted": 0,
+    "surplus": 0,
+    "suppressions": [
+      {
+        "at_ms": 5.9605,
+        "pass_id": 3,
+        "ordinal": 576,
+        "source_last": 575
+      }
+    ],
+    "last_send_begin_ms": -15.9765,
+    "last_send_end_ms": -15.8612,
+    "returned_after_output_stop": 0,
+    "qf": 1434,
+    "steady_median_spacing_ms": 20.8534,
+    "effective_clock_offset_us": 15166,
+    "compensation_readback": {
+      "beat_clock": true,
+      "mtc": true,
+      "notes": false
+    }
+  },
+  {
+    "label": "stop-ordinal-4ed607bf-on-5",
+    "valid": true,
+    "mode": "on",
+    "advance_ms": 5,
+    "input": 576,
+    "output": 576,
+    "valid_prefix": true,
+    "omitted": 0,
+    "surplus": 0,
+    "suppressions": [
+      {
+        "at_ms": 4.4254,
+        "pass_id": 3,
+        "ordinal": 576,
+        "source_last": 575
+      }
+    ],
+    "last_send_begin_ms": -16.5087,
+    "last_send_end_ms": -16.3766,
+    "returned_after_output_stop": 0,
+    "qf": 1434,
+    "steady_median_spacing_ms": 20.8618,
+    "effective_clock_offset_us": 15166,
+    "compensation_readback": {
+      "beat_clock": true,
+      "mtc": true,
+      "notes": false
+    }
+  },
+  {
+    "label": "stop-ordinal-4ed607bf-on-10",
+    "valid": true,
+    "mode": "on",
+    "advance_ms": 10,
+    "input": 576,
+    "output": 576,
+    "valid_prefix": true,
+    "omitted": 0,
+    "surplus": 0,
+    "suppressions": [
+      {
+        "at_ms": 10.966,
+        "pass_id": 3,
+        "ordinal": 576,
+        "source_last": 575
+      }
+    ],
+    "last_send_begin_ms": -10.0124,
+    "last_send_end_ms": -9.8507,
+    "returned_after_output_stop": 0,
+    "qf": 1433,
+    "steady_median_spacing_ms": 20.8668,
+    "effective_clock_offset_us": 15166,
+    "compensation_readback": {
+      "beat_clock": true,
+      "mtc": true,
+      "notes": false
+    }
+  },
+  {
+    "label": "stop-ordinal-4ed607bf-on-15",
+    "valid": true,
+    "mode": "on",
+    "advance_ms": 15,
+    "input": 576,
+    "output": 576,
+    "valid_prefix": true,
+    "omitted": 0,
+    "surplus": 0,
+    "suppressions": [],
+    "last_send_begin_ms": -3.6957,
+    "last_send_end_ms": -3.5727,
+    "returned_after_output_stop": 0,
+    "qf": 1432,
+    "steady_median_spacing_ms": 20.8554,
+    "effective_clock_offset_us": 15166,
+    "compensation_readback": {
+      "beat_clock": true,
+      "mtc": true,
+      "notes": false
+    }
+  },
+  {
+    "label": "stop-ordinal-4ed607bf-off-15",
+    "valid": true,
+    "mode": "off",
+    "advance_ms": 15,
+    "input": 576,
+    "output": 576,
+    "valid_prefix": true,
+    "omitted": 0,
+    "surplus": 0,
+    "suppressions": [
+      {
+        "at_ms": 3.3415,
+        "pass_id": 3,
+        "ordinal": 576,
+        "source_last": 575
+      }
+    ],
+    "last_send_begin_ms": -17.3179,
+    "last_send_end_ms": -17.2031,
+    "returned_after_output_stop": 0,
+    "qf": 1433,
+    "steady_median_spacing_ms": 20.8694,
+    "effective_clock_offset_us": 0,
+    "compensation_readback": {
+      "beat_clock": false,
+      "mtc": true,
+      "notes": false
+    }
+  },
+  {
+    "label": "stop-ordinal-4ed607bf-off-10",
+    "valid": true,
+    "mode": "off",
+    "advance_ms": 10,
+    "input": 576,
+    "output": 577,
+    "valid_prefix": true,
+    "omitted": 0,
+    "surplus": 1,
+    "suppressions": [],
+    "last_send_begin_ms": -4.8319,
+    "last_send_end_ms": -4.7123,
+    "returned_after_output_stop": 0,
+    "qf": 1434,
+    "steady_median_spacing_ms": 20.86125,
+    "effective_clock_offset_us": 0,
+    "compensation_readback": {
+      "beat_clock": false,
+      "mtc": true,
+      "notes": false
+    }
+  },
+  {
+    "label": "stop-ordinal-4ed607bf-off-5",
+    "valid": true,
+    "mode": "off",
+    "advance_ms": 5,
+    "input": 576,
+    "output": 577,
+    "valid_prefix": true,
+    "omitted": 0,
+    "surplus": 1,
+    "suppressions": [],
+    "last_send_begin_ms": -9.5944,
+    "last_send_end_ms": -9.4408,
+    "returned_after_output_stop": 0,
+    "qf": 1434,
+    "steady_median_spacing_ms": 20.86525,
+    "effective_clock_offset_us": 0,
+    "compensation_readback": {
+      "beat_clock": false,
+      "mtc": true,
+      "notes": false
+    }
+  },
+  {
+    "label": "stop-ordinal-4ed607bf-off-0",
+    "valid": true,
+    "mode": "off",
+    "advance_ms": 0,
+    "input": 576,
+    "output": 577,
+    "valid_prefix": true,
+    "omitted": 0,
+    "surplus": 1,
+    "suppressions": [],
+    "last_send_begin_ms": -14.9697,
+    "last_send_end_ms": -14.8315,
+    "returned_after_output_stop": 0,
+    "qf": 1435,
+    "steady_median_spacing_ms": 20.8604,
+    "effective_clock_offset_us": 0,
+    "compensation_readback": {
+      "beat_clock": false,
+      "mtc": true,
+      "notes": false
+    }
+  }
+]

@@ -1,0 +1,75 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.35s
+     Running unittests src\lib.rs (E:/soundcraft/compatibility-audit/g11-hw-acceptance/target-follow-confirm\debug\build\soundcraft-playback/02c6748131393de9\out\soundcraft_playback-02c6748131393de9.exe)
+
+running 48 tests
+test midi::tests::review_closing_mtc_port_calls_host_wakeup_outside_the_writer_lock ... ok
+test mtc::tests::full_take_probe::measure_full_take_relocations ... FAILED
+test mtc::tests::only_mtc_transitions_wake_the_host ... ok
+test mtc::tests::first_integer_sample_of_an_even_fractional_frame_emits_its_quarter_group ... ok
+test mtc::tests::all_six_rates_align_eight_wire_pieces_and_session_offset_to_presentation ... ok
+test mtc::tests::stopped_locates_drop_frame_labels_and_delayed_worker_resumes_a_whole_group ... ok
+test mtc::tests::external_timecode_before_session_start_preserves_the_cursor_and_recovers ... ok
+test mtc::tests::going_offline_before_ui_observes_roll_stops_chase_and_permits_record ... ok
+test mtc_input::dropout_tests::freewheel_at_configured_rate_and_jam_still_obey_explicit_stop ... ok
+test mtc_input::dropout_tests::matching_rate_with_jitter_never_reports_a_mismatch ... ignored, ten simulated minutes for each of four rate settings
+test mtc_input::dropout_tests::incompatible_rate_code_reports_a_mismatch ... ok
+test mtc::tests::recording_request_is_ignored_while_waiting_for_external_timecode ... ok
+test mtc::tests::external_lock_starts_and_runs_at_unity_without_repaints ... ok
+test mtc_input::dropout_tests::jam_sync_runs_on_internal_clock_and_only_accepts_a_corroborated_seek ... ok
+test mtc_input::dropout_tests::none_stops_on_missing_or_discontinuous_code_without_coasting ... ok
+test mtc::tests::ui_stop_from_an_earlier_lock_cannot_restart_the_new_roll ... ok
+test mtc::tests::mtc_chase_waits_for_observed_lead_before_testing_presentation_drift ... ok
+test mtc_input::dropout_tests::reader_reports_the_latest_absolute_incoming_timecode_and_rate ... ok
+test mtc_input::dropout_tests::one_lost_quarter_does_not_stop_or_change_phase ... ok
+test mtc_input::tests::all_wire_rates_roll_across_midnight_and_reverse_never_starts_playback ... ok
+test mtc_input::tests::arrival_delay_uses_the_selected_input_and_remains_readable_after_stop ... ok
+test mtc_input::tests::framing_adjacent_full_frame_rewind_crosses_to_the_previous_day ... ok
+test mtc_input::tests::clock_and_timecode_share_interleaved_realtime_without_double_counting ... ok
+test mtc_input::tests::framing_generator_and_chase_keep_midnight_session_samples_continuous ... ok
+test mtc_input::tests::framing_ignores_incomplete_and_oversized_timecode_then_accepts_fresh_locate ... ok
+test mtc_input::tests::full_frame_locate_matches_fractional_rate_session_start ... ok
+test mtc_input::tests::framing_selected_port_accepts_interleaved_realtime_and_split_quarter_frames ... ok
+test mtc_input::tests::full_frame_validates_drop_labels_and_does_not_lock ... ok
+test mtc_input::tests::locate_only_anchors_the_matching_first_roll ... ok
+test mtc_input::tests::malformed_full_frames_captured_on_din_preserve_position_until_a_valid_locate ... ok
+test mtc_input::tests::rolling_requires_two_sequential_forward_cycles_and_expires ... ok
+test mtc_input::tests::selected_feed_separates_chase_from_channel_recording_and_closed_callbacks ... ok
+test mtc_input::dropout_tests::ntsc_speed_mismatch_is_reported_within_30_seconds ... ok
+test mtc_input::tests::short_dropout_across_midnight_keeps_the_locked_reader_day ... ok
+test sync_output::mtc_on_shared_port::a_burst_of_external_locates_queues_one_transport_refresh ... ok
+test sync_output::mtc_on_shared_port::an_mtc_route_is_cached_only_after_the_worker_accepts_it ... ok
+test sync_output::mtc_on_shared_port::both_encoders_use_one_connection_and_the_same_offset ... ok
+test sync_output::mtc_on_shared_port::generator_waits_for_observed_presentation_only_when_compensation_is_enabled ... ok
+test sync_output::mtc_on_shared_port::mtc_rate_and_start_change_at_the_first_rendered_block_of_the_new_generation ... ok
+test sync_output::tests::short_mtc_block_without_a_quarter_frame_keeps_the_worker_awake ... ok
+test sync_output::mtc_on_shared_port::recovered_mtc_locates_live_and_starts_a_complete_quarter_frame_group ... ok
+test sync_output::tests::mtc_sync_route_warns_only_with_an_open_chase_source ... ok
+test sync_output::mtc_on_shared_port::mtc_quarters_use_the_mixer_delay_and_report_limited_negative_advances ... ok
+test sync_output::mtc_on_shared_port::generator_and_slave_agree_on_heard_time_after_acquisition ... ok
+test mtc::tests::jam_sync_audio_free_runs_for_ten_seconds_and_seeks_only_on_the_second_new_group ... ok
+test mtc::tests::locked_device_tracks_and_stops_during_a_ui_stall ... ok
+test mtc::tests::anchored_start::anchored_start_preserves_attack_phase_across_device_buffers ... ok
+test mtc::tests::phase_probe::anchored_phase_replay_matrix ... ok
+
+failures:
+
+---- mtc::tests::full_take_probe::measure_full_take_relocations stdout ----
+
+thread 'mtc::tests::full_take_probe::measure_full_take_relocations' (2356) panicked at crates\playback\src\mtc\tests\full_take_probe.rs:7:75:
+called `Result::unwrap()` on an `Err` value: NotPresent
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    mtc::tests::full_take_probe::measure_full_take_relocations
+
+test result: FAILED. 46 passed; 1 failed; 1 ignored; 0 measured; 225 filtered out; finished in 0.72s
+
+error: test failed, to rerun pass `-p soundcraft-playback --lib`

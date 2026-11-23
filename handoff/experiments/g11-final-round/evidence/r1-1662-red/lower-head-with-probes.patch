@@ -1,0 +1,379 @@
+diff --git a/crates/playback/src/beat_clock.rs b/crates/playback/src/beat_clock.rs
+index 852302d..fed2c49 100644
+--- a/crates/playback/src/beat_clock.rs
++++ b/crates/playback/src/beat_clock.rs
+@@ -218,6 +218,50 @@ fn remapped(old: &Session, new: &Session, at: i64) -> bool {
+ #[cfg(test)]
+ mod tests {
+     use super::*;
++    #[test]
++    fn review_launch_at_a_rounded_pulse_boundary_does_not_send_two_clocks() {
++        let mut song = Session::new("rounded pulse", SampleRate::HZ_48000);
++        song.tempo.set_tempo(0, 126.).unwrap();
++        let now = Instant::now();
++        let block = Presentation {
++            generation: 0,
++            sample_rate: song.sample_rate,
++            system_delay_samples: 0,
++            pass: 1,
++            origin: 0,
++            playing: true,
++            sample: 952.,
++            limit: 1464.,
++            samples_per_second: 48_000.,
++            heard_at: now,
++            looped: None,
++            end: None,
++            lead: Some(Duration::ZERO),
++        };
++        let mut messages = Vec::new();
++        let mut cursor = Cursor::default();
++        let next = cursor.update(block, now, &song, &mut |_, m| messages.push(m.to_vec())).unwrap();
++        assert_eq!(messages, [vec![START], vec![CLOCK]]);
++        assert!(next >= now + CATCH_UP_SPACING);
++        messages.clear();
++        cursor.update(block, next, &song, &mut |_, m| messages.push(m.to_vec()));
++        assert_eq!(messages, [vec![CLOCK]]);
++    }
++
++    #[test]
++    fn review_stopped_range_warning_persists_until_the_next_locate() {
++        let mut cursor = Cursor::default();
++        let tempo = TempoMap::default();
++        let sr = SampleRate::HZ_48000;
++        let far = tempo.tick_to_samples((i64::from(MAX_POSITION) + 1) * 6 * TICKS_PER_CLOCK, sr);
++        for locate in [true, false, false] {
++            cursor.advance(false, far, locate, &tempo, sr, |_| panic!("invalid SPP"));
++            assert!(cursor.error().is_some());
++        }
++        cursor.advance(false, 0, true, &tempo, sr, |_| {});
++        assert!(cursor.error().is_none());
++    }
++
+     #[test]
+     fn stopped_locates_announce_the_same_position_as_play_without_starting() {
+         let mut cursor = Cursor::default();
+diff --git a/crates/playback/src/stream_recovery.rs b/crates/playback/src/stream_recovery.rs
+index 7c8df7b..9901641 100644
+--- a/crates/playback/src/stream_recovery.rs
++++ b/crates/playback/src/stream_recovery.rs
+@@ -287,6 +287,39 @@ impl Recovery {
+ mod tests {
+     use super::*;
+     use crate::sync_clock::StreamLead;
++    #[test]
++    fn callback_panic_latched_after_service_check_prevents_handoff() {
++        let now = Instant::now();
++        let current = Route::new(true, now);
++        let next = Route::new(false, now);
++        let graph = Mutex::new(());
++        let fault = Fault::default();
++        let running = AtomicBool::new(false);
++        for _ in 0..8 {
++            next.reports.write(now, true);
++        }
++        // Simulate a callback latching a failure after the control thread's safety check.
++        current.render(&graph, |_| fault.failed.store(true, Ordering::Relaxed));
++        assert!(!current.hand_over(&next, &graph, &running, now));
++        assert!(!next.selected.load(Ordering::Acquire));
++        assert_eq!(fault.trouble(false), Some(crate::OutputTrouble::Bug));
++        assert!(current.hand_over(&next, &graph, &running, now));
++    }
++
++    #[test]
++    fn exhausted_recovery_can_reopen_an_endpoint_that_never_disappears() {
++        let mut retry = Retry::default();
++        let start = Instant::now();
++        for _ in 0..MAX_ATTEMPTS {
++            assert_eq!(retry.lookup(start, || Some(())), Some(()));
++        }
++        for period in 1..=3 {
++            let due = start + PRESENCE_INTERVAL * period;
++            assert!(retry.lookup(due - Duration::from_millis(1), || -> Option<()> { panic!("early enumeration") }).is_none());
++            assert_eq!(retry.lookup(due, || Some(())), Some(()));
++        }
++    }
++
+     #[test]
+     fn only_an_identifiable_wasapi_endpoint_gets_the_handoff_callback() {
+         let wasapi = cpal::DeviceId::new(cpal::HostId::Wasapi, "original-endpoint");
+diff --git a/crates/playback/src/sync_output/ports.rs b/crates/playback/src/sync_output/ports.rs
+index 1b51970..f509de0 100644
+--- a/crates/playback/src/sync_output/ports.rs
++++ b/crates/playback/src/sync_output/ports.rs
+@@ -105,6 +105,12 @@ mod tests {
+         ports.iter().map(|(name, id)| (name.to_string(), id.to_string())).collect()
+     }
+ 
++    #[test]
++    fn review_unnameable_output_with_the_same_id_never_opens_its_named_sibling() {
++        let found = [(None, "shared".into()), (Some("DIN".into()), "shared".into()), (Some("Other".into()), "distinct".into())];
++        assert_eq!(assign(&Bindings::new(), found.into_iter().filter_map(|(name,id): (Option<String>,String)| Some((name?, id)))), Bindings::from([("Other".into(), "distinct".into())]));
++    }
++
+     #[test]
+     fn duplicate_calibrations_reserve_literal_names_and_reject_indistinguishable_ids() {
+         let found = listed(&[("DIN", "a"), ("DIN", "b"), ("DIN (2)", "c"), ("unstable", "d"), ("unstable", "d")]);
+diff --git a/crates/playback/src/sync_output_tests.rs b/crates/playback/src/sync_output_tests.rs
+index 955e19b..ec8c93d 100644
+--- a/crates/playback/src/sync_output_tests.rs
++++ b/crates/playback/src/sync_output_tests.rs
+@@ -5,6 +5,123 @@ use std::sync::atomic::AtomicUsize;
+ 
+ /// On Windows, set SOUNDCRAFT_LOOPBACK_IN and SOUNDCRAFT_LOOPBACK_OUT to the
+ /// exact names of a dedicated virtual cable. The Unix paths create their own port.
++#[test]
++fn review_unavailable_generation_never_encodes_another_sessions_tempo() {
++    let now = Instant::now();
++    let mut p = active_port(0, false);
++    let view = View::default();
++    let s = Arc::new(Session::default());
++    for generation in 1..=crate::sync_clock::MAX_REVISIONS as u64 + 1 {
++        view.lock().unwrap().register(SessionRevision { generation, doc: s.clone(), remap: true }, true);
++    }
++    view.lock().unwrap().push(Presentation { generation: 1, ..block(now, 0., 480., Duration::ZERO) });
++    let stats = Stats::default();
++    p.poll("DIN", now, &s, &view, &stats, &mut vec![]);
++    assert!(p.link.as_ref().unwrap().messages.is_empty());
++    let next = now + Duration::from_millis(10);
++    view.lock().unwrap().push(Presentation { generation: 9, pass: 2, ..block(next, 0., 480., Duration::ZERO) });
++    p.poll("DIN", next, &s, &view, &stats, &mut vec![]);
++    assert_eq!(p.link.unwrap().messages.iter().map(|(_, m)| m[0]).collect::<Vec<_>>(), [START, CLOCK]);
++}
++
++#[test]
++fn review_superseded_pass_discards_locates_both_before_and_at_their_deadline() {
++    for change_ms in [4, 10] {
++        let t = Instant::now();
++        let delay = Duration::from_millis(10);
++        let view = View::default();
++        let s = Session::default();
++        let stats = Stats::default();
++        let mut port = active_port(0, false);
++        port.routes[0].as_mut().unwrap().encoder = Box::new(Messages(vec![(delay, vec![0xf2, 7, 0])]));
++        view.lock().unwrap().push(block(t, 0., 480., Duration::ZERO));
++        port.poll("DIN", t, &s, &view, &stats, &mut vec![]);
++        let changed = t + Duration::from_millis(change_ms);
++        view.lock().unwrap().push(Presentation { pass: 2, ..block(changed, 4800., 480., Duration::ZERO) });
++        port.poll("DIN", changed, &s, &view, &stats, &mut vec![]);
++        port.poll("DIN", t + delay, &s, &view, &stats, &mut vec![]);
++        assert!(port.link.unwrap().messages.is_empty(), "obsolete SPP at {change_ms} ms");
++    }
++}
++
++#[test]
++fn review_failed_transport_stop_is_retried_before_new_pass_start() {
++    struct FailsOnce(bool, Vec<Vec<u8>>);
++    impl SyncPort for FailsOnce {
++        fn send_at(&mut self, at: Instant, msg: &[u8]) -> Result<Instant, String> {
++            if msg == [STOP] && std::mem::take(&mut self.0) {
++                return Err("port unavailable".into());
++            }
++            self.1.push(msg.to_vec());
++            Ok(at)
++        }
++    }
++    let now = Instant::now();
++    let old = active_port(0, false);
++    let mut port = Port {
++        link: Some(FailsOnce(true, vec![])),
++        retry: now,
++        routes: old.routes,
++        future: vec![],
++        stop_pending: false,
++        timing_epochs: [0; 2],
++        waiting_for_timing: false,
++        failure: None,
++    };
++    let view = View::default();
++    let s = Session::default();
++    let stats = Stats::default();
++    for (ms, play) in [(0, false), (1, true), (2, false), (1002, true)] {
++        let t = now + Duration::from_millis(ms);
++        view.lock().unwrap().push(Presentation { pass: ms, playing: play, ..block(t, 0., 480., Duration::ZERO) });
++        if ms == 1002 {
++            assert!(port.link.is_none());
++            port.link = Some(FailsOnce(false, vec![]));
++            port.routes[0].as_mut().unwrap().encoder.reset();
++        }
++        port.poll("DIN", t, &s, &view, &stats, &mut vec![]);
++    }
++    assert_eq!(port.link.unwrap().1, [vec![STOP], vec![START], vec![CLOCK]]);
++}
++
++#[test]
++fn review_delay_uses_rate_of_the_audible_callback_after_an_edit() {
++    let now = Instant::now();
++    let out = &mut Output::default();
++    out.beat.push(("DIN".into(), 0));
++    out.compensated = true;
++    let mut publisher = Publisher::new(out.view.clone(), out.metrics.clone());
++    publisher.observe(DeviceTiming::new(now, Some(Duration::ZERO), 0), 0.01);
++    publisher.publish(Presentation {
++        sample_rate: soundcraft_time::SampleRate::HZ_48000,
++        system_delay_samples: 4800,
++        ..block(now, 0., 480., Duration::ZERO)
++    });
++    out.session = Some(Arc::new(Session::new("new", soundcraft_time::SampleRate::new(96_000).unwrap())));
++    assert_eq!(out.status().ports["DIN"].effective_total_us, Some(100_000));
++}
++
++#[test]
++fn review_a_stall_beyond_the_repayment_beat_relocates_to_the_current_position() {
++    let t = Instant::now();
++    let view = View::default();
++    let s = Session::default();
++    let mut p = active_port(0, true);
++    let stats = Stats::default();
++    for ms in (0..=240).chain([1200]) {
++        let now = t + Duration::from_millis(ms);
++        if ms % 10 == 0 {
++            view.lock().unwrap().push(Presentation {
++                lead: (!(100..200).contains(&ms)).then_some(Duration::ZERO),
++                ..block(now, ms as f64 * 48., 480., Duration::ZERO)
++            });
++        }
++        p.link.as_mut().unwrap().messages.clear();
++        p.poll("DIN", now, &s, &view, &stats, &mut vec![]);
++    }
++    assert_eq!(p.link.unwrap().messages.iter().map(|(_, m)| m[0]).collect::<Vec<_>>(), [STOP, 0xf2, CONTINUE]);
++}
++
+ #[test]
+ #[ignore = "requires an OS MIDI loopback driver"]
+ fn beat_clock_reaches_a_virtual_midi_receiver() {
+@@ -1085,10 +1202,13 @@ fn a_missed_timing_gap_invalidates_only_the_compensated_route_queue() {
+     let mut port = active_port(0, true);
+     let delay = Duration::from_millis(20);
+     for (index, compensate) in [true, false].into_iter().enumerate() {
+-        port.routes[index] = Some(Route { map: None, offset: 0, compensate, encoder: Box::new(Messages(vec![(delay, vec![0xf8])])) });
++        port.routes[index] =
++            Some(Route { map: None, offset: 0, compensate, encoder: Box::new(Messages(vec![(delay, vec![if compensate { 0xf1 } else { 0xf8 }])])) });
+     }
+     view.lock().unwrap().push(block(base, 0., 480., Duration::ZERO));
+     port.poll("desk", base, &song, &view, &stats, &mut vec![]);
++    // Mutation control. Mislabel just the queued destinations before resuming, emulating a route swap.
++    for event in &mut port.future { event.route = 1 - event.route; }
+     // Both callback publications land between two worker polls.
+     let now = base + delay;
+     let mut timeline = view.lock().unwrap();
+diff --git a/crates/ui-egui/src/app/audio.rs b/crates/ui-egui/src/app/audio.rs
+index 2eccba7..0437937 100644
+--- a/crates/ui-egui/src/app/audio.rs
++++ b/crates/ui-egui/src/app/audio.rs
+@@ -82,6 +82,19 @@ impl SoundApp {
+         self.report_output_trouble(trouble, name, valid_reports);
+     }
+ 
++    // Test adapters reproduce the old apply, reconnect-result, and config expressions.
++    #[cfg(test)]
++    fn applied_output_status(&mut self, _changed: bool, silent: bool) {
++        if !silent { self.unavailable_output = None; }
++    }
++    #[cfg(test)]
++    fn reconnected_output_status(&mut self, name: Option<String>, _system: Option<String>, silent: bool) {
++        self.unavailable_output = name.filter(|_| silent).map(|name| crate::UnavailableOutput {
++            name, system: None, stalled_at_report: None, idle_status: None
++        });
++    }
++    #[cfg(test)]
++    fn recovery_config(&self) -> soundcraft_playback::AudioConfig { self.ui.audio.clone() }
+     fn clear_recovered_output(&mut self) {
+         if let Some(fault) = self.unavailable_output.take()
+             && fault.idle_status.as_ref() == Some(&self.ui.status)
+@@ -119,6 +132,7 @@ impl SoundApp {
+         if matches!(trouble, OutputTrouble::Gone | OutputTrouble::Stalled) {
+             self.unavailable_output = Some(crate::UnavailableOutput {
+                 name,
++                system: None,
+                 stalled_at_report: (trouble == OutputTrouble::Stalled).then_some(valid_reports),
+                 idle_status: (!recording && !playing).then(|| self.ui.status.clone()),
+             });
+@@ -209,7 +223,7 @@ impl SoundApp {
+         let player = match required {
+             Some(name) => {
+                 let player = Player::reconnect_output(session, &self.ui.audio, &name);
+-                self.unavailable_output = player.silent.then_some(crate::UnavailableOutput { name, stalled_at_report: None, idle_status: None });
++                self.unavailable_output = player.silent.then_some(crate::UnavailableOutput { name, system: None, stalled_at_report: None, idle_status: None });
+                 player
+             }
+             None => Player::with_config(session, &self.ui.audio),
+@@ -301,6 +315,57 @@ mod audio_input_tests {
+ mod timing_warning_tests {
+     use super::*;
+ 
++    #[test]
++    fn applied_selection_retargets_a_failed_open_including_equal_names_on_other_hosts() {
++        let mut app = SoundApp::new(crate::Engine::default(), None, crate::Services::default());
++        app.report_output_trouble(OutputTrouble::Gone, "A".into(), 0);
++        for (name, host) in [("B", "WASAPI"), ("B", "ASIO")] {
++            app.ui.audio.output = Some(name.into());
++            app.ui.audio.system = Some(host.into());
++            app.applied_output_status(true, true);
++            let fault = app.unavailable_output.as_ref().unwrap();
++            assert_eq!(fault.name, name);
++            assert_eq!(fault.system.as_deref(), Some(host));
++            assert!(!app.ui.status.contains("“A”"));
++        }
++        app.ui.audio.output = None;
++        app.applied_output_status(true, true);
++        assert!(app.recovery_output().is_none(), "retry the current default");
++    }
++
++    #[test]
++    fn manual_retry_and_apply_clear_only_the_matching_idle_warning() {
++        let mut app = SoundApp::new(crate::Engine::default(), None, crate::Services::default());
++        for apply in [false, true] {
++            app.report_output_trouble(OutputTrouble::Gone, "A".into(), 0);
++            app.reconnected_output_status(Some("A".into()), None, true);
++            assert_eq!(app.unavailable_output.as_ref().unwrap().idle_status.as_ref(), Some(&app.ui.status));
++            if apply {
++                app.applied_output_status(false, false);
++            } else {
++                app.reconnected_output_status(Some("A".into()), None, false);
++            }
++            assert!(app.unavailable_output.is_none() && app.ui.status.is_empty());
++        }
++        app.report_output_trouble(OutputTrouble::Gone, "A".into(), 0);
++        app.ui.status = "Saved".into();
++        app.reconnected_output_status(Some("A".into()), None, false);
++        assert_eq!(app.ui.status, "Saved");
++    }
++
++    #[test]
++    fn reconnect_uses_the_original_open_host_after_falling_back() {
++        let mut app = SoundApp::new(crate::Engine::default(), None, crate::Services::default());
++        app.ui.audio.system = Some("initially unavailable host".into());
++        app.ui.audio.input = Some("microphone".into());
++        app.report_output_trouble(OutputTrouble::Gone, "USB".into(), 0);
++        app.unavailable_output.as_mut().unwrap().system = Some("WASAPI".into());
++        let retry = app.recovery_config();
++        assert_eq!(retry.system.as_deref(), Some("WASAPI"));
++        assert_eq!(retry.input, app.ui.audio.input);
++        assert_eq!(app.ui.audio.system.as_deref(), Some("initially unavailable host"));
++    }
++
+     #[test]
+     fn pending_transport_commands_defer_output_recovery_until_the_host_handles_them() {
+         use soundcraft_engine::TransportRequest;
+@@ -397,7 +462,7 @@ mod timing_warning_tests {
+         app.ui.audio.output = Some("Output A".into());
+         app.ui.audio.input = Some("Input B".into());
+         app.engine.session_mut().edit.selection = crate::Range::point(66_150);
+-        app.unavailable_output = Some(crate::UnavailableOutput { name: "Output A".into(), stalled_at_report: None, idle_status: None });
++        app.unavailable_output = Some(crate::UnavailableOutput { name: "Output A".into(), system: None, stalled_at_report: None, idle_status: None });
+         let before = app.engine.session_arc();
+         for (playing, recording) in [(true, false), (true, true), (false, true)] {
+             app.engine.transport.playing = playing;
+diff --git a/crates/ui-egui/src/lib.rs b/crates/ui-egui/src/lib.rs
+index 36df686..bdfc922 100644
+--- a/crates/ui-egui/src/lib.rs
++++ b/crates/ui-egui/src/lib.rs
+@@ -282,6 +282,7 @@ pub enum Gesture {
+ 
+ struct UnavailableOutput {
+     name: String,
++    system: Option<String>,
+     // A stalled callback may resume. A stream explicitly invalidated by CPAL must be reopened.
+     stalled_at_report: Option<u64>,
+     // Dismiss our idle warning on recovery only if it still occupies the status line.

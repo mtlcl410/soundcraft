@@ -1,0 +1,285 @@
+{
+  "baseline": {
+    "roll_span_ms": 7991.4166,
+    "qframes": 960,
+    "decoded_reference_scatter_ms": 0.5715333390980959,
+    "a4": {
+      "output1": {
+        "ms": -14.7804,
+        "epoch": "epoch-0",
+        "crossings": 22
+      },
+      "input9": {
+        "ms": 5.4779,
+        "epoch": "epoch-0",
+        "crossings": 22
+      }
+    },
+    "roll": {
+      "callbacks": 1498,
+      "intervals": 1497,
+      "median_ms": 5.0182,
+      "mean_ms": 5.332609619238477,
+      "min_ms": 4.8589,
+      "max_ms": 6.1356,
+      "p99_ms": 6.0734,
+      "bins": [
+        0,
+        0,
+        1497,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pos_deltas": {
+        "256": 1497
+      },
+      "serial_skips": 0,
+      "frames": [
+        256
+      ],
+      "position_valid": 1498,
+      "flags": {
+        "15": 1498
+      }
+    },
+    "around_a4": {
+      "callbacks": 375,
+      "intervals": 374,
+      "median_ms": 5.0162,
+      "mean_ms": 5.331498128342246,
+      "min_ms": 4.8816,
+      "max_ms": 6.1014,
+      "p99_ms": 6.0638,
+      "bins": [
+        0,
+        0,
+        374,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "pos_deltas": {
+        "256": 374
+      },
+      "serial_skips": 0,
+      "frames": [
+        256
+      ],
+      "position_valid": 375,
+      "flags": {
+        "15": 375
+      }
+    }
+  },
+  "post-1": {
+    "roll_span_ms": 7991.8182,
+    "qframes": 960,
+    "decoded_reference_scatter_ms": 0.5526333407033235,
+    "a4": {},
+    "roll": {
+      "callbacks": 31,
+      "intervals": 30,
+      "median_ms": 251.26585,
+      "mean_ms": 251.29140666666663,
+      "min_ms": 250.2839,
+      "max_ms": 252.4462,
+      "p99_ms": 252.4462,
+      "bins": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        30,
+        0
+      ],
+      "pos_deltas": {
+        "256": 30
+      },
+      "serial_skips": 0,
+      "frames": [
+        256
+      ],
+      "position_valid": 31,
+      "flags": {
+        "15": 31
+      }
+    },
+    "around_a4": {
+      "callbacks": 8,
+      "intervals": 7,
+      "median_ms": 251.2849,
+      "mean_ms": 251.2945857142857,
+      "min_ms": 250.2839,
+      "max_ms": 252.0517,
+      "p99_ms": 252.0517,
+      "bins": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        7,
+        0
+      ],
+      "pos_deltas": {
+        "256": 7
+      },
+      "serial_skips": 0,
+      "frames": [
+        256
+      ],
+      "position_valid": 8,
+      "flags": {
+        "15": 8
+      }
+    }
+  },
+  "post-2": {
+    "roll_span_ms": 7991.8383,
+    "qframes": 960,
+    "decoded_reference_scatter_ms": 0.5971666541881859,
+    "a4": {},
+    "roll": {
+      "callbacks": 32,
+      "intervals": 31,
+      "median_ms": 251.2504,
+      "mean_ms": 251.3311870967742,
+      "min_ms": 250.2473,
+      "max_ms": 253.0223,
+      "p99_ms": 253.0223,
+      "bins": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        31,
+        0
+      ],
+      "pos_deltas": {
+        "256": 31
+      },
+      "serial_skips": 0,
+      "frames": [
+        256
+      ],
+      "position_valid": 32,
+      "flags": {
+        "15": 32
+      }
+    },
+    "around_a4": {
+      "callbacks": 8,
+      "intervals": 7,
+      "median_ms": 251.3562,
+      "mean_ms": 251.44158571428574,
+      "min_ms": 250.4169,
+      "max_ms": 253.0223,
+      "p99_ms": 253.0223,
+      "bins": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        7,
+        0
+      ],
+      "pos_deltas": {
+        "256": 7
+      },
+      "serial_skips": 0,
+      "frames": [
+        256
+      ],
+      "position_valid": 8,
+      "flags": {
+        "15": 8
+      }
+    }
+  },
+  "post-3": {
+    "roll_span_ms": 7991.8439,
+    "qframes": 960,
+    "decoded_reference_scatter_ms": 0.6283000111579895,
+    "a4": {},
+    "roll": {
+      "callbacks": 31,
+      "intervals": 30,
+      "median_ms": 251.32195000000002,
+      "mean_ms": 251.25724000000002,
+      "min_ms": 250.1166,
+      "max_ms": 252.6103,
+      "p99_ms": 252.6103,
+      "bins": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        30,
+        0
+      ],
+      "pos_deltas": {
+        "256": 30
+      },
+      "serial_skips": 0,
+      "frames": [
+        256
+      ],
+      "position_valid": 31,
+      "flags": {
+        "15": 31
+      }
+    },
+    "around_a4": {
+      "callbacks": 8,
+      "intervals": 7,
+      "median_ms": 251.4423,
+      "mean_ms": 251.38628571428572,
+      "min_ms": 250.6666,
+      "max_ms": 252.6103,
+      "p99_ms": 252.6103,
+      "bins": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        7,
+        0
+      ],
+      "pos_deltas": {
+        "256": 7
+      },
+      "serial_skips": 0,
+      "frames": [
+        256
+      ],
+      "position_valid": 8,
+      "flags": {
+        "15": 8
+      }
+    }
+  }
+}

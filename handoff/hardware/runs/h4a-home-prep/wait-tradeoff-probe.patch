@@ -1,0 +1,81 @@
+--- a/crates/playback/src/callback.rs
++++ b/crates/playback/src/callback.rs
+@@ -468,6 +468,7 @@
+                 // inputs remain audible. A late lock starts immediately.
+                 let frames = out.len() / channels;
+                 let elapsed = (now.saturating_sub(stamp).max(0) as f64 * self.device_rate / 1e6).round() as usize;
++                #[cfg(test)] let frames = frames.saturating_sub(START_ADVANCE_US.with(|us| (us.get() as f64 * self.device_rate / 1e6).round() as usize));
+                 prefix = frames.saturating_sub(elapsed);
+                 if prefix > 0 {
+                     self.render_output(&mut out[..prefix * channels], channels, self.speed());
+@@ -1503,3 +1504,6 @@
+     }
+     g
+ }
++
++#[cfg(test)]
++std::thread_local! { pub(crate) static START_ADVANCE_US: std::cell::Cell<usize> = const {std::cell::Cell::new(0)}; }
+--- a/crates/playback/src/mtc/tests/phase_probe.rs
++++ b/crates/playback/src/mtc/tests/phase_probe.rs
+@@ -67,3 +67,33 @@
+     assert!(sweep<=21,"one-sample phase sweep: {sweep} us");
+     assert!(groups.values().all(|v|v.len()==10 && v.iter().max().unwrap()-v.iter().min().unwrap()<=3000));
+ }
++#[test]
++fn shorter_wait_tradeoff_matrix() {
++    for us in [0,500,1000,1500,2000,2500,3000,5334] {
++ crate::callback::START_ADVANCE_US.with(|v|v.set(us));
++ let mut lines=include_str!("../phase_replay_inputs.txt").lines();
++    let mut groups=BTreeMap::<String,Vec<i64>>::new();
++    let mut swept=Vec::new();
++    while let Some(line)=lines.next() {
++        let h:Vec<_>=line.split_whitespace().collect();
++        let rate=match h[2] { "24"=>FrameRate::Fps24,"25"=>FrameRate::Fps25,"29.97nd"=>FrameRate::Fps29_97,"29.97df"=>FrameRate::Fps29_97Drop,"30"=>FrameRate::Fps30,_=>panic!() };
++        let frame=h[3].parse().unwrap();let at=h[4].parse().unwrap();let score=h[5].parse().unwrap();
++        let reference:i64=h[6].parse().unwrap();
++        let events=lines.next().unwrap().split_whitespace().map(|s| {let (a,b)=s.split_once(':').unwrap();(a.parse().unwrap(),b.parse().unwrap())}).collect::<Vec<_>>();
++        let times=lines.next().unwrap().split_whitespace().map(|v|v.parse().unwrap()).collect::<Vec<i64>>();
++        let hits=replay(rate,frame,at,score,&events,&times);
++        let err=hits[1].0-reference;
++        println!("PROBE,{us},{},{},{err},{}",h[0],h[1],h[7]);
++        groups.entry(h[0].into()).or_default().push(err);
++        if h[0]=="h4a-integration-30-forward-01" && h[1]=="0" {
++            for phase in 0..256 {
++                let regular=(0..177).map(|i|((i*256+phase)*1000000+24000)/48000).collect::<Vec<_>>();
++                swept.push(replay(rate,frame,at,score,&events,&regular)[1].0);
++            }
++        }
++    }
++    let sweep=swept.iter().max().unwrap()-swept.iter().min().unwrap();
++    println!("SWEEP,{us},{sweep}");
++    for (group,values) in &groups {println!("RANGE,{us},{group},{}",values.iter().max().unwrap()-values.iter().min().unwrap());}
++    }
++}
+--- a/crates/playback/src/mtc/tests/anchored_start.rs
++++ b/crates/playback/src/mtc/tests/anchored_start.rs
+@@ -74,3 +74,25 @@
+         assert!(spread <= 21, "buffer {buffer}: first attacks {first:?}");
+     }
+ }
++#[test]
++fn large_buffer_wait_tradeoff() {
++    let rate = FrameRate::Fps30;
++    let events: Vec<_> = (0..120usize)
++        .map(|piece| {
++            let stamp = 100_000 + piece as i64 * 1_000_000 / 120;
++            (stamp, quarters(60 + 2 * (piece / 8) as i64, rate)[piece % 8][1])
++        })
++        .collect();
++    for us in [0,1000,2000,3000,50000] { crate::callback::START_ADVANCE_US.with(|v|v.set(us)); for buffer in [128, 256, 512, 2048] {
++        let first: Vec<_> = (0..buffer)
++            .step_by(1)
++            .map(|phase| {
++                let times: Vec<_> = (phase..48_000).step_by(buffer).map(|sample| sample as i64 * 1_000_000 / 48_000).collect();
++                replay(rate, 60, 96_000, 108_000, &events, &times, buffer)[0].0
++            })
++            .collect();
++        let spread = first.iter().max().unwrap() - first.iter().min().unwrap();
++        println!("LARGE,{us},{buffer},{},{},{spread}",first.iter().min().unwrap(),first.iter().max().unwrap());
++        }
++    }
++}

@@ -1,0 +1,27 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling soundcraft-dsp v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-guide-wav-replay\crates\dsp)
+   Compiling soundcraft-model v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-guide-wav-replay\crates\model)
+   Compiling soundcraft-time v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-guide-wav-replay\crates\time)
+   Compiling soundcraft-midi v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-guide-wav-replay\crates\midi)
+   Compiling soundcraft-clap-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-guide-wav-replay\crates\clap-host)
+   Compiling soundcraft-au-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-guide-wav-replay\crates\au-host)
+   Compiling soundcraft-vst3-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-guide-wav-replay\crates\vst3-host)
+   Compiling soundcraft-mix v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-guide-wav-replay\crates\mix)
+   Compiling soundcraft-playback v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-guide-wav-replay\crates\playback)
+    Finished `test` profile [optimized + debuginfo] target(s) in 39.96s
+     Running unittests src\lib.rs (E:\soundcraft\compatibility-audit\g11-hw-acceptance\target-follow-confirm\debug\build\soundcraft-playback/02c6748131393de9\out\soundcraft_playback-02c6748131393de9.exe)
+
+running 1 test
+Exact endpoint Model 12 MIDI: 64/64 reached UM-ONE, expected 64
+Exact endpoint MIDIOUT2 (Model 12 MIDI): 0/64 reached UM-ONE, expected 0
+Exact endpoint Model 12 MIDI: 64/64 reached UM-ONE, expected 64
+test mtc::tests::nightly_winmm_probe::exact_native_pair_reaches_only_the_physical_din_connector ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 228 filtered out; finished in 2.97s
+

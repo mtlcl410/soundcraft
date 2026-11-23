@@ -1,0 +1,121 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling soundcraft-playback v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\overnight-g11\crates\playback)
+error[E0432]: unresolved import `soundcraft_mix::ClockDelivery`
+   --> crates\playback\src\midi.rs:461:13
+    |
+461 |         use soundcraft_mix::ClockDelivery;
+    |             ^^^^^^^^^^^^^^^^-------------
+    |                             |
+    |                             no `ClockDelivery` in the root
+
+error[E0433]: cannot find `ClockDelivery` in `soundcraft_mix`
+   --> crates\playback\src\midi.rs:486:29
+    |
+486 |             soundcraft_mix::ClockDelivery::Coalesced
+    |                             ^^^^^^^^^^^^^ could not find `ClockDelivery` in `soundcraft_mix`
+
+error[E0433]: cannot find `ClockDelivery` in `soundcraft_mix`
+   --> crates\playback\src\midi.rs:488:29
+    |
+488 |             soundcraft_mix::ClockDelivery::Wire
+    |                             ^^^^^^^^^^^^^ could not find `ClockDelivery` in `soundcraft_mix`
+
+error[E0433]: cannot find `ClockDelivery` in `soundcraft_mix`
+   --> crates\playback\src\callback.rs:999:89
+    |
+999 |                 let (through, delivery) = follow.as_ref().map_or((None, soundcraft_mix::ClockDelivery::Wire), |feed| {
+    |                                                                                         ^^^^^^^^^^^^^ could not find `ClockDelivery` in `soundcraft_mix`
+
+error[E0433]: cannot find `ClockDelivery` in `soundcraft_mix`
+    --> crates\playback\src\callback.rs:1012:65
+     |
+1012 | ...   self.render_next(if delivery == soundcraft_mix::ClockDelivery::Predicted { render_frames } else { quantum }, through, delive...
+     |                                                       ^^^^^^^^^^^^^ could not find `ClockDelivery` in `soundcraft_mix`
+
+error[E0433]: cannot find `MidiClipBeatBounds` in `soundcraft_mix`
+   --> crates\playback\src\lib.rs:563:29
+    |
+563 |             soundcraft_mix::MidiClipBeatBounds::from_score(doc, |_| true)
+    |                             ^^^^^^^^^^^^^^^^^^ could not find `MidiClipBeatBounds` in `soundcraft_mix`
+
+error[E0433]: cannot find `MidiClipBeatBounds` in `soundcraft_mix`
+    --> crates\playback\src\tests.rs:2109:34
+     |
+2109 |     let bounds = soundcraft_mix::MidiClipBeatBounds::from_score(&score, |_| true);
+     |                                  ^^^^^^^^^^^^^^^^^^ could not find `MidiClipBeatBounds` in `soundcraft_mix`
+
+error[E0425]: cannot find type `ClockDelivery` in crate `soundcraft_mix`
+   --> crates\playback\src\midi.rs:460:40
+    |
+460 |     ) -> (Option<i64>, soundcraft_mix::ClockDelivery) {
+    |                                        ^^^^^^^^^^^^^ not found in `soundcraft_mix`
+
+error[E0425]: cannot find type `ClockDelivery` in crate `soundcraft_mix`
+   --> crates\playback\src\midi.rs:484:53
+    |
+484 |     pub fn clock_delivery(&self) -> soundcraft_mix::ClockDelivery {
+    |                                                     ^^^^^^^^^^^^^ not found in `soundcraft_mix`
+
+error[E0425]: cannot find type `ClockDelivery` in crate `soundcraft_mix`
+   --> crates\playback\src\callback.rs:754:95
+    |
+754 |     fn render_next(&mut self, quantum: usize, through: Option<i64>, delivery: soundcraft_mix::ClockDelivery) {
+    |                                                                                               ^^^^^^^^^^^^^ not found in `soundcraft_mix`
+
+error[E0425]: cannot find type `MidiClipBeatBounds` in crate `soundcraft_mix`
+    --> crates\playback\src\callback.rs:1292:40
+     |
+1292 |     clock_clip_bounds: soundcraft_mix::MidiClipBeatBounds,
+     |                                        ^^^^^^^^^^^^^^^^^^ not found in `soundcraft_mix`
+
+error[E0425]: cannot find type `MidiClipBeatBounds` in crate `soundcraft_mix`
+    --> crates\playback\src\callback.rs:1329:89
+     |
+1329 |     pub(crate) fn set_follow_base(&mut self, doc: Arc<Session>, bounds: soundcraft_mix::MidiClipBeatBounds) {
+     |                                                                                         ^^^^^^^^^^^^^^^^^^ not found in `soundcraft_mix`
+
+error[E0425]: cannot find type `MidiClipBeatBounds` in crate `soundcraft_mix`
+   --> crates\playback\src\lib.rs:536:114
+    |
+536 |     fn publish_session(&self, s: Arc<Session>, clock_document: std::sync::Weak<Session>, bounds: soundcraft_mix::MidiClipBeatBounds) {
+    |                                                                                                                  ^^^^^^^^^^^^^^^^^^ not found in `soundcraft_mix`
+
+error[E0425]: cannot find type `MidiClipBeatBounds` in crate `soundcraft_mix`
+   --> crates\playback\src\lib.rs:572:63
+    |
+572 |         project: impl FnOnce(&mut Session) -> soundcraft_mix::MidiClipBeatBounds,
+    |                                                               ^^^^^^^^^^^^^^^^^^ not found in `soundcraft_mix`
+
+error[E0599]: no method named `render_with_clock_limit` found for struct `MixEngine` in the current scope
+   --> crates\playback\src\clock_follow\render_lead.rs:202:12
+    |
+202 |     follow.render_with_clock_limit(&s, 4096, 2048, &mut buf, Some(418));
+    |            ^^^^^^^^^^^^^^^^^^^^^^^ method not found in `MixEngine`
+
+error[E0599]: no method named `render_with_clock_prediction` found for struct `MixEngine` in the current scope
+   --> crates\playback\src\clock_follow\render_lead.rs:204:12
+    |
+204 |     follow.render_with_clock_prediction(&s, 6144, 512, &mut buf, 666);
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ method not found in `MixEngine`
+
+error[E0599]: no method named `start_midi_at` found for struct `MixEngine` in the current scope
+   --> crates\playback\src\callback.rs:318:30
+    |
+318 |                     self.mix.start_midi_at(origin);
+    |                              ^^^^^^^^^^^^^ method not found in `MixEngine`
+
+error[E0599]: no method named `render_clock_block` found for struct `MixEngine` in the current scope
+   --> crates\playback\src\callback.rs:802:18
+    |
+802 |         self.mix.render_clock_block(&self.session, self.pos, n, &mut self.pending, through, delivery);
+    |                  ^^^^^^^^^^^^^^^^^^ method not found in `MixEngine`
+
+Some errors have detailed explanations: E0425, E0432, E0433, E0599.
+For more information about an error, try `rustc --explain E0425`.
+error: could not compile `soundcraft-playback` (lib test) due to 18 previous errors

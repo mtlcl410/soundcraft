@@ -1,0 +1,40 @@
+{
+  "as_of": "2026-11-23T01:40:03.992111+08:00",
+  "scope": "in-progress common prefix, start-aligned by ordinal",
+  "complete_common_pulses": 43264,
+  "parsed_source": 43264,
+  "parsed_ingress": 43318,
+  "sender_intervals_over_50ms": 4,
+  "over_50ms_on_256_boundary": 4,
+  "row_ascii_bytes_including_crlf": 32,
+  "top": [
+    {
+      "next_pulse_zero_based": 14080,
+      "sender_interval_ms": 713.697,
+      "virtual_ingress_interval_ms": 717.3218,
+      "dispatch_late_ms": 692.894867,
+      "index_multiple_of_256": true
+    },
+    {
+      "next_pulse_zero_based": 8192,
+      "sender_interval_ms": 131.8675,
+      "virtual_ingress_interval_ms": 131.7223,
+      "dispatch_late_ms": 111.429733,
+      "index_multiple_of_256": true
+    },
+    {
+      "next_pulse_zero_based": 512,
+      "sender_interval_ms": 96.9911,
+      "virtual_ingress_interval_ms": 96.98,
+      "dispatch_late_ms": 76.635333,
+      "index_multiple_of_256": true
+    },
+    {
+      "next_pulse_zero_based": 22528,
+      "sender_interval_ms": 51.2449,
+      "virtual_ingress_interval_ms": 51.262,
+      "dispatch_late_ms": 30.542167,
+      "index_multiple_of_256": true
+    }
+  ]
+}

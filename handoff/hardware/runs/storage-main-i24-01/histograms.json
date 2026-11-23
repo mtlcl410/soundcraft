@@ -1,0 +1,174 @@
+{
+  "baseline": {
+    "segments": [
+      {
+        "epoch": "epoch-0",
+        "callbacks": 1498,
+        "meta": {
+          "sample_rate": 48000,
+          "buffer": 256,
+          "input_index": 8,
+          "output_index": 0,
+          "input_latency": 304,
+          "output_latency": 728,
+          "input_format": 17,
+          "output_format": 17,
+          "qpc_frequency": 10000000
+        },
+        "last_qpc_ns": 232076417200800,
+        "sample_jumps": 0,
+        "sequence_skips": 0
+      }
+    ],
+    "intervals": 1497,
+    "bins": [
+      0,
+      0,
+      1497,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "min_ms": 4.8086,
+    "max_ms": 6.1993,
+    "median_ms": 5.0165,
+    "qpc_ns": [
+      232068429603400,
+      232076421063800
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "post-1": {
+    "segments": [
+      {
+        "epoch": "epoch-0",
+        "callbacks": 32,
+        "meta": {
+          "sample_rate": 48000,
+          "buffer": 256,
+          "input_index": 8,
+          "output_index": 0,
+          "input_latency": 304,
+          "output_latency": 728,
+          "input_format": 17,
+          "output_format": 17,
+          "qpc_frequency": 10000000
+        },
+        "last_qpc_ns": 232188078020600,
+        "sample_jumps": 0,
+        "sequence_skips": 0
+      }
+    ],
+    "intervals": 31,
+    "bins": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      31,
+      0
+    ],
+    "min_ms": 250.3711,
+    "max_ms": 252.213,
+    "median_ms": 250.9385,
+    "qpc_ns": [
+      232180130879600,
+      232188122359800
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "post-2": {
+    "segments": [
+      {
+        "epoch": "epoch-0",
+        "callbacks": 32,
+        "meta": {
+          "sample_rate": 48000,
+          "buffer": 256,
+          "input_index": 8,
+          "output_index": 0,
+          "input_latency": 304,
+          "output_latency": 728,
+          "input_format": 17,
+          "output_format": 17,
+          "qpc_frequency": 10000000
+        },
+        "last_qpc_ns": 232278879953100,
+        "sample_jumps": 0,
+        "sequence_skips": 0
+      }
+    ],
+    "intervals": 31,
+    "bins": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      31,
+      0
+    ],
+    "min_ms": 250.427,
+    "max_ms": 252.0101,
+    "median_ms": 251.0881,
+    "qpc_ns": [
+      232271012888500,
+      232279004627400
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "post-3": {
+    "segments": [
+      {
+        "epoch": "epoch-0",
+        "callbacks": 31,
+        "meta": {
+          "sample_rate": 48000,
+          "buffer": 256,
+          "input_index": 8,
+          "output_index": 0,
+          "input_latency": 304,
+          "output_latency": 728,
+          "input_format": 17,
+          "output_format": 17,
+          "qpc_frequency": 10000000
+        },
+        "last_qpc_ns": 232383477298700,
+        "sample_jumps": 0,
+        "sequence_skips": 0
+      }
+    ],
+    "intervals": 30,
+    "bins": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      30,
+      0
+    ],
+    "min_ms": 250.2778,
+    "max_ms": 251.8152,
+    "median_ms": 251.07575,
+    "qpc_ns": [
+      232375699613000,
+      232383691512100
+    ],
+    "qf": 960,
+    "wire_bound": true
+  }
+}

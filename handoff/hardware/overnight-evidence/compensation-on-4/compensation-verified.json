@@ -1,0 +1,92 @@
+{
+  "audio_device_open": true,
+  "clock_follow": {
+    "arrival_residual_us": 0,
+    "dropouts": 0,
+    "enabled": true,
+    "estimated_bpm": null,
+    "input": "SC G11 55D0B2 Out",
+    "input_offset_samples": 0,
+    "jitter_us": 0.0,
+    "loss_policy": "coast",
+    "phase_error_us": null,
+    "state": "Waiting"
+  },
+  "mtc_chase": {
+    "arrival_delay_p95_us": 0,
+    "elapsed_frames": 0,
+    "freewheel_entries": 0,
+    "freewheel_state": "waiting",
+    "hard_relocates": 0,
+    "incoming_rate": null,
+    "incoming_timecode": null,
+    "input_jitter_p95_us": 0,
+    "limit_frames": 8,
+    "locks": 0,
+    "losses": 0,
+    "rate_mismatch": null,
+    "state": "Offline"
+  },
+  "output": {
+    "callback_gap_max_us": 6103,
+    "callback_gaps_over_two_buffers": 0,
+    "catch_up_sends": 0,
+    "error": null,
+    "lateness_buckets": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "lateness_max_us": 0,
+    "lateness_p50_us": 0,
+    "lateness_p95_us": 0,
+    "lead_clamps": 0,
+    "lead_source": "reported",
+    "oversized_dropped": 0,
+    "pending_transition_timeouts": 0,
+    "ports": {
+      "UM-ONE": {
+        "advance_limited": false,
+        "beat_clock_enabled": true,
+        "beat_clock_total_us": 15166,
+        "connected": false,
+        "device_lead_us": 15166,
+        "effective_total_us": 15166,
+        "lead_source": "reported",
+        "mtc_enabled": true,
+        "mtc_total_us": 15166,
+        "offset_samples": 0,
+        "requested_offset_samples": 0,
+        "system_delay_samples": 0
+      }
+    },
+    "priority": "raised",
+    "relaunches": 0,
+    "reported_lead_us": 15166,
+    "sent": 0,
+    "session_backlog_drops": 0,
+    "stale_dropped": 0
+  },
+  "settings": {
+    "compensation": {
+      "beat_clock": true,
+      "mtc": true,
+      "notes": false
+    },
+    "enabled": true,
+    "port_ids": {
+      "UM-ONE": "\\\\?\\usb#vid_0582&pid_0168&mi_00#8&256da864&0&0000#{6994ad04-93ef-11d0-a3cc-00a0c9223196}\\global"
+    },
+    "ports": {
+      "UM-ONE": {
+        "enabled": true,
+        "in_offset_samples": 0,
+        "out_offset_samples": 0
+      }
+    }
+  }
+}

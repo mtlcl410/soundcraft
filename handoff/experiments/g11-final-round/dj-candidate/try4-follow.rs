@@ -1,0 +1,605 @@
+//! Incoming MIDI Beat Clock. The input thread timestamps and interprets the wire;
+//! the host drains only transport transitions. Ordinary clock ticks take no queue space.
+use crate::sync_input::PulseFit;
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Default)]
+pub enum State {
+    #[default]
+    Waiting,
+    Locked,
+    Coasting,
+    Stopped,
+}
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum Action {
+    Locate(i64),
+    Play {
+        pulse: i64,
+        at: i64,
+    },
+    /// The input thread already submitted the prepared playback command.
+    Started {
+        pulse: i64,
+        at: i64,
+        render_from: i64,
+    },
+    Stop,
+}
+#[derive(Default, Clone, Copy, Debug)]
+pub struct Snapshot {
+    pub bpm: Option<f64>,
+    /// A confirmed tempo step or brake needs a fast grid correction during playback.
+    pub recovering_tempo_step: bool,
+    /// A fast brake has reached long pulse intervals. Follow the arriving pulses
+    /// themselves while the new tempo and phase settle.
+    pub braking: bool,
+    /// The source has a sustained tempo trend above its measured timestamp noise.
+    pub tempo_ramp: bool,
+    /// Number of intervals used if the latest F8 confirmed a new tempo.
+    pub step_intervals: u8,
+    /// The input is delivering groups of F8s with shared timing.
+    pub packed_delivery: bool,
+    pub jitter_us: f64,
+    pub phase_error_us: i64,
+    pub state: State,
+    pub dropouts: u64,
+    /// Most recently played musical clock number, separate from the tempo estimator counter.
+    pub pulse: i64,
+    pub stamp_us: i64,
+    pub now_us: i64,
+}
+
+/// Musical start and input calibration captured when a stopped position is armed.
+pub struct LocatedCue {
+    pub pulse: i64,
+    pub origin: i64,
+    pub offset: i64,
+    pub rate: soundcraft_time::SampleRate,
+    pub revision: std::sync::Weak<std::sync::Mutex<bool>>,
+}
+
+/// One-shot transport handoff. Device callbacks never prepare plugins or retain a player.
+pub(crate) struct PreparedResume {
+    pub(crate) revision: std::sync::Weak<std::sync::Mutex<bool>>,
+    pub(crate) pulse: i64,
+    pub(crate) origin: i64,
+    pub(crate) offset: i64,
+    pub(crate) sr: soundcraft_time::SampleRate,
+    pub(crate) shared: std::sync::Weak<super::Shared>,
+    pub(crate) tx: std::sync::Weak<super::Sender<super::Cmd>>,
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    pub(crate) output: std::sync::Weak<super::Mutex<super::sync_output::Output>>,
+    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+    pub(crate) silent: bool,
+}
+impl PreparedResume {
+    fn dispatch(&self, age_us: impl FnOnce() -> i64) -> Option<i64> {
+        use super::{Cmd, Ordering};
+        let revision = self.revision.upgrade()?;
+        let shared = self.shared.upgrade()?;
+        let tx = self.tx.upgrade()?;
+        if shared.playing.load(Ordering::Acquire) {
+            return None;
+        }
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        let output = self.output.upgrade()?;
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        let output = output.try_lock().ok()?;
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        let lead = if self.silent { 0 } else { output.reported_lead_us()? };
+        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+        let lead = 0;
+        let render_from = self
+            .origin
+            .saturating_add(self.sr.samples(age_us().max(0) as f64 / 1e6))
+            .saturating_add(self.sr.samples(lead as f64 / 1e6))
+            .saturating_sub(self.offset)
+            .max(0);
+        // The host revokes this gate before an edit can mutate the prepared document.
+        // Hold it through queueing and publishing the start. An edit that won this race
+        // leaves the original Play action for the host to prepare against its fresh session.
+        let current = revision.try_lock().ok()?;
+        if !*current {
+            return None;
+        }
+        let cmd = Cmd::PlayClock { origin: self.origin, render_from };
+        #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
+        let queued = output.send_transport(&tx, cmd);
+        #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+        let queued = tx.send(cmd).is_ok();
+        if !queued {
+            return None;
+        }
+        shared.position.store(render_from, Ordering::Relaxed);
+        shared.playing.store(true, Ordering::Release);
+        Some(render_from)
+    }
+}
+
+pub(crate) struct Follower {
+    pub(crate) cue: Option<PreparedResume>,
+    pub(crate) source: Option<u8>,
+    pub(crate) coast: bool,
+    pub(crate) waiting_for_output: bool,
+    state: State,
+    awaiting_clock: Option<i64>,
+    pub(crate) next_pulse: i64,
+    fit_index: i64,
+    // Three F8s within one millisecond cannot be individual beats in the
+    // supported tempo range. Keep every pulse, but fit only batch heads.
+    packet_head: Option<(i64, i64)>,
+    packed_delivery: bool,
+    singleton_groups: u8,
+    previous_batch_noise: [f64; 4],
+    // Period and phase before the newest four candidate intervals.
+    previous_periods: [Option<f64>; 4],
+    incumbent: Option<(f64, i64)>,
+    tracking_pulses: u8,
+    short: PulseFit<12>,
+    steady: PulseFit<192>,
+    changes: u8,
+    step_pulses_left: u8,
+    step_intervals: u8,
+    latest: Option<i64>,
+    // Wire history survives Coast. A fresh pair in the new acquisition epoch
+    // replaces the old period; the silence between epochs is never a beat.
+    wire_stamps: [i64; 13],
+    wire_points: usize,
+    last_wire_interval: Option<i64>,
+    previous_wire_interval: Option<i64>,
+    brake_pulses_left: u8,
+    last_sensing_byte: Option<i64>,
+    coast_period_us: Option<f64>,
+    played_stamp: i64,
+    played_pulse: i64,
+    phase_error_us: i64,
+    dropouts: u64,
+    events: [Option<Action>; 32],
+    head: usize,
+    queued_action: bool,
+    count: usize,
+    spp: Option<Option<u8>>,
+}
+impl Default for Follower {
+    fn default() -> Self {
+        Self {
+            cue: None,
+            source: None,
+            coast: true,
+            waiting_for_output: false,
+            state: State::Waiting,
+            awaiting_clock: None,
+            next_pulse: 0,
+            fit_index: 0,
+            packet_head: None,
+            packed_delivery: false,
+            singleton_groups: 0,
+            previous_batch_noise: [0.; 4],
+            previous_periods: [None; 4],
+            incumbent: None,
+            tracking_pulses: 0,
+            short: Default::default(),
+            steady: Default::default(),
+            changes: 0,
+            step_pulses_left: 0,
+            step_intervals: 0,
+            latest: None,
+            wire_stamps: [0; 13],
+            wire_points: 0,
+            last_wire_interval: None,
+            previous_wire_interval: None,
+            brake_pulses_left: 0,
+            last_sensing_byte: None,
+            played_stamp: 0,
+            played_pulse: 0,
+            coast_period_us: None,
+            phase_error_us: 0,
+            dropouts: 0,
+            events: [None; 32],
+            head: 0,
+            queued_action: false,
+            count: 0,
+            spp: None,
+        }
+    }
+}
+impl Follower {
+    pub(crate) fn arm(&mut self, port: u8, cue: PreparedResume) -> bool {
+        if self.source == Some(port) && self.count == 0 && self.next_pulse == cue.pulse && matches!(self.state, State::Waiting | State::Stopped) {
+            self.cue = Some(cue);
+            return true;
+        }
+        false
+    }
+
+    pub(crate) fn dispatch_prepared(&mut self, now: impl FnOnce() -> i64) {
+        if self.count == 1
+            && let Some(Action::Play { pulse, at }) = self.events[self.head]
+            && let Some(cue) = self.cue.take()
+            && cue.pulse == pulse
+            && let Some(render_from) = cue.dispatch(|| now().saturating_sub(at))
+        {
+            self.waiting_for_output = false;
+            self.events[self.head] = Some(Action::Started { pulse, at, render_from });
+        }
+    }
+
+    fn push(&mut self, action: Action) {
+        if !matches!(action, Action::Play { .. }) {
+            self.cue = None;
+            self.step_pulses_left = 0;
+        }
+        self.queued_action = true;
+        if self.count == self.events.len() {
+            // A paused host cannot replay an arbitrarily long history safely.
+            // Resynchronise on a fresh Start/Continue after delivering one Stop.
+            self.events.fill(None);
+            self.head = 0;
+            self.count = 1;
+            self.events[0] = Some(Action::Stop);
+            self.state = State::Stopped;
+            self.awaiting_clock = None;
+            return;
+        }
+        self.events[(self.head + self.count) % self.events.len()] = Some(action);
+        self.count += 1;
+    }
+    pub(crate) fn take(&mut self) -> Option<Action> {
+        if self.count == 0 {
+            return None;
+        }
+        let a = self.events[self.head].take();
+        self.head = (self.head + 1) % self.events.len();
+        self.count -= 1;
+        a
+    }
+    pub(crate) fn start_pending(&self) -> bool {
+        self.awaiting_clock.is_some() || self.events.iter().flatten().any(|action| matches!(action, Action::Play { .. } | Action::Started { .. }))
+    }
+
+    pub(crate) fn render_through_pulse(&self) -> Option<i64> {
+        match self.state {
+            State::Locked if self.brake_pulses_left > 0 || self.tracking_pulses > 0 && self.step_pulses_left == 0 => Some(self.played_pulse),
+            State::Locked => Some(self.played_pulse.saturating_add(1)),
+            State::Stopped => Some(self.played_pulse),
+            State::Waiting | State::Coasting => None,
+        }
+    }
+
+    pub(crate) fn render_prediction(&self) -> Option<(i64, f64)> {
+        let period = self.steady.period_us()?;
+        if self.state != State::Locked
+            || self.step_pulses_left != 0
+            || self.brake_pulses_left != 0
+            || self.packed_delivery
+            || !(2500. ..=500_000.).contains(&period)
+            || !self.short.regular_intervals(period)
+            || self.steady.is_tempo_ramp()
+        {
+            return None;
+        }
+        Some((self.latest?, period))
+    }
+
+    fn bpm(&self) -> Option<f64> {
+        let fit = if self.tracking_pulses > 0 && self.step_pulses_left == 0 && self.changes > 0 { self.short.period_us() } else { self.steady.period_us() }.or_else(|| self.short.period_us());
+        let period = match self.brake_pulses_left {
+            0 => fit,
+            1..=36 => self.short.period_us().or(fit),
+            _ => self.last_wire_interval.map(|p| p as f64).or(fit),
+        }?;
+        // At 5 BPM, two timestamps with ±1 ms jitter can enclose a 502 ms interval.
+        (2_500. ..=502_000.).contains(&period).then(|| 2_500_000. / period.clamp(2_500., 500_000.))
+    }
+    pub(crate) fn snapshot(&self, now_us: i64) -> Snapshot {
+        Snapshot {
+            bpm: self.bpm().or_else(|| self.coast_period_us.map(|p| 2_500_000. / p)),
+            recovering_tempo_step: self.step_pulses_left > 0 || self.brake_pulses_left > 0 || self.tracking_pulses > 0,
+            braking: self.brake_pulses_left > 0 || self.tracking_pulses > 0 && self.step_pulses_left == 0,
+            tempo_ramp: self.state == State::Locked && !self.packed_delivery && self.step_pulses_left == 0 && self.steady.is_tempo_ramp(),
+            step_intervals: self.step_intervals,
+            packed_delivery: self.packed_delivery,
+            jitter_us: self.steady.jitter_us(),
+            phase_error_us: self.phase_error_us,
+            state: self.state,
+            dropouts: self.dropouts,
+            pulse: self.played_pulse,
+            stamp_us: self.played_stamp,
+            now_us,
+        }
+    }
+    pub(crate) fn expire(&mut self, now: i64) {
+        let period = self.bpm().map(|bpm| 2_500_000. / bpm);
+        // The first pulse of an acquisition has no interval yet. Give even a
+        // 5 BPM source time to provide a second pulse, also when returning from Coast.
+        let timeout = match (period, self.last_wire_interval) {
+            (None, _) if self.short.period_us().is_none() && self.steady.period_us().is_none() => 1_500_000,
+            (fitted, interval) => {
+                let last = interval.unwrap_or(0);
+                let growth = if self.brake_pulses_left > 0 { last.saturating_sub(self.previous_wire_interval.unwrap_or(last)).max(0) } else { 0 };
+                let expected = fitted.unwrap_or(0.).max(last.saturating_add(growth) as f64);
+                // Timestamped groups of up to five pulses can be followed by
+                // a whole group's silence even when the preceding group was short.
+                let group_gap = if self.packed_delivery { 3. * 5. * fitted.unwrap_or(0.) + 1_000. } else { 0. };
+                (3. * expected).max(group_gap).ceil().clamp(150_000., 1_500_000.) as i64
+            }
+        };
+        let cable_lost = self.last_sensing_byte.is_some_and(|last| now.saturating_sub(last) > 300_000);
+        if cable_lost {
+            self.last_sensing_byte = None;
+        }
+        if self.latest.is_some_and(|last| cable_lost || now.saturating_sub(last) > timeout) {
+            // Idle pulses can predate a fresh transport request by an entire timeout.
+            let request = self.awaiting_clock.filter(|at| now.saturating_sub(*at) <= timeout);
+            let cue = self.cue.take();
+            self.lost();
+            if request.is_some() {
+                self.awaiting_clock = request;
+                self.cue = cue;
+            }
+        }
+    }
+    pub(crate) fn lost(&mut self) {
+        self.cue = None;
+        self.coast_period_us = self.bpm().map(|bpm| 2_500_000. / bpm).or(self.coast_period_us);
+        self.short.clear();
+        self.previous_periods = [None; 4];
+        self.incumbent = None;
+        self.tracking_pulses = 0;
+        self.steady.clear();
+        self.latest = None;
+        self.wire_points = 0;
+        self.packet_head = None;
+        self.packed_delivery = false;
+        self.singleton_groups = 0;
+        self.previous_batch_noise = [0.; 4];
+        self.step_intervals = 0;
+        self.brake_pulses_left = 0;
+        self.changes = 0;
+        self.step_pulses_left = 0;
+        if self.state == State::Locked {
+            self.dropouts = self.dropouts.saturating_add(1);
+            if self.coast {
+                self.state = State::Coasting;
+            } else {
+                self.state = State::Stopped;
+                self.push(Action::Stop);
+            }
+        }
+        self.awaiting_clock = None;
+    }
+    /// Three consecutive four-pulse spans isolate a sustained brake from a single
+    /// tempo step. A smooth period increase produces a quadratic time curve; compare
+    /// the growth with residual timing noise before leaving the long jitter filter.
+    fn braking_trend(&self) -> bool {
+        let w = &self.wire_stamps;
+        if self.wire_points < w.len() {
+            return false;
+        }
+        let first = w[4].saturating_sub(w[0]) as f64;
+        let middle = w[8].saturating_sub(w[4]) as f64;
+        let last = w[12].saturating_sub(w[8]) as f64;
+        let growth = (middle - first).min(last - middle);
+        if growth <= 2_000. || middle <= 1.05 * first || last <= 1.05 * middle {
+            return false;
+        }
+        let slope = w[12].saturating_sub(w[0]) as f64 / 12.;
+        let curvature = (w[12].saturating_sub(w[6]) as f64 - w[6].saturating_sub(w[0]) as f64) / 72.;
+        w.iter().enumerate().all(|(index, stamp)| {
+            let x = index as f64 - 6.;
+            let residual = stamp.saturating_sub(w[6]) as f64 - x * (slope + x * curvature);
+            2. * residual.abs() < growth
+        })
+    }
+
+    fn observe_wire_interval(&mut self, at: i64) {
+        if self.brake_pulses_left == 1 && self.wire_points == self.wire_stamps.len() {
+            // Seed the normal fit with the settled end of the ramp; its older
+            // history describes a different speed and phase.
+            self.steady.clear();
+            for (index, stamp) in self.wire_stamps.iter().enumerate() {
+                self.steady.push(self.fit_index - 12 + index as i64, *stamp);
+            }
+        }
+        self.brake_pulses_left = self.brake_pulses_left.saturating_sub(1);
+        self.wire_stamps.rotate_left(1);
+        self.wire_stamps[12] = at;
+        self.wire_points = (self.wire_points + 1).min(self.wire_stamps.len());
+        let Some(previous) = self.latest else { return };
+        let gap = at.saturating_sub(previous).min(1_500_000);
+        if self.packed_delivery || gap <= 1_000 {
+            self.brake_pulses_left = 0;
+            return;
+        }
+        let changing = self.last_wire_interval.is_some_and(|last| gap.abs_diff(last) > (last / 16).max(4_000) as u64);
+        if self.braking_trend() || (self.brake_pulses_left > 0 && changing) {
+            // Hold the score at the last confirmed wire pulse through the brake
+            // and the subsequent acceleration, then settle back over two beats.
+            self.brake_pulses_left = 48;
+        }
+        self.previous_wire_interval = self.last_wire_interval;
+        self.last_wire_interval = Some(gap);
+    }
+
+    fn clock(&mut self, at: i64) {
+        let at = self.latest.map_or(at, |prev| prev.max(at));
+        self.observe_wire_interval(at);
+        self.latest = Some(at);
+        self.fit_index = self.fit_index.saturating_add(1);
+        self.step_intervals = 0;
+        self.step_pulses_left = self.step_pulses_left.saturating_sub(1);
+        if self.packet_head.is_none_or(|(_, stamp)| at.saturating_sub(stamp) > 1000) {
+            if self.packed_delivery
+                && let Some((head, _)) = self.packet_head
+            {
+                let width = self.fit_index - head;
+                self.singleton_groups = if width == 1 { self.singleton_groups.saturating_add(1) } else { 0 };
+                if self.singleton_groups >= 4 {
+                    self.packed_delivery = false;
+                    self.previous_batch_noise = [0.; 4];
+                }
+            }
+            self.packet_head = Some((self.fit_index, at));
+        }
+        let (head, stamp) = self.packet_head.unwrap_or((self.fit_index, at));
+        if !self.packed_delivery && self.fit_index - head >= 2 {
+            self.packed_delivery = true;
+            self.singleton_groups = 0;
+            self.short.clear();
+            self.steady.clear();
+            self.short.push(head, stamp);
+            self.steady.push(head, stamp);
+            self.changes = 0;
+        }
+        if !self.packed_delivery || self.fit_index == head {
+            self.observe_period(at);
+        }
+        let start_requested = self.awaiting_clock.take().is_some();
+        if self.state == State::Coasting && (start_requested || self.bpm().is_some()) {
+            // F8 has no absolute position. Match the returning train to the nearest
+            // pulse on the coasting grid. A lone tick after a timeout has no fitted tempo.
+            if let Some(period) = self.coast_period_us {
+                let coasted = (at.saturating_sub(self.played_stamp).max(0) as f64 / period).round() as i64;
+                self.next_pulse = self.next_pulse.max(self.played_pulse.saturating_add(coasted));
+            }
+            self.state = State::Locked;
+        }
+        if start_requested {
+            self.state = State::Locked;
+            self.push(Action::Play { pulse: self.next_pulse, at });
+        }
+        if self.state == State::Locked {
+            self.played_stamp = match self.brake_pulses_left {
+                0 if self.tracking_pulses > 0 && self.step_pulses_left == 0 => at,
+                0 => self.steady.predict_us(self.fit_index).unwrap_or(at),
+                1..=36 => self.short.predict_us(self.fit_index).unwrap_or(at),
+                _ => at,
+            };
+            self.played_pulse = self.next_pulse;
+            self.next_pulse = self.next_pulse.saturating_add(1);
+        }
+    }
+    fn observe_period(&mut self, at: i64) {
+        let prior = if self.steady.is_tempo_ramp() || self.tracking_pulses > 0 { self.short.period_us() } else { self.steady.period_us() };
+        let before_candidate = self.previous_periods[0];
+        self.previous_periods.rotate_left(1);
+        self.previous_periods[3] = prior;
+        self.tracking_pulses = self.tracking_pulses.saturating_sub(1);
+        self.short.push(self.fit_index, at);
+        // Long regression suppresses USB quantisation and timestamp jitter.
+        // A sustained slope change outside the short fit's noise band starts a fresh epoch.
+        if let (Some(fast), Some(slow)) = (self.short.period_us(), self.steady.period_us()) {
+            let threshold = (0.013 * slow).max(0.35 * self.short.jitter_us());
+            if (fast - slow).abs() > threshold {
+                self.changes = self.changes.saturating_add(1);
+            } else {
+                self.changes = 0;
+            }
+            // Four batch heads can span twenty pulses. Use the noise floor from
+            // before that candidate, so the step itself cannot mask the change.
+            let mut noise = self.steady.jitter_us();
+            if self.packed_delivery {
+                self.previous_batch_noise.rotate_left(1);
+                std::mem::swap(&mut noise, &mut self.previous_batch_noise[3]);
+            }
+            if !self.packed_delivery && self.step_pulses_left == 0
+                && let (Some(short_phase), Some(long_phase)) = (self.short.predict_us(self.fit_index), self.steady.predict_us(self.fit_index))
+                && short_phase.abs_diff(long_phase) as f64 > (3. * self.short.jitter_us()).max(1_000.)
+            {
+                self.tracking_pulses = 72;
+            }
+            let baseline = if self.packed_delivery { slow } else { before_candidate.unwrap_or(slow) };
+            if !self.packed_delivery && self.incumbent.is_none() && fast.recip().mul_add(baseline, -1.).abs() > 0.035 {
+                self.incumbent = Some((baseline, self.fit_index));
+            }
+            let mut detected = self.short.confirmed_step(baseline, noise);
+            if !self.packed_delivery && let Some((prior, start)) = self.incumbent {
+                let delta = (prior/fast - 1.).abs();
+                if delta < 0.04 && self.fit_index - start > 16 || self.fit_index - start > 180 {
+                    self.incumbent = None;
+                }
+                if delta < 0.13 {
+                    detected = None;
+                    let elapsed = self.fit_index - start;
+                    if elapsed > 120 && (prior/slow-1.).abs() >= 0.07975 {
+                        detected = Some(((self.fit_index - 1, at.saturating_sub(fast.round() as i64)), 120));
+                    } else if self.short.jitter_us() < 1. && noise < 2. {
+                        detected = self.short.confirmed_step(prior, 0.);
+                    }
+                }
+            }
+            if (self.packed_delivery || self.step_pulses_left == 0) && let Some(((index, stamp), intervals)) = detected {
+                self.incumbent = None;
+                self.steady.clear();
+                self.steady.push(index, stamp);
+                self.changes = 0;
+                self.tracking_pulses = 0;
+                if self.state == State::Locked {
+                    self.step_intervals = intervals;
+                    self.step_pulses_left = 24;
+                }
+            } else if self.changes >= 6 {
+                self.steady.clear();
+                self.changes = 0;
+            }
+        }
+        self.phase_error_us = self.steady.predict_us(self.fit_index).map_or(0, |pred| at.saturating_sub(pred));
+        self.steady.push(self.fit_index, at);
+    }
+    /// System common bytes may be interrupted by real-time messages, even inside SysEx.
+    /// Channel data and incomplete or malformed system messages never trigger a transport action.
+    pub(crate) fn receive(&mut self, bytes: &[u8], at: i64) -> bool {
+        self.queued_action = false;
+        self.expire(at);
+        if !bytes.is_empty() && (self.last_sensing_byte.is_some() || bytes.contains(&0xfe)) {
+            self.last_sensing_byte = Some(self.last_sensing_byte.map_or(at, |last| last.max(at)));
+        }
+        for &byte in bytes {
+            match byte {
+                0xf8 => self.clock(at),
+                0xfa => {
+                    self.state = State::Waiting;
+                    self.next_pulse = 0;
+                    self.awaiting_clock = Some(at);
+                    self.push(Action::Locate(0));
+                }
+                0xfb => {
+                    if self.state != State::Locked {
+                        self.awaiting_clock = Some(at);
+                    }
+                }
+                0xfc => {
+                    self.awaiting_clock = None;
+                    self.state = State::Stopped;
+                    self.push(Action::Stop);
+                }
+                0xf9..=0xff => {}
+                0xf2 => self.spp = Some(None),
+                0..=0x7f => match self.spp {
+                    Some(None) => self.spp = Some(Some(byte)),
+                    Some(Some(low)) => {
+                        self.spp = None;
+                        if self.waiting_for_output || (matches!(self.state, State::Waiting | State::Stopped) && self.awaiting_clock.is_none()) {
+                            // The clock can be locked before a device has ever presented sound.
+                            // A new stopped insertion replaces that unrendered Continue.
+                            if self.waiting_for_output {
+                                self.state = State::Stopped;
+                                self.awaiting_clock = None;
+                            }
+                            self.next_pulse = (i64::from(low) | i64::from(byte) << 7) * 6;
+                            self.push(Action::Locate(self.next_pulse));
+                        }
+                    }
+                    _ => {}
+                },
+                _ => self.spp = None,
+            }
+        }
+        self.queued_action
+    }
+}
+#[cfg(test)]
+mod tests;
+
+#[cfg(all(test, any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+mod render_lead;

@@ -1,0 +1,13 @@
+{
+  "phase": "measured",
+  "updated": "2026-11-23 05:33:46 +0800",
+  "environment_valid": true,
+  "recorder_exit": 0,
+  "counts_test_exit": 1,
+  "dropouts": 0,
+  "clock": 345609,
+  "expected_clock": 345600,
+  "qf": 864028,
+  "expected_qf": 864000,
+  "report": "E:\\soundcraft\\compatibility-audit\\g11-hw-acceptance\\overnight-evidence\\dedicated-source-two-hours\\RESULT.zh-TW.md"
+}

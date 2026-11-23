@@ -1,0 +1,61 @@
+From 44de4b91708a6086e99e5b3a55bcfcadae850ec4 Mon Sep 17 00:00:00 2001
+From: mtlcl410 <2368091+mtlcl410@users.noreply.github.com>
+Date: Mon, 23 Nov 2026 06:08:43 +0800
+Subject: [PATCH 08/12] Publish the incoming external Clock cue separately from
+ the audio lead
+
+---
+ crates/playback/src/callback.rs |  6 ++++++
+ crates/playback/src/tests.rs    | 19 +++++++++++++++++++
+ 2 files changed, 25 insertions(+)
+
+diff --git a/crates/playback/src/callback.rs b/crates/playback/src/callback.rs
+index 4c8c7f43..28dd1ce3 100644
+--- a/crates/playback/src/callback.rs
++++ b/crates/playback/src/callback.rs
+@@ -315,6 +315,12 @@ impl AudioState {
+                 Cmd::Play { from, end, looped } => self.begin_play(from, end, looped, false),
+                 Cmd::PlayClock { origin, render_from } => {
+                     self.begin_play(render_from, None, None, false);
++                    // Outputs locate at the incoming musical cue. The audio cursor
++                    // already includes the lead needed to present its first block.
++                    #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++                    if let Some(clock) = &mut self.clock {
++                        clock.origin = Some(origin);
++                    }
+                     self.mix.start_midi_at(origin);
+                     self.following_clock = true;
+                 }
+diff --git a/crates/playback/src/tests.rs b/crates/playback/src/tests.rs
+index 73a4979f..57511ecc 100644
+--- a/crates/playback/src/tests.rs
++++ b/crates/playback/src/tests.rs
+@@ -2230,6 +2230,25 @@ fn a_stopped_locate_while_monitoring_publishes_the_transport_position() {
+     assert_eq!((block.sample, block.origin), (42_000., 42_000));
+ }
+ 
++#[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
++#[test]
++fn external_start_publishes_the_wire_cue_separately_from_the_render_head() {
++    use crate::sync_clock::{DeviceTiming, Publisher, View};
++    use std::time::{Duration, Instant};
++    for origin in [0, 390_000] {
++        let (mut state, tx, ..) = keyboard_session();
++        let view = View::default();
++        tx.send(Cmd::Clock(Some(Publisher::new(view.clone(), Arc::default())))).unwrap();
++        let now = Instant::now();
++        state.device_timing = Some(DeviceTiming::new(now, Some(Duration::ZERO), 0));
++        let render_from = origin + 728;
++        tx.send(Cmd::PlayClock { origin, render_from }).unwrap();
++        state.fill(&mut [0.; 512], 2);
++        let block = view.lock().unwrap().read(now, true, 0).0.unwrap();
++        assert_eq!((block.origin, block.sample), (origin, render_from as f64));
++    }
++}
++
+ #[test]
+ fn rejected_online_recording_cannot_leak_a_tentative_note_into_the_next_take() {
+     let (mut state, tx, feed, ..) = keyboard_session();
+-- 
+2.55.0.windows.1
+

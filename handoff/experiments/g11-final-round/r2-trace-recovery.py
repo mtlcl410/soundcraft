@@ -1,0 +1,4 @@
+exec((d/'r2-pending.py').read_text(encoding='utf-8-sig'))
+s=s.replace('            update_grid(&mut song.tempo, Some((0, 0)), 0, snap, sr, pos + 1440);', '''            let changed=update_grid(&mut song.tempo, Some((0, 0)), 0, snap, sr, pos + 1440);
+            if from==180. && to==60. && transition==384 && matches!(mode,Delivery::Jitter(1000)) && (382..=397).contains(&p) {
+            eprintln!("TRACE pulse={p} at={} bpm={:?} rec={} step={} phase={} pending={} changed={changed} stamp={} pos={} writable={} point396={} ideal396={} hist={:?}",times[p],snap.bpm,snap.recovering_tempo_step,snap.step_intervals,snap.phase_error_us,snap.wire_phase_pending,snap.stamp_us,pos,song.tempo.samples_to_ticks(pos+1440,sr) / TICKS_PER_PULSE, song.tempo.tick_to_samples(396*TICKS_PER_PULSE,sr),sr.samples(ideal[396]/1e6),song.tempo.tempos().iter().rev().take(2).map(|v|(v.tick / TICKS_PER_PULSE,v.bpm)).collect::<Vec<_>>()); }''')

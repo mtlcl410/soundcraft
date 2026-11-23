@@ -1,0 +1,198 @@
+{
+  "baseline": {
+    "callbacks": 1499,
+    "intervals": 1498,
+    "bins": [
+      0,
+      0,
+      1498,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "median_ms": 5.0128,
+    "mean_ms": 5.333761415220294,
+    "min_ms": 4.8476,
+    "max_ms": 6.1327,
+    "invalid_position": 0,
+    "position_jumps": 0,
+    "buffer_index_repeats": 0,
+    "qpc_ns": [
+      233300656990800,
+      233308648536300
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "post-1": {
+    "callbacks": 32,
+    "intervals": 31,
+    "bins": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      31,
+      0
+    ],
+    "median_ms": 250.933,
+    "mean_ms": 250.98453225806458,
+    "min_ms": 250.2903,
+    "max_ms": 251.943,
+    "invalid_position": 0,
+    "position_jumps": 0,
+    "buffer_index_repeats": 0,
+    "qpc_ns": [
+      233627413834600,
+      233635405078400
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "after-stream-1": {
+    "callbacks": 1498,
+    "intervals": 1497,
+    "bins": [
+      0,
+      0,
+      1497,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "median_ms": 5.0106,
+    "mean_ms": 5.332657448229793,
+    "min_ms": 4.6773,
+    "max_ms": 6.3448,
+    "invalid_position": 0,
+    "position_jumps": 0,
+    "buffer_index_repeats": 0,
+    "qpc_ns": [
+      233637618012100,
+      233645609209400
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "post-2": {
+    "callbacks": 32,
+    "intervals": 31,
+    "bins": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      31,
+      0
+    ],
+    "median_ms": 250.9776,
+    "mean_ms": 250.92756129032256,
+    "min_ms": 250.2211,
+    "max_ms": 251.5497,
+    "invalid_position": 0,
+    "position_jumps": 0,
+    "buffer_index_repeats": 0,
+    "qpc_ns": [
+      233696916898200,
+      233704908622500
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "after-stream-2": {
+    "callbacks": 1499,
+    "intervals": 1498,
+    "bins": [
+      0,
+      0,
+      1498,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "median_ms": 5.0118,
+    "mean_ms": 5.333091922563418,
+    "min_ms": 4.7311,
+    "max_ms": 6.2643,
+    "invalid_position": 0,
+    "position_jumps": 0,
+    "buffer_index_repeats": 0,
+    "qpc_ns": [
+      233707219942300,
+      233715211626100
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "post-3": {
+    "callbacks": 32,
+    "intervals": 31,
+    "bins": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      31,
+      0
+    ],
+    "median_ms": 250.9941,
+    "mean_ms": 250.97419677419356,
+    "min_ms": 250.2675,
+    "max_ms": 251.9412,
+    "invalid_position": 0,
+    "position_jumps": 0,
+    "buffer_index_repeats": 0,
+    "qpc_ns": [
+      233801076676600,
+      233809068169000
+    ],
+    "qf": 960,
+    "wire_bound": true
+  },
+  "after-stream-3": {
+    "callbacks": 1498,
+    "intervals": 1497,
+    "bins": [
+      0,
+      0,
+      1497,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "median_ms": 5.0112,
+    "mean_ms": 5.333387241148965,
+    "min_ms": 4.7559,
+    "max_ms": 6.1567,
+    "invalid_position": 0,
+    "position_jumps": 0,
+    "buffer_index_repeats": 0,
+    "qpc_ns": [
+      233811286396500,
+      233819277795500
+    ],
+    "qf": 960,
+    "wire_bound": true
+  }
+}

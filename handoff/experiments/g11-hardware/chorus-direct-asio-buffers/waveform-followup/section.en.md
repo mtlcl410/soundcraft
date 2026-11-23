@@ -1,0 +1,11 @@
+### Locating low-buffer waveform changes
+
+On the original 128-frame take, MAIN fell to 14.9 PCM counts RMS for a 64-sample window (1.45 ms), while the simultaneous level-matched 9/10 mix measured 98.4 counts. This window began 4.35 ms into the rendered crash on the whole-take alignment. Replaying those same 9/10 samples through an independent ASIO client produced a clean MAIN capture. Three equivalent replays of the flagged 64-frame takes also passed the same dropout and residual-step checks.
+
+Fresh SoundCraft runs captured the converted samples at the ASIO callback output and timed the actual VST3 processor call. The first sounding block consumed **10.64 ms at 128 frames** (2.90 ms budget), including **10.04 ms inside S-MU2000’s `IAudioProcessor::process`**. At 64 frames the corresponding times were **7.28 / 6.78 ms** (1.45 ms budget). Both cold starts showed a MAIN waveform deviation. The specific 128-frame RMS dropout did not recur. Removing only the verse-bass VST3 assignment in a control copy preserved the four drum instruments, reduced the first 64-frame block to **0.12 ms** and yielded six clean returns. These are elapsed call times, including scheduling. The taps bound the deviation to the path between the delivered output samples and the recorded MAIN bus. They cannot identify which driver or device stage handled the late block.
+
+Of the four earlier 64-frame flags, two were cold starts. Each of the other two recordings fits the output with one change in relative alignment (5 or 6 samples, 0.11–0.14 ms). Allowing that change reduced the peak residual step below 2.4 counts in each take. The original fixed-delay test was sensitive to timing changes as well as level changes.
+
+The unmodified project passed **12/12** exact starts at 8.000 s (one crash each) and **6/6** late starts at 8.125 s (zero crashes, later accompaniment present) on the physical MIDI loop. The two modified-project controls are excluded from those totals. Listener assessment is pending. This verification adds a figure and evidence to the existing PR; the follower and playback defaults are unchanged.
+
+![Rendered stereo output and MAIN return around the deviations](https://raw.githubusercontent.com/mtlcl410/soundcraft/f76cef2a4fbd17d04997fc6164e6685c3da3cded/docs/images/midi-clock-asio-waveform-detail.png)

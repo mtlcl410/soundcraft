@@ -1,0 +1,66 @@
+[
+  {
+    "trial": "stop-witness-f60b1632-1",
+    "last_valid": 575,
+    "last_output": 576,
+    "handoff_ms": 3.3868,
+    "returned_ms": 3.578,
+    "classification": "preventable at handoff"
+  },
+  {
+    "trial": "stop-witness-f60b1632-2",
+    "last_valid": 575,
+    "last_output": 575,
+    "handoff_ms": -2.8632,
+    "returned_ms": -2.7272,
+    "classification": "valid"
+  },
+  {
+    "trial": "stop-witness-f60b1632-3",
+    "last_valid": 575,
+    "last_output": 576,
+    "handoff_ms": 4.8122,
+    "returned_ms": 5.0027,
+    "classification": "preventable at handoff"
+  },
+  {
+    "trial": "stop-witness-f60b1632-4",
+    "last_valid": 575,
+    "last_output": 576,
+    "handoff_ms": 3.8436,
+    "returned_ms": 4.0208,
+    "classification": "preventable at handoff"
+  },
+  {
+    "trial": "compensation-on-1",
+    "last_valid": 575,
+    "last_output": 576,
+    "handoff_ms": -0.2189,
+    "returned_ms": -0.081,
+    "classification": "already sent"
+  },
+  {
+    "trial": "compensation-off-2",
+    "last_valid": 575,
+    "last_output": 576,
+    "handoff_ms": -15.273,
+    "returned_ms": -15.154,
+    "classification": "already sent"
+  },
+  {
+    "trial": "compensation-off-3",
+    "last_valid": 575,
+    "last_output": 576,
+    "handoff_ms": -9.4886,
+    "returned_ms": -9.3679,
+    "classification": "already sent"
+  },
+  {
+    "trial": "compensation-on-4",
+    "last_valid": 575,
+    "last_output": 576,
+    "handoff_ms": 4.9271,
+    "returned_ms": 5.1282,
+    "classification": "preventable at handoff"
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "head": "4cfaf0996b86ca4793f4e10dd71b7e08df3c52bb",
+  "exe": "E:\\soundcraft\\compatibility-audit\\g11-hw-acceptance\\audio\\build\\soundcraft-4cfaf099.exe",
+  "sha256": "e88bbaa6400a75cf9e0436f2e4b8a278c4f8ab59c4568364c247ea5cf037ccb1",
+  "overlay": "asio-sys witness only"
+}

@@ -1,0 +1,7 @@
+{
+  "environment_valid": false,
+  "reasons": [
+    "Competing build, remote session or endpoint change during run"
+  ],
+  "command_exit": 0
+}

@@ -1,0 +1,81 @@
+diff --git a/crates/playback/src/lib.rs b/crates/playback/src/lib.rs
+index 8aaba3e..43c3e01 100644
+--- a/crates/playback/src/lib.rs
++++ b/crates/playback/src/lib.rs
+@@ -714,7 +714,7 @@ impl Player {
+     /// Play MIDI devices through record-enabled and input-monitored MIDI and instrument tracks.
+     pub fn set_midi(&self, feed: Arc<midi::MidiFeed>) {
+         #[cfg(any(target_os = "windows", target_os = "linux", target_os = "macos"))]
+-        feed.set_sync_waker(self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).transport_waker());
++        feed.set_sync_waker(self.beat_clock.lock().unwrap_or_else(PoisonError::into_inner).attach_mtc_feed(&feed));
+         let _ = self.tx.send(Cmd::Midi(feed));
+     }
+ 
+diff --git a/crates/playback/src/sync_output.rs b/crates/playback/src/sync_output.rs
+index 2a3c7fa..b901dae 100644
+--- a/crates/playback/src/sync_output.rs
++++ b/crates/playback/src/sync_output.rs
+@@ -100,6 +100,7 @@ impl WorkerSender {
+ #[derive(Default)]
+ pub(crate) struct Output {
+     port_registry: Arc<ports::Registry>,
++    chase_feed: std::sync::Weak<crate::midi::MidiFeed>,
+     view: View,
+     metrics: Arc<CallbackMetrics>,
+     session: Option<Arc<Session>>,
+@@ -210,6 +211,11 @@ impl Output {
+     }
+     /// MidiFeed invokes this while it still holds the reader, before the callback
+     /// can consume the new roll, stop or locate and publish its transport state.
++    pub(crate) fn attach_mtc_feed(&mut self, feed: &Arc<crate::midi::MidiFeed>) -> crate::midi::TransportWaker {
++        self.chase_feed = Arc::downgrade(feed);
++        self.transport_waker()
++    }
++
+     pub(crate) fn transport_waker(&self) -> crate::midi::TransportWaker {
+         let dest = self.wake_tx.clone();
+         let pending = Arc::<AtomicBool>::default();
+diff --git a/crates/playback/src/sync_output_tests.rs b/crates/playback/src/sync_output_tests.rs
+index 5c0d007..febf494 100644
+--- a/crates/playback/src/sync_output_tests.rs
++++ b/crates/playback/src/sync_output_tests.rs
+@@ -1134,3 +1134,16 @@ fn a_stop_cancels_clock_repayment_and_a_new_pass_starts_normally() {
+     }
+     assert_eq!(messages, [(300, vec![STOP]), (400, vec![START]), (400, vec![CLOCK])]);
+ }
++
++
++#[test]
++fn mtc_sync_route_warns_only_with_an_open_chase_source() {
++    let mut output = Output::default();
++    let feed = Arc::new(crate::midi::MidiFeed::default());
++    feed.set_sync_waker(output.attach_mtc_feed(&feed));
++    assert_eq!(output.timing_issue(), None);
++    feed.set_mtc_source(Some(1));
++    assert_eq!(output.timing_issue(), Some(crate::OutputTimingIssue::Unknown));
++    feed.set_mtc_source(None);
++    assert_eq!(output.timing_issue(), None);
++}
+diff --git a/crates/ui-egui/src/midi_sync.rs b/crates/ui-egui/src/midi_sync.rs
+index c269943..df54642 100644
+--- a/crates/ui-egui/src/midi_sync.rs
++++ b/crates/ui-egui/src/midi_sync.rs
+@@ -221,6 +221,18 @@ fn apply_beat_clock_routes(config: &MidiSync, applied: &mut Option<MidiSync>, en
+ mod tests {
+     use super::*;
+ 
++    #[test]
++    fn mtc_sync_route_keeps_its_device_id_after_beat_clock_is_disabled() {
++        let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, crate::Services::default());
++        let label = "DIN (2)";
++        app.sync_command("setup.midi_beat_clock", &json!({"ports": {(label): {"enabled":true}}, "port_ids": {(label):"midi-b"}})).unwrap();
++        app.mtc_output_command(&json!({"port":label})).unwrap();
++        app.sync_command("setup.midi_beat_clock", &json!({"ports":{}})).unwrap();
++        assert_eq!(app.ui.midi_sync.port_ids.get(label).map(String::as_str),Some("midi-b"));
++        app.mtc_output_command(&json!({"port":null})).unwrap();
++        assert!(app.ui.midi_sync.port_ids.is_empty());
++    }
++
+     #[test]
+     fn duplicate_calibrations_roundtrip_as_independent_enabled_routes() {
+         let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, crate::Services::default());

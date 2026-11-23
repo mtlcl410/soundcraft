@@ -1,0 +1,58 @@
+[
+  {
+    "label": "compensation-on-1",
+    "advance_ms": 0,
+    "valid": true,
+    "count": 577,
+    "expected": 576,
+    "return_f8_minus_input_fc_ms": 0.3077,
+    "receipt_to_host_ms": 0.1373,
+    "receipt_to_callback_ms": 0.1648,
+    "receipt_to_f8_handoff_ms": -0.2189,
+    "receipt_to_f8_handoff_end_ms": -0.081,
+    "receipt_to_fc_handoff_ms": 15.729,
+    "return_fc_minus_input_fc_ms": 16.2719
+  },
+  {
+    "label": "compensation-off-2",
+    "advance_ms": 0,
+    "valid": true,
+    "count": 577,
+    "expected": 576,
+    "return_f8_minus_input_fc_ms": -14.78,
+    "receipt_to_host_ms": 0.1391,
+    "receipt_to_callback_ms": 3.1552,
+    "receipt_to_f8_handoff_ms": -15.273,
+    "receipt_to_f8_handoff_end_ms": -15.154,
+    "receipt_to_fc_handoff_ms": 4.3578,
+    "return_fc_minus_input_fc_ms": 4.9742
+  },
+  {
+    "label": "compensation-off-3",
+    "advance_ms": 0,
+    "valid": true,
+    "count": 577,
+    "expected": 576,
+    "return_f8_minus_input_fc_ms": -8.9789,
+    "receipt_to_host_ms": 0.1467,
+    "receipt_to_callback_ms": 2.4342,
+    "receipt_to_f8_handoff_ms": -9.4886,
+    "receipt_to_f8_handoff_end_ms": -9.3679,
+    "receipt_to_fc_handoff_ms": 3.392,
+    "return_fc_minus_input_fc_ms": 4.0236
+  },
+  {
+    "label": "compensation-on-4",
+    "advance_ms": 0,
+    "valid": true,
+    "count": 577,
+    "expected": 576,
+    "return_f8_minus_input_fc_ms": 5.5421,
+    "receipt_to_host_ms": 0.1505,
+    "receipt_to_callback_ms": 2.3002,
+    "receipt_to_f8_handoff_ms": 4.9271,
+    "receipt_to_f8_handoff_end_ms": 5.1282,
+    "receipt_to_fc_handoff_ms": 17.7921,
+    "return_fc_minus_input_fc_ms": 18.3363
+  }
+]

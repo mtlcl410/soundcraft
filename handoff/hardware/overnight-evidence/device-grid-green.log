@@ -1,0 +1,42 @@
+warning: patch `egui_demo_lib v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_inspection v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+warning: patch `egui_system_font_provider v0.37.0 (https://github.com/storytold/egui.git?rev=6d518fc799681571963842f95b55a6b68431b15a#6d518fc7)` was not used in the crate graph
+help: Check that the patched package version and available features are compatible
+      with the dependency requirements. If the patch has a different version from
+      what is locked in the Cargo.lock file, run `cargo update` to use the new
+      version. This may also occur with an optional dependency that is not enabled.
+   Compiling soundcraft-dsp v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\dsp)
+   Compiling soundcraft-model v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\model)
+   Compiling soundcraft-time v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\time)
+   Compiling soundcraft-midi v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\midi)
+   Compiling soundcraft-interchange v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\interchange)
+   Compiling soundcraft-ui-egui v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\ui-egui)
+   Compiling soundcraft-video v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\video)
+   Compiling soundcraft-clap-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\clap-host)
+   Compiling soundcraft-vst3-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\vst3-host)
+   Compiling soundcraft-au-host v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\au-host)
+   Compiling soundcraft-mix v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\mix)
+   Compiling soundcraft-engine v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\engine)
+   Compiling soundcraft-playback v0.20.1 (E:\soundcraft\compatibility-audit\g11-hw-acceptance\morning-device-grid\crates\playback)
+warning: variable does not need to be mutable
+   --> crates\engine\src\autosave.rs:481:13
+    |
+481 |         let mut builder = std::fs::DirBuilder::new();
+    |             ----^^^^^^^
+    |             |
+    |             help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: `soundcraft-engine` (lib) generated 1 warning (run `cargo fix --lib -p soundcraft-engine` to apply 1 suggestion)
+    Finished `test` profile [optimized + debuginfo] target(s) in 2m 57s
+     Running unittests src\lib.rs (E:\soundcraft\compatibility-audit\g11-follow-r3-target\debug\build\soundcraft-ui-egui/c84836957a48c4d7\out\soundcraft_ui_egui-c84836957a48c4d7.exe)
+
+running 1 test
+physical oscillator +39 ppm; maximum musical grid error 2.593 ms
+physical oscillator -40 ppm; maximum musical grid error 2.580 ms
+physical oscillator +0 ppm; maximum musical grid error 0.000 ms
+test app::clock_follow::device_time::tests::next_external_downbeat_uses_physical_samples_over_a_two_hour_pass ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 446 filtered out; finished in 0.00s
+

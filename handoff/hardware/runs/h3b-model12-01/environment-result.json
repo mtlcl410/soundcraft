@@ -1,0 +1,10 @@
+{
+  "environment_valid": false,
+  "reasons": [
+    "Competing build, remote session or endpoint change during run",
+    "Busy system during run (76.3%)",
+    "Busy system during run (75.1%)",
+    "Busy system during run (76.6%)"
+  ],
+  "command_exit": 0
+}

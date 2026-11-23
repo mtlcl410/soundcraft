@@ -1,0 +1,104 @@
+{
+  "policy": "Local environment investigation only. No driver install or publication.",
+  "officialPackage": "Driver and Settings Panel v2.20 for Windows",
+  "source": "https://www.tascam.eu/en/downloads/model12",
+  "firmware": "1.50 0103",
+  "os": {
+    "DisplayVersion": "26H2",
+    "CurrentBuild": "26300",
+    "UBR": 9974
+  },
+  "package": {
+    "DisplayName": "TASCAM ModelMixer Settings Panel version 2.20",
+    "DisplayVersion": "2.20",
+    "InstallDate": "20261118",
+    "Publisher": "TEAC Corporation"
+  },
+  "driver": {
+    "DeviceName": "Model 12",
+    "DeviceID": "USB\\VID_0644&PID_805F&MI_00\\7&FAA69BA&0&0000",
+    "DriverVersion": "14.30.55.883",
+    "infDate": "2024-07-04",
+    "InfName": "oem58.inf",
+    "DriverProviderName": "TEAC Corporation",
+    "IsSigned": true
+  },
+  "setupapi": [
+    ">>>  Section start 2026/11/18 19:44:05.829",
+    "      cmd: \"C:\\Program Files\\TASCAM\\ModelMixer\\win10\\x64\\avs\\dpinst64.exe\" /sa",
+    "     inf: Provider: TEAC Corporation",
+    "     inf: Class GUID: {4D36E96C-E325-11CE-BFC1-08002BE10318}",
+    "     inf: Driver Version: 07/04/2024,14.30.55.883",
+    "     inf: Catalog File: model2400.cat"
+  ],
+  "fileSHA256": [
+    {
+      "Hash": "E7D2CFD53379A7619AD264E5C25F97A4BB525B58B4EBEA4089D3AF0552253B5B",
+      "Path": "C:\\Windows\\INF\\oem58.inf"
+    },
+    {
+      "Hash": "AF5986723ECE9819FE19D961FCB53480B4742B6B5410CAC8910E08496EACD7D4",
+      "Path": "C:\\Windows\\System32\\drivers\\model2400.sys"
+    },
+    {
+      "Hash": "E7D2CFD53379A7619AD264E5C25F97A4BB525B58B4EBEA4089D3AF0552253B5B",
+      "Path": "C:\\Program Files\\TASCAM\\ModelMixer\\win10\\x64\\avs\\uac20.inf"
+    },
+    {
+      "Hash": "AF5986723ECE9819FE19D961FCB53480B4742B6B5410CAC8910E08496EACD7D4",
+      "Path": "C:\\Program Files\\TASCAM\\ModelMixer\\win10\\x64\\avs\\model2400.sys"
+    },
+    {
+      "Hash": "00001FDFBD7622F2511FE2D8F4862A64DC2C608449A7276C4B5F846FAC969CB1",
+      "Path": "C:\\Program Files\\TASCAM\\ModelMixer\\x64\\uac20.inf"
+    },
+    {
+      "Hash": "D4F25981D53D297643C7D674E3E1CA643EBC47B3BE3A1EFBF53EA13DAC1DA258",
+      "Path": "C:\\Program Files\\TASCAM\\ModelMixer\\x64\\model2400.sys"
+    },
+    {
+      "Hash": "364A9C3A07B87C65617F0CB5E33F79B2DD35E0ECE5673CA146F6C194DF8C7A35",
+      "Path": "C:\\Program Files\\TASCAM\\ModelMixer\\x64\\us_asio.dll"
+    }
+  ],
+  "asioComServer": "c:\\program files\\tascam\\modelmixer\\x64\\us_asio.dll",
+  "asioNative": {
+    "sample_rate": 48000,
+    "buffer": 256,
+    "input_index": 8,
+    "output_index": 0,
+    "input_latency": 304,
+    "output_latency": 728,
+    "input_format": 17,
+    "output_format": 17,
+    "qpc_frequency": 10000000
+  },
+  "historicalEnvironment": {
+    "panel_reported": {
+      "firmware": "1.50 0103",
+      "output_delay": "DISABLE",
+      "usb_audio": "MULTI INPUT",
+      "return": "TO CH9/10",
+      "channel_mode": "PC",
+      "midi_timecode": "OFF",
+      "midi_clock_spp": "OFF",
+      "song": "48/24",
+      "local_confirmed": true,
+      "source": "operator confirmation and photograph; USB replugged, green light confirmed"
+    },
+    "at": "2026-11-22T20:50:40.262992+08:00",
+    "playback_endpoint": "{0.0.0.00000000}.{1c2d2607-ad49-4a08-893e-377b4f2ba88b}",
+    "power_plan": "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c",
+    "rdp_active": false,
+    "asio_panel": {
+      "blockFrames": 256,
+      "sampleRate": 48000
+    },
+    "crd_last_event": {
+      "Id": 2,
+      "RecordId": 40617
+    },
+    "compilers": []
+  },
+  "verifiedAt": "2026-11-22T21:31:34.1615502+08:00"
+}
