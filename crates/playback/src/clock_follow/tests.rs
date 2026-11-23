@@ -346,3 +346,5 @@ fn prepared_device_clock_needs_a_report_and_accepts_both_retained_and_true_zero(
         shared.playing.store(false, Ordering::Relaxed);
     }
 }
+
+mod performance_scenarios;

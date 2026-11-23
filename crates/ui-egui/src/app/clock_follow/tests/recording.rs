@@ -118,3 +118,6 @@ fn record_through_loss(policy: &str) {
     assert_eq!(samples, if coast { vec![0, 12_000, 24_000] } else { vec![0] });
     std::fs::remove_dir_all(app.fallback_take_dir.as_ref().unwrap()).unwrap();
 }
+
+#[path = "scenario_studio.rs"]
+mod scenario_studio;

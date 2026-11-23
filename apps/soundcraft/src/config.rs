@@ -329,3 +329,7 @@ mod config_tests {
         assert_eq!(config_dir_with(Platform::Mac, |_| Some(value.clone()), None), Some(PathBuf::from(value)));
     }
 }
+
+#[cfg(test)]
+#[path = "scenario_config.rs"]
+mod scenario_config;

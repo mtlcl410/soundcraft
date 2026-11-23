@@ -743,6 +743,7 @@ mod tests {
 
     #[cfg(not(target_arch = "wasm32"))]
     mod recording;
+    mod performance_scenarios;
 
     #[test]
     fn master_and_reader_conflicts_are_rejected_in_both_directions() {
