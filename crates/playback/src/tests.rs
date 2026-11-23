@@ -201,7 +201,7 @@ fn stopping_zeroes_meters_in_place_and_removed_tracks_are_pruned() {
     let empty = soundcraft_model::Session::default();
     let gone = side.gone_tracks(&empty);
     assert_eq!(gone, vec![t]);
-    tx.send(Cmd::Session(Arc::new(empty), Vec::new())).unwrap();
+    tx.send(Cmd::Session(0, Arc::new(empty), Vec::new())).unwrap();
     tx.send(Cmd::Forget(gone)).unwrap();
     tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
     st.fill(&mut out, 2);
@@ -474,16 +474,17 @@ fn instances_arrive_with_the_session_and_leave_through_the_return_channel() {
     let (gtx, grx) = channel();
     let mut st = AudioState::new(rx, Arc::clone(&shared), Arc::new(soundcraft_model::Session::default()), 48_000.0, gtx);
     let plugin = soundcraft_dsp::create("gain").unwrap();
-    tx.send(Cmd::Session(Arc::clone(&s), vec![PreparedInstance { track: t, slot: 1, id: "clap:test.fake".into(), ch: 2, plugin }])).unwrap();
+    tx.send(Cmd::Session(0, Arc::clone(&s), vec![PreparedInstance { track: t, slot: 1, id: "clap:test.fake".into(), ch: 2, plugin }])).unwrap();
     let mut out = vec![0.0f32; 256];
     st.fill(&mut out, 2);
     assert!(grx.try_recv().is_err(), "nothing retired yet");
     // A session without the insert retires the instance to the return channel.
-    tx.send(Cmd::Session(Arc::new(soundcraft_model::Session::default()), Vec::new())).unwrap();
+    tx.send(Cmd::Session(0, Arc::new(soundcraft_model::Session::default()), Vec::new())).unwrap();
     st.fill(&mut out, 2);
     assert_eq!(grx.try_recv().unwrap().len(), 1);
     // A sample-rate change rebuilds the engine without dropping plugins on this thread.
     tx.send(Cmd::Session(
+        0,
         Arc::clone(&s),
         vec![PreparedInstance { track: t, slot: 1, id: "clap:test.fake".into(), ch: 2, plugin: soundcraft_dsp::create("gain").unwrap() }],
     ))
@@ -491,7 +492,7 @@ fn instances_arrive_with_the_session_and_leave_through_the_return_channel() {
     st.fill(&mut out, 2);
     let mut s44 = (*s).clone();
     s44.sample_rate = soundcraft_time::SampleRate::new(44_100).unwrap();
-    tx.send(Cmd::Session(Arc::new(s44), Vec::new())).unwrap();
+    tx.send(Cmd::Session(0, Arc::new(s44), Vec::new())).unwrap();
     st.fill(&mut out, 2);
     assert_eq!(grx.try_recv().unwrap().len(), 1);
 }
@@ -622,7 +623,7 @@ fn replaced_sessions_are_freed_on_the_ui_thread() {
         let s = Arc::new(soundcraft_model::Session::default());
         watched.push(Arc::downgrade(&s));
         side.collect_garbage();
-        tx.send(Cmd::Session(s, Vec::new())).unwrap();
+        tx.send(Cmd::Session(0, s, Vec::new())).unwrap();
         st.fill(&mut out, 2);
         let replaced = watched.len().checked_sub(2).and_then(|i| watched.get(i));
         assert!(replaced.is_none_or(|w| w.strong_count() == 1), "freed on the audio thread");
@@ -752,11 +753,11 @@ fn a_midi_keyboard_plays_and_records_through_a_record_enabled_instrument() {
     feed.set_clock(1);
     // Not record-enabled: the engine stays idle and the key press is not kept for later.
     s.track_mut(t).unwrap().mixer.record_arm = false;
-    tx.send(Cmd::Session(Arc::new(s.clone()), Vec::new())).unwrap();
+    tx.send(Cmd::Session(0, Arc::new(s.clone()), Vec::new())).unwrap();
     feed.receive(0, &[0x90, 60, 100]);
     assert!(!heard(&mut st, 4));
     s.track_mut(t).unwrap().mixer.record_arm = true;
-    tx.send(Cmd::Session(Arc::new(s), Vec::new())).unwrap();
+    tx.send(Cmd::Session(0, Arc::new(s), Vec::new())).unwrap();
     assert!(!heard(&mut st, 4), "the earlier key press is gone");
     feed.receive(0, &[0x90, 60, 100]);
     assert!(heard(&mut st, 4), "stopped, a record-enabled instrument plays the keyboard");
@@ -827,12 +828,12 @@ fn keys_held_while_nothing_listens_or_the_port_closes_do_not_stay_on() {
     assert!(heard(&mut st, 4));
     // The track leaves record with the key down; its note-off comes while nothing listens.
     s.track_mut(t).unwrap().mixer.record_arm = false;
-    tx.send(Cmd::Session(Arc::new(s.clone()), Vec::new())).unwrap();
+    tx.send(Cmd::Session(0, Arc::new(s.clone()), Vec::new())).unwrap();
     heard(&mut st, 2);
     feed.receive(0, &[0x80, 60, 0]);
     heard(&mut st, 2);
     s.track_mut(t).unwrap().mixer.record_arm = true;
-    tx.send(Cmd::Session(Arc::new(s), Vec::new())).unwrap();
+    tx.send(Cmd::Session(0, Arc::new(s), Vec::new())).unwrap();
     assert!(!heard(&mut st, 60), "the note does not come back");
     // The device is unplugged with a key down: no note-off will come.
     feed.receive(0, &[0x90, 62, 100]);
@@ -1555,7 +1556,7 @@ fn a_session_at_another_sample_rate_is_rendered_at_that_rate_from_the_callback_t
     st.fill(&mut out, 2);
     // The device runs at 48 kHz. A 96 kHz session takes two session frames to a device frame.
     let s = soundcraft_model::Session::new("t", soundcraft_time::SampleRate::new(96_000).unwrap());
-    tx.send(Cmd::Session(Arc::new(s), Vec::new())).unwrap();
+    tx.send(Cmd::Session(0, Arc::new(s), Vec::new())).unwrap();
     tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
     st.fill(&mut out, 2);
     assert_eq!(st.shared.position.load(Ordering::Relaxed), 2048, "1024 device frames");
