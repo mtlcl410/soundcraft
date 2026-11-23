@@ -288,6 +288,39 @@ mod tests {
     use super::*;
     use crate::sync_clock::StreamLead;
     #[test]
+    fn callback_panic_latched_after_service_check_prevents_handoff() {
+        let now = Instant::now();
+        let current = Route::new(true, now);
+        let next = Route::new(false, now);
+        let graph = Mutex::new(());
+        let fault = Fault::default();
+        let running = AtomicBool::new(false);
+        for _ in 0..8 {
+            next.reports.write(now, true);
+        }
+        // Simulate a callback latching a failure after the control thread's safety check.
+        current.render(&graph, |_| fault.failed.store(true, Ordering::Relaxed));
+        assert!(!current.hand_over(&next, &graph, &running, now));
+        assert!(!next.selected.load(Ordering::Acquire));
+        assert_eq!(fault.trouble(false), Some(crate::OutputTrouble::Bug));
+        assert!(current.hand_over(&next, &graph, &running, now));
+    }
+
+    #[test]
+    fn exhausted_recovery_can_reopen_an_endpoint_that_never_disappears() {
+        let mut retry = Retry::default();
+        let start = Instant::now();
+        for _ in 0..MAX_ATTEMPTS {
+            assert_eq!(retry.lookup(start, || Some(())), Some(()));
+        }
+        for period in 1..=3 {
+            let due = start + PRESENCE_INTERVAL * period;
+            assert!(retry.lookup(due - Duration::from_millis(1), || -> Option<()> { panic!("early enumeration") }).is_none());
+            assert_eq!(retry.lookup(due, || Some(())), Some(()));
+        }
+    }
+
+    #[test]
     fn only_an_identifiable_wasapi_endpoint_gets_the_handoff_callback() {
         let wasapi = cpal::DeviceId::new(cpal::HostId::Wasapi, "original-endpoint");
         assert_eq!(recoverable_endpoint(Some(wasapi.clone())), Some(wasapi));

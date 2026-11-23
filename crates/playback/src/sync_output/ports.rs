@@ -106,6 +106,12 @@ mod tests {
     }
 
     #[test]
+    fn review_unnameable_output_with_the_same_id_never_opens_its_named_sibling() {
+        let found = [(None, "shared".into()), (Some("DIN".into()), "shared".into()), (Some("Other".into()), "distinct".into())];
+        assert_eq!(assign(&Bindings::new(), found.into_iter().filter_map(|(name,id): (Option<String>,String)| Some((name?, id)))), Bindings::from([("Other".into(), "distinct".into())]));
+    }
+
+    #[test]
     fn duplicate_calibrations_reserve_literal_names_and_reject_indistinguishable_ids() {
         let found = listed(&[("DIN", "a"), ("DIN", "b"), ("DIN (2)", "c"), ("unstable", "d"), ("unstable", "d")]);
         let available = assign(&Bindings::new(), found);

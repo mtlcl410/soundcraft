@@ -219,6 +219,50 @@ fn remapped(old: &Session, new: &Session, at: i64) -> bool {
 mod tests {
     use super::*;
     #[test]
+    fn review_launch_at_a_rounded_pulse_boundary_does_not_send_two_clocks() {
+        let mut song = Session::new("rounded pulse", SampleRate::HZ_48000);
+        song.tempo.set_tempo(0, 126.).unwrap();
+        let now = Instant::now();
+        let block = Presentation {
+            generation: 0,
+            sample_rate: song.sample_rate,
+            system_delay_samples: 0,
+            pass: 1,
+            origin: 0,
+            playing: true,
+            sample: 952.,
+            limit: 1464.,
+            samples_per_second: 48_000.,
+            heard_at: now,
+            looped: None,
+            end: None,
+            lead: Some(Duration::ZERO),
+        };
+        let mut messages = Vec::new();
+        let mut cursor = Cursor::default();
+        let next = cursor.update(block, now, &song, &mut |_, m| messages.push(m.to_vec())).unwrap();
+        assert_eq!(messages, [vec![START], vec![CLOCK]]);
+        assert!(next >= now + CATCH_UP_SPACING);
+        messages.clear();
+        cursor.update(block, next, &song, &mut |_, m| messages.push(m.to_vec()));
+        assert_eq!(messages, [vec![CLOCK]]);
+    }
+
+    #[test]
+    fn review_stopped_range_warning_persists_until_the_next_locate() {
+        let mut cursor = Cursor::default();
+        let tempo = TempoMap::default();
+        let sr = SampleRate::HZ_48000;
+        let far = tempo.tick_to_samples((i64::from(MAX_POSITION) + 1) * 6 * TICKS_PER_CLOCK, sr);
+        for locate in [true, false, false] {
+            cursor.advance(false, far, locate, &tempo, sr, |_| panic!("invalid SPP"));
+            assert!(cursor.error().is_some());
+        }
+        cursor.advance(false, 0, true, &tempo, sr, |_| {});
+        assert!(cursor.error().is_none());
+    }
+
+    #[test]
     fn stopped_locates_announce_the_same_position_as_play_without_starting() {
         let mut cursor = Cursor::default();
         let song = Session::default();

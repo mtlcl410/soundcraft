@@ -82,6 +82,19 @@ impl SoundApp {
         self.report_output_trouble(trouble, name, valid_reports);
     }
 
+    // Test adapters reproduce the old apply, reconnect-result, and config expressions.
+    #[cfg(test)]
+    fn applied_output_status(&mut self, _changed: bool, silent: bool) {
+        if !silent { self.unavailable_output = None; }
+    }
+    #[cfg(test)]
+    fn reconnected_output_status(&mut self, name: Option<String>, _system: Option<String>, silent: bool) {
+        self.unavailable_output = name.filter(|_| silent).map(|name| crate::UnavailableOutput {
+            name, system: None, stalled_at_report: None, idle_status: None
+        });
+    }
+    #[cfg(test)]
+    fn recovery_config(&self) -> soundcraft_playback::AudioConfig { self.ui.audio.clone() }
     fn clear_recovered_output(&mut self) {
         if let Some(fault) = self.unavailable_output.take()
             && fault.idle_status.as_ref() == Some(&self.ui.status)
@@ -119,6 +132,7 @@ impl SoundApp {
         if matches!(trouble, OutputTrouble::Gone | OutputTrouble::Stalled) {
             self.unavailable_output = Some(crate::UnavailableOutput {
                 name,
+                system: None,
                 stalled_at_report: (trouble == OutputTrouble::Stalled).then_some(valid_reports),
                 idle_status: (!recording && !playing).then(|| self.ui.status.clone()),
             });
@@ -209,7 +223,7 @@ impl SoundApp {
         let player = match required {
             Some(name) => {
                 let player = Player::reconnect_output(session, &self.ui.audio, &name);
-                self.unavailable_output = player.silent.then_some(crate::UnavailableOutput { name, stalled_at_report: None, idle_status: None });
+                self.unavailable_output = player.silent.then_some(crate::UnavailableOutput { name, system: None, stalled_at_report: None, idle_status: None });
                 player
             }
             None => Player::with_config(session, &self.ui.audio),
@@ -300,6 +314,57 @@ mod audio_input_tests {
 #[cfg(test)]
 mod timing_warning_tests {
     use super::*;
+
+    #[test]
+    fn applied_selection_retargets_a_failed_open_including_equal_names_on_other_hosts() {
+        let mut app = SoundApp::new(crate::Engine::default(), None, crate::Services::default());
+        app.report_output_trouble(OutputTrouble::Gone, "A".into(), 0);
+        for (name, host) in [("B", "WASAPI"), ("B", "ASIO")] {
+            app.ui.audio.output = Some(name.into());
+            app.ui.audio.system = Some(host.into());
+            app.applied_output_status(true, true);
+            let fault = app.unavailable_output.as_ref().unwrap();
+            assert_eq!(fault.name, name);
+            assert_eq!(fault.system.as_deref(), Some(host));
+            assert!(!app.ui.status.contains("“A”"));
+        }
+        app.ui.audio.output = None;
+        app.applied_output_status(true, true);
+        assert!(app.recovery_output().is_none(), "retry the current default");
+    }
+
+    #[test]
+    fn manual_retry_and_apply_clear_only_the_matching_idle_warning() {
+        let mut app = SoundApp::new(crate::Engine::default(), None, crate::Services::default());
+        for apply in [false, true] {
+            app.report_output_trouble(OutputTrouble::Gone, "A".into(), 0);
+            app.reconnected_output_status(Some("A".into()), None, true);
+            assert_eq!(app.unavailable_output.as_ref().unwrap().idle_status.as_ref(), Some(&app.ui.status));
+            if apply {
+                app.applied_output_status(false, false);
+            } else {
+                app.reconnected_output_status(Some("A".into()), None, false);
+            }
+            assert!(app.unavailable_output.is_none() && app.ui.status.is_empty());
+        }
+        app.report_output_trouble(OutputTrouble::Gone, "A".into(), 0);
+        app.ui.status = "Saved".into();
+        app.reconnected_output_status(Some("A".into()), None, false);
+        assert_eq!(app.ui.status, "Saved");
+    }
+
+    #[test]
+    fn reconnect_uses_the_original_open_host_after_falling_back() {
+        let mut app = SoundApp::new(crate::Engine::default(), None, crate::Services::default());
+        app.ui.audio.system = Some("initially unavailable host".into());
+        app.ui.audio.input = Some("microphone".into());
+        app.report_output_trouble(OutputTrouble::Gone, "USB".into(), 0);
+        app.unavailable_output.as_mut().unwrap().system = Some("WASAPI".into());
+        let retry = app.recovery_config();
+        assert_eq!(retry.system.as_deref(), Some("WASAPI"));
+        assert_eq!(retry.input, app.ui.audio.input);
+        assert_eq!(app.ui.audio.system.as_deref(), Some("initially unavailable host"));
+    }
 
     #[test]
     fn pending_transport_commands_defer_output_recovery_until_the_host_handles_them() {
@@ -397,7 +462,7 @@ mod timing_warning_tests {
         app.ui.audio.output = Some("Output A".into());
         app.ui.audio.input = Some("Input B".into());
         app.engine.session_mut().edit.selection = crate::Range::point(66_150);
-        app.unavailable_output = Some(crate::UnavailableOutput { name: "Output A".into(), stalled_at_report: None, idle_status: None });
+        app.unavailable_output = Some(crate::UnavailableOutput { name: "Output A".into(), system: None, stalled_at_report: None, idle_status: None });
         let before = app.engine.session_arc();
         for (playing, recording) in [(true, false), (true, true), (false, true)] {
             app.engine.transport.playing = playing;
