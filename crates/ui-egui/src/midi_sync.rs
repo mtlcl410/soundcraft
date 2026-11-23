@@ -298,3 +298,52 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod scenario_settings {
+    use super::*;
+
+    #[test]
+    fn d4_selection_pre_post_roll_bounds_given_to_clock_output() {
+        let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
+        let edit = &mut app.engine.session_mut().edit;
+        edit.selection.start = 192_000;
+        edit.selection.end = 288_000;
+        edit.loop_playback = false;
+        edit.pre_post_roll = true;
+        edit.pre_roll = 48_000;
+        edit.post_roll = 24_000;
+        app.play_from_selection();
+        assert_eq!(app.engine.transport.position, 144_000);
+        assert_eq!(app.sim.unwrap(), (144_000, Some(312_000), None));
+        println!("D4 SoundApp selection=192000..288000 real play request=144000..312000");
+    }
+    #[test]
+    fn d5_station_calibration_rename_and_same_named_units() {
+        let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
+        app.sync_command("setup.midi_beat_clock", &json!({"enabled":true,"destination":"Deck","offset":-2501})).unwrap();
+        let p = std::env::temp_dir().join(format!("soundcraft-d5-{}-beat.json", std::process::id()));
+        std::fs::write(&p, serde_json::to_vec(&app.ui.midi_sync).unwrap()).unwrap();
+        let mut reopened = SoundApp::new(Default::default(), None, crate::Services::default());
+        reopened.ui.midi_sync = serde_json::from_slice(&std::fs::read(&p).unwrap()).unwrap();
+        std::fs::remove_file(&p).unwrap();
+        assert_eq!(reopened.ui.midi_sync.ports["Deck"].offset_samples, -2501);
+        reopened.sync_command("setup.midi_beat_clock", &json!({"ports":{"Deck 2":{"enabled":true,"offset_samples":900}}})).unwrap();
+        let old = reopened.ui.midi_sync.ports["Deck"];
+        assert_eq!(old.offset_samples, -2501);
+        assert!(!old.enabled);
+        let new = reopened.ui.midi_sync.ports["Deck 2"];
+        assert_eq!(new.offset_samples, 900);
+        // Both physical endpoints now enumerate the same OS name. Exercise both edits via RPC.
+        for calibration in [701, 302] {
+            reopened.sync_command("setup.midi_beat_clock", &json!({"destination":"Identical","offset":calibration})).unwrap();
+        }
+        let shared: Vec<_> = reopened.ui.midi_sync.ports.iter().filter(|(k, _)| k.as_str() == "Identical").collect();
+        println!(
+            "D5 saved=-2501 restored=-2501 renamed_preserved_old=-2501 new=900 same_named_endpoints=2 stored_keys={} final_value={}",
+            shared.len(),
+            shared[0].1.offset_samples
+        );
+        assert_eq!(shared.len(), 2, "two independently calibrated same-name units should remain distinct");
+    }
+}

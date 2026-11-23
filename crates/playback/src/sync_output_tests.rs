@@ -942,3 +942,6 @@ fn connected_worker_accepts_control_and_shuts_down_while_a_future_message_is_pen
     eprintln!("control={control:?} shutdown={shutdown:?}");
     assert!(shutdown < bound, "Output::drop took {shutdown:?}");
 }
+
+#[path = "scenario_1662.rs"]
+mod scenario_1662;
