@@ -260,6 +260,19 @@ fn a_block_that_panics_goes_silent_and_is_reported_once() {
 }
 
 #[test]
+fn sustained_slow_asio_callbacks_request_idle_recovery() {
+    // The existing watchdog only sees an advancing block count and transport state.
+    let gaps_us = [251415, 250779, 251056, 251436, 250864, 251117, 250825, 250922];
+    let mut seen = None;
+    let mut requested = false;
+    for (block, gap) in gaps_us.into_iter().enumerate() {
+        std::thread::sleep(std::time::Duration::from_micros(gap));
+        requested |= stalled(&mut seen, block as u64 + 1, false);
+    }
+    assert!(requested, "continuing quarter-second callbacks must request a rebuild when stopped");
+}
+
+#[test]
 fn a_lost_or_stalled_device_is_reported_once() {
     let ago = |seen: &mut Option<(u64, std::time::Instant)>| {
         if let Some(s) = seen {
