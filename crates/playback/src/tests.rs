@@ -181,6 +181,20 @@ fn spike_session(spike_at: usize) -> (Arc<Shared>, AudioState, std::sync::mpsc::
 }
 
 #[test]
+fn recording_clock_arms_once_only_when_play_starts_with_recording_on() {
+    let (_, mut audio, tx, _) = spike_session(0);
+    let mut out = [0.0; 64];
+    audio.fill(&mut out, 2);
+    assert!(!audio.started_now);
+    tx.send(Cmd::Recording(true, 0)).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    audio.fill(&mut out, 2);
+    assert!(audio.started_now);
+    audio.fill(&mut out, 2);
+    assert!(!audio.started_now);
+}
+
+#[test]
 fn main_mix_falls_back_to_first_channels_on_a_narrow_device() {
     let (_, mut audio, tx, _) = spike_session(0);
     let mut session = (*audio.session).clone();
@@ -376,12 +390,12 @@ fn a_block_that_panics_goes_silent_and_is_reported_once() {
     let fault = Fault::default();
     let mut out = [0.5f32; 8];
     guarded_block(&fault, &shared, &mut out, |o| o.fill(0.25));
-    assert_eq!((out, fault.trouble(false)), ([0.25; 8], None));
+    assert_eq!((out, fault.trouble(None)), ([0.25; 8], None));
     guarded_block(&fault, &shared, &mut out, |_| std::panic::panic_any("a bug in the mix"));
     guarded_block(&fault, &shared, &mut out, |o| o.fill(0.25));
     assert_eq!(out, [0.0; 8]);
     assert!(!shared.playing.load(Ordering::Relaxed));
-    assert_eq!((fault.trouble(false), fault.trouble(false)), (Some(OutputTrouble::Bug), None));
+    assert_eq!((fault.trouble(None), fault.trouble(None)), (Some(OutputTrouble::Bug), None));
     assert_eq!(fault.beats.load(Ordering::Relaxed), 3);
 }
 
@@ -399,10 +413,27 @@ fn a_lost_or_stalled_device_is_reported_once() {
     assert!(!stalled(&mut seen, 6, true), "it asked again");
     ago(&mut seen);
     assert!(!stalled(&mut seen, 6, false), "stopped, so nothing to ask for");
-    assert_eq!(Fault::default().trouble(true), Some(OutputTrouble::Stalled));
+    let stalled = Some(OutputTrouble::Stalled);
+    assert_eq!(Fault::default().trouble(stalled), stalled);
     let fault = Fault::default();
     fault.gone.store(true, Ordering::Relaxed);
-    assert_eq!((fault.trouble(false), fault.trouble(true)), (Some(OutputTrouble::Gone), None));
+    assert_eq!((fault.trouble(None), fault.trouble(stalled)), (Some(OutputTrouble::Gone), None));
+}
+
+#[test]
+fn sporadic_asio_callbacks_after_usb_loss_report_clock_failure_once() {
+    let mut seen = None;
+    let start = std::time::Instant::now();
+    let slow = |seen: &mut _, frames, elapsed, playing| callback::asio_clock_slow(seen, frames, start + elapsed, 48_000, playing);
+    assert!(!slow(&mut seen, 0, std::time::Duration::ZERO, true));
+    assert!(!slow(&mut seen, 92_160, STALL, true), "normal callback jitter");
+    assert!(!slow(&mut seen, 92_416, STALL + std::time::Duration::from_millis(500), true), "wait for a full window");
+    assert!(slow(&mut seen, 94_208, STALL * 2, true), "frames keep arriving, but too slowly");
+    let fault = Fault::default();
+    let failure = Some(OutputTrouble::ClockTooSlow);
+    assert_eq!((fault.trouble(failure), fault.trouble(failure)), (failure, None));
+    assert!(!slow(&mut seen, 94_208, STALL * 3, false), "reset while transport is idle");
+    assert!(!slow(&mut seen, 94_464, STALL * 5, true), "allow the next start a full window");
 }
 
 #[test]
@@ -831,7 +862,7 @@ fn armed_tracks_are_heard_and_metered_after_playback_stops() {
     let (tx, rx) = channel();
     let mut st = AudioState::new(rx, Arc::clone(&shared), Arc::new(s), 48_000.0, channel().0);
     let ring = record::InputRing::new(1, 48_000);
-    tx.send(Cmd::Input(Arc::clone(&ring))).unwrap();
+    tx.send(Cmd::Input(Arc::clone(&ring), false)).unwrap();
     tx.send(Cmd::Play { from: 0, end: Some(1000), looped: None }).unwrap();
     let mut out = vec![0.0f32; 4096];
     st.fill(&mut out, 2);

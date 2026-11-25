@@ -9,30 +9,50 @@ use soundcraft_model::TrackKind;
 /// How the audio output is doing, for the UI.
 #[derive(Default)]
 pub(crate) struct Fault {
+    #[cfg(all(windows, feature = "asio"))]
+    pub(crate) record_clock: std::sync::Arc<crate::record_clock::OutputClock>,
     /// A block panicked: output stays silent from then on.
     failed: AtomicBool,
     /// The device went away or the stream was invalidated: only a reconnect can restore audio.
     pub(crate) gone: AtomicBool,
     /// Blocks so far, to tell a device that stopped asking for audio.
     pub(crate) beats: std::sync::atomic::AtomicU64,
+    #[cfg(all(windows, feature = "asio"))]
+    pub(crate) asio_frames: std::sync::atomic::AtomicU64,
     /// The UI has been told.
     reported: AtomicBool,
 }
 
 impl Fault {
     /// What stopped the output, once.
-    pub(crate) fn trouble(&self, stalled: bool) -> Option<OutputTrouble> {
+    pub(crate) fn trouble(&self, clock: Option<OutputTrouble>) -> Option<OutputTrouble> {
         let trouble = if self.failed.load(Ordering::Relaxed) {
             OutputTrouble::Bug
         } else if self.gone.load(Ordering::Relaxed) {
             OutputTrouble::Gone
-        } else if stalled {
-            OutputTrouble::Stalled
         } else {
-            return None;
+            clock?
         };
         (!self.reported.swap(true, Ordering::Relaxed)).then_some(trouble)
     }
+}
+
+/// Some ASIO drivers keep calling back sporadically after USB removal. Count actual device frames
+/// over a full stall interval so those callbacks cannot indefinitely mask a dead audio clock.
+#[cfg(any(test, all(windows, feature = "asio")))]
+pub(crate) fn asio_clock_slow(seen: &mut Option<(u64, std::time::Instant)>, frames: u64, now: std::time::Instant, rate: u32, playing: bool) -> bool {
+    if !playing {
+        *seen = None;
+        return false;
+    }
+    let (previous, since) = *seen.get_or_insert((frames, now));
+    let elapsed = now.saturating_duration_since(since);
+    if elapsed < STALL {
+        return false;
+    }
+    *seen = Some((frames, now));
+    // Allow normal callback jitter and brief load spikes; only a severe, sustained slowdown counts.
+    (frames.wrapping_sub(previous) as f64) < f64::from(rate) * elapsed.as_secs_f64() * 0.5
 }
 
 /// How long a playing output may go without a block before it counts as stalled.
@@ -82,6 +102,7 @@ pub(crate) struct AudioState {
     pub(crate) device_rate: f64,
     input: Option<Arc<record::InputRing>>,
     recording: bool,
+    pub(crate) started_now: bool,
     midi: Option<Arc<midi::MidiFeed>>,
     /// Live MIDI events of this callback not played yet: frames (session rate) until each is due.
     midi_pending: Vec<(i64, LiveMidi)>,
@@ -176,6 +197,7 @@ impl AudioState {
             device_rate,
             input: None,
             recording: false,
+            started_now: false,
             midi: None,
             midi_pending: Vec::with_capacity(MIDI_EVENTS),
             midi_delay: 0,
@@ -200,7 +222,10 @@ impl AudioState {
         let mut changed = false;
         while let Ok(c) = self.rx.try_recv() {
             match c {
-                Cmd::Input(r) => self.input = Some(r),
+                Cmd::Input(r, direct) => {
+                    self.input = Some(r);
+                    self.mix.direct_monitor_available = direct;
+                }
                 Cmd::Midi(f) => {
                     self.mix.midi_ports = Some(Arc::clone(f.ports()));
                     self.midi = Some(f);
@@ -240,6 +265,7 @@ impl AudioState {
                     changed = true;
                     if (s.sample_rate.as_f64() - self.session.sample_rate.as_f64()).abs() > 0.5 {
                         let mut old = std::mem::replace(&mut self.mix, new_engine(s.sample_rate.as_f64() as f32));
+                        self.mix.direct_monitor_available = old.direct_monitor_available;
                         self.mix.set_hardware_channels(old.hardware_output().len());
                         let _ = self.garbage.send(old.drain_plugins());
                         self.mix.midi_ports = self.midi.as_ref().map(|f| Arc::clone(f.ports()));
@@ -266,6 +292,7 @@ impl AudioState {
                 }
                 Cmd::OldSessions(tx) => self.old_sessions = Some(tx),
                 Cmd::Play { from, end, looped } => {
+                    self.started_now = self.recording;
                     self.pos = from;
                     self.end = end;
                     self.looped = looped.filter(|r| super::loops(*r));
@@ -630,6 +657,7 @@ impl AudioState {
 
     /// Fill an interleaved device buffer.
     pub(crate) fn fill(&mut self, out: &mut [f32], channels: usize) {
+        self.started_now = false;
         let channels = channels.max(1);
         let callback_frames = out.len() / channels;
         // The speed is read once: the callback renders at the speed it keeps for the ages of
