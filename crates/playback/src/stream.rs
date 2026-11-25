@@ -1,4 +1,4 @@
-use super::callback::{AudioState, Fault, guarded_block};
+use super::callback::{Fault, guarded_block};
 use super::{Arc, AudioConfig, Cmd, Ordering, Plugin, Receiver, Sender, Shared, devices, mark_audio_thread};
 
 /// Start a freshly built output stream. `false` when the device refuses to start it, so the caller
@@ -15,6 +15,8 @@ pub(crate) fn start_stream(stream: &impl cpal::traits::StreamTrait) -> bool {
 
 /// A built output stream and the channels and fault flag its callback shares with the player.
 pub(crate) struct Opened {
+    #[cfg(all(windows, feature = "asio"))]
+    pub(crate) recovery: Option<crate::asio_recovery::native::Recovery>,
     pub(crate) stream: cpal::Stream,
     pub(crate) tx: Sender<Cmd>,
     pub(crate) grx: Receiver<Vec<Box<dyn Plugin>>>,
@@ -39,22 +41,41 @@ pub(crate) fn first_started<A: std::fmt::Debug, S, E: std::fmt::Display>(
     None
 }
 
-/// The output stream: the mix renders f32 into a scratch buffer allocated here (so the callback
-/// never allocates), converted to the device's sample type.
+/// [`build_output`] in the device's sample `format`.
+pub(crate) fn build_format(
+    device: &cpal::Device,
+    config: cpal::StreamConfig,
+    format: cpal::SampleFormat,
+    fault: &Arc<Fault>,
+    shared: &Arc<Shared>,
+    begin: impl FnMut(usize) + Send + 'static,
+    render: impl FnMut(&mut [f32], usize) -> bool + Send + 'static,
+) -> Result<cpal::Stream, cpal::Error> {
+    match format {
+        cpal::SampleFormat::I32 => build_output::<i32>(device, config, fault, shared, begin, render),
+        cpal::SampleFormat::I24 => build_output::<cpal::I24>(device, config, fault, shared, begin, render),
+        cpal::SampleFormat::I16 => build_output::<i16>(device, config, fault, shared, begin, render),
+        _ => build_output::<f32>(device, config, fault, shared, begin, render),
+    }
+}
+
+/// The output stream: `render` fills f32 into a scratch buffer allocated here (so the callback
+/// never allocates), converted to the device's sample type, and says whether that block started
+/// playback with recording on. `begin` is told each callback's frame count first.
 pub(crate) fn build_output<T>(
     device: &cpal::Device,
     config: cpal::StreamConfig,
-    mut state: AudioState,
-    channels: usize,
     fault: &Arc<Fault>,
     shared: &Arc<Shared>,
+    mut begin: impl FnMut(usize) + Send + 'static,
+    mut render: impl FnMut(&mut [f32], usize) -> bool + Send + 'static,
 ) -> Result<cpal::Stream, cpal::Error>
 where
     T: cpal::SizedSample + cpal::FromSample<f32>,
 {
     use cpal::traits::DeviceTrait;
+    let channels = usize::from(config.channels);
     let frame = channels.max(1);
-    state.mix.set_hardware_channels(frame);
     let mut scratch = vec![0.0f32; 8192 * frame];
     let chunk = scratch.len();
     let (failed, guard, gone) = (Arc::clone(fault), Arc::clone(shared), Arc::clone(fault));
@@ -72,10 +93,12 @@ where
             if clock.is_some() {
                 failed.asio_frames.fetch_add(frames as u64, Ordering::Relaxed);
             }
+            begin(frames);
             for out in data.chunks_mut(chunk) {
                 let Some(s) = scratch.get_mut(..out.len()) else { return };
-                guarded_block(&failed, &guard, s, |d| state.fill(d, channels));
-                if state.started_now
+                let mut started_now = false;
+                guarded_block(&failed, &guard, s, |d| started_now = render(d, channels));
+                if started_now
                     && let (Some(clock), Some(cycle)) = (&clock, cycle)
                     && clock.first_play.read().is_none()
                 {
