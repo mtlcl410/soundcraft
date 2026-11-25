@@ -1,6 +1,6 @@
 # Hardware parity
 
-> **Last reviewed:** 2026-11-18 · **Last updated:** 2026-11-25 · **Change:** minor (named input paths for recording and monitoring, verified on Core Audio with an RME UFX; previously minor: named output paths to hardware channels, verified on Core Audio with an RME UFX; previously minor: record to disk: done, #84 and #888, previously trivial: bounces of a bus fed by an aux compensate its latency, #246; previously minor: MIDI input devices, live play-through with controllers, and MIDI recording) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-11-18 · **Last updated:** 2026-11-25 · **Change:** minor (opt-in `asio` build: packed 24-bit PCM, named paths on every ASIO output, same-device take alignment and direct monitoring, verified on a TASCAM Model 12; previously minor: named input paths for recording and monitoring, verified on Core Audio with an RME UFX; previously minor: named output paths to hardware channels, verified on Core Audio with an RME UFX; previously minor: record to disk: done, #84 and #888, previously trivial: bounces of a bus fed by an aux compensate its latency, #246; previously minor: MIDI input devices, live play-through with controllers, and MIDI recording) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 A DAW is judged by how it drives audio interfaces, MIDI gear, control surfaces and sync. This is
 SoundCraft's weakest dimension. Ours is measured from `crates/playback` (cpal) and the absence of
@@ -15,14 +15,14 @@ Legend: ✅ works · 🟡 partial · ❌ missing.
 
 | Feature | Pro Tools (macOS / Windows) | SoundCraft macOS | Windows | Linux | FreeBSD | Web |
 |---|---|---|---|---|---|---|
-| Driver API | Core Audio / ASIO | 🟡 Core Audio via cpal | 🟡 WASAPI shared via cpal; ASIO with the opt-in `asio` build feature (verified with an SSL 2+) | 🟡 ALSA/Pulse via cpal; no JACK | 🟡 cpal (ALSA layer) | 🟡 Web Audio |
+| Driver API | Core Audio / ASIO | 🟡 Core Audio via cpal | 🟡 WASAPI shared via cpal; ASIO with the opt-in `asio` build feature (verified with an SSL 2+; packed 24-bit PCM verified on a TASCAM Model 12) | 🟡 ALSA/Pulse via cpal; no JACK | 🟡 cpal (ALSA layer) | 🟡 Web Audio |
 | Choose playback device | ✅ Playback Engine | 🟡 Setup › Playback Engine (not yet verified on macOS) | ✅ Setup › Playback Engine (WASAPI, ASIO) | 🟡 (not yet verified) | 🟡 (not yet verified) | ❌ |
 | Choose input device | ✅ | 🟡 Setup › Playback Engine (not yet verified on macOS) | ✅ (WASAPI, ASIO) | 🟡 (not yet verified) | ❌ no recording | ❌ |
 | Buffer size (32–2048) | ✅ | 🟡 device buffer when the driver allows it (not yet verified); mix in 512-sample blocks | 🟡 device buffer 16–8192 (verified 128 on ASIO, 256 on WASAPI); mix in 512-sample blocks | 🟡 (not yet verified) | 🟡 | ❌ |
 | Duplex stream on one clock | ✅ | ❌ separate input/output streams | ❌ | ❌ | ❌ | ❌ |
-| Hardware I/O mapping (I/O Setup to physical channels) | ✅ | 🟡 named output and input paths; Core Audio opens every output (a path on outputs 3–4, ADAT outputs 17–22, a live channel change and a named input on In 5 verified on an RME UFX; Unavailable on a 2-channel device) | 🟡 named inputs; named outputs limited to the opened main-mix width; unverified | 🟡 named outputs limited to the opened main-mix width; unverified | 🟡 named outputs limited to the opened main-mix width; unverified | ❌ |
-| Low-latency monitoring | ✅ | ❌ (`options.low_latency_monitoring` is a stored flag) | ❌ | ❌ | ❌ | ❌ |
-| Latency reporting and record offset compensation | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Hardware I/O mapping (I/O Setup to physical channels) | ✅ | 🟡 named output and input paths; Core Audio opens every output (a path on outputs 3–4, ADAT outputs 17–22, a live channel change and a named input on In 5 verified on an RME UFX; Unavailable on a 2-channel device) | 🟡 named output and input paths; ASIO (opt-in build) opens every output (USB outputs 1–10 and named inputs 1–12 verified on Model 12); WASAPI limited to the opened main-mix width | 🟡 named outputs limited to the opened main-mix width; unverified | 🟡 named outputs limited to the opened main-mix width; unverified | ❌ |
+| Low-latency monitoring | ✅ | ❌ (`options.low_latency_monitoring` is a stored flag) | 🟡 opt-in ASIO build: software monitoring hands off to the interface's hardware monitoring on the same ASIO device | ❌ | ❌ | ❌ |
+| Latency reporting and record offset compensation | ✅ | ❌ | 🟡 opt-in ASIO build: same-device, matching-rate takes placed by callback cycle and driver latency; plugin delay excluded | ❌ | ❌ | ❌ |
 | Sample rate follows the session; resample when it can't | ✅ (switches device) | 🟡 resamples (input pitch bug fixed, #28) | 🟡 | 🟡 | 🟡 | 🟡 |
 | Avid HDX / HD Native DSP, Hybrid Engine DSP mode | ✅ | ❌ (out of reach: Avid hardware) | ❌ | ❌ | ❌ | ❌ |
 | Disk allocation / record to disk | ✅ | ✅ takes written to disk as they record (#84); a long take goes on in a new file (#888) | 🟡 same recorder (not yet verified on Windows) | 🟡 same recorder (input not yet verified) | ❌ no recording | ❌ |
@@ -72,6 +72,7 @@ Legend: ✅ works · 🟡 partial · ❌ missing.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | Opt-in `asio` build: packed 24-bit PCM, named paths on every ASIO output and named inputs (verified on a TASCAM Model 12), same-device take alignment and direct monitoring |
 | 2026-11-25 | minor | Named input paths for recording and monitoring (verified on Core Audio with an RME UFX) |
 | 2026-11-25 | minor | Named output paths route to hardware channels; Core Audio opens every output of an interface (verified on an RME UFX) |
 | 2026-11-18 | minor | MIDI input devices (`midir`): live play-through to record-enabled MIDI and instrument tracks (notes, pedal, controllers, pitch bend, aftertouch), MIDI recording into clips, per-track device and channel, device switches in Playback Engine; guide in `midi-input.md` |

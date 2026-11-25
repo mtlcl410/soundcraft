@@ -1,6 +1,6 @@
 # Where SoundCraft falls short of Pro Tools
 
-> **Last reviewed:** 2026-11-18 · **Last updated:** 2026-11-25 · **Change:** minor (G-01: Setup › I/O maps named input paths for recording and monitoring, verified on Core Audio with an RME UFX; previously minor: G-01: Setup › I/O routes named output paths to hardware channels, verified on Core Audio with an RME UFX; Core Audio opens every output of an interface; input selectors follow the device's recording width; previously minor: G-06: recording to disk is done (#84, long takes #888); streaming sources remain; previously minor: G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-11-18 · **Last updated:** 2026-11-25 · **Change:** minor (G-01, opt-in `asio` build: packed 24-bit PCM, shared-device capture, named paths on every ASIO output, take alignment on the shared clock, direct monitoring, clock-failure stop, slow-stream recovery and reset reopen; previously minor: G-01: Setup › I/O maps named input paths for recording and monitoring, verified on Core Audio with an RME UFX; previously minor: G-01: Setup › I/O routes named output paths to hardware channels, verified on Core Audio with an RME UFX; Core Audio opens every output of an interface; input selectors follow the device's recording width; previously minor: G-06: recording to disk is done (#84, long takes #888); streaming sources remain; previously minor: G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 Every known shortfall, one entry each, ranked by how much it stops a Pro Tools user from doing
 real work in SoundCraft. This is the work list: pick from the top. Rows marked **alpha blocker**
@@ -67,11 +67,22 @@ When you close a gap, delete its entry (or shrink it) in the same PR, and bump t
   format. Audio tracks select them by name for recording and input monitoring. On the same UFX
   and cable, a mono named input at channel 5 records the same samples as `In 5`, and the path and
   the track's assignment survive save and reopen.
+- **Done (2026-11-25), opt-in `asio` build only:** ASIO accepts packed 24-bit PCM (the TASCAM
+  Model 12 reported no usable channels before). When the selected input is the open ASIO output
+  device, capture runs on that device at the output's rate and buffer. ASIO opens every output,
+  so named paths reach channels past the main mix: USB outputs 1–10 and named inputs 1–12
+  verified on the Model 12 at 48 kHz. A take started from stop on one ASIO device at the session
+  rate is placed by the shared callback cycle and the driver-reported latency (loopback residual
+  42–47 samples early in 76 Model 12 takes), and an aligned punch waits for its input tail. With
+  Low Latency Monitoring on, a monitored input on that device is left to the interface's hardware
+  monitoring. Playback stops with the take kept when the ASIO clock fails (USB cable pulled),
+  an idle stream that keeps calling back far too slowly is reopened, and a driver's reset request
+  (buffer size changed in its own settings) reopens the device.
 - **Missing:** hardware input sub-paths and noncontiguous mappings, outputs past the main mix's
-  width outside Core Audio, one duplex stream on one clock (input and output are still separate
-  cpal streams), latency reporting and record-offset compensation, ASIO in official builds (owner decision:
-  Steinberg's SDK is proprietary or GPLv3), JACK, and verification on macOS and Linux. The mix
-  still runs in fixed 512-sample blocks.
+  width outside Core Audio and ASIO, one duplex stream on one clock (input and output are still
+  separate cpal streams), latency reporting and record-offset compensation outside same-device ASIO,
+  ASIO in official builds (owner decision: Steinberg's SDK is proprietary or GPLv3), JACK, and
+  verification on macOS and Linux. The mix still runs in fixed 512-sample blocks.
 - **Evidence:** code above; Playback Engine window says "Mix block size: 512 samples"; issue #42
   (no input device selection, forced monitoring feedback with virtual routing).
 - **Impact:** blocks tracking with any multichannel interface; latency makes overdubs hard.
@@ -269,6 +280,7 @@ missing. Out of scope unless the owner decides otherwise.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-25 | minor | G-01, opt-in `asio` build: packed 24-bit PCM, shared-device capture, named paths on every ASIO output, take alignment, direct monitoring, clock-failure stop, slow-stream recovery and reset reopen |
 | 2026-11-25 | minor | G-01: named hardware input paths for recording and monitoring (verified on Core Audio with an RME UFX) |
 | 2026-11-25 | minor | G-01: Setup › I/O routes named output paths to hardware channels (verified on Core Audio with an RME UFX); Core Audio opens every output of an interface; input selectors follow the device's recording width |
 | 2026-11-14 | minor | G-03: strict external-WAV AAF import with bounded property caching; AAF/OMF export, OMF import and `.ptx` remain; estimates unchanged |
