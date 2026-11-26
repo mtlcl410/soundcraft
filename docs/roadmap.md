@@ -1,6 +1,6 @@
 # SoundCraft roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-18 · **Change:** minor (M6: long takes continue in a new file (#888); previously minor: MIDI input landed, the gate row needs checking on macOS and Windows; strict external-WAV AAF import; previously trivial: 28 built-in processors with the Frequency Shifter; G-05 estimate after Linux/X11 plugin editors; M15: partial pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-27 · **Change:** minor (alpha gate: up to 512 frames the mix follows the device buffer; previously minor: M6: long takes continue in a new file (#888); previously minor: MIDI input landed, the gate row needs checking on macOS and Windows; strict external-WAV AAF import; previously trivial: 28 built-in processors with the Frequency Shifter; G-05 estimate after Linux/X11 plugin editors; M15: partial pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 Forward-looking plan. Status and numbers: [`../ROADMAP.md`](../ROADMAP.md) and
 [`target-app-parity.md`](target-app-parity.md); the ranked work list: [`gaps.md`](gaps.md).
@@ -22,7 +22,7 @@ main platform). Any **no** keeps SoundCraft **pre-alpha**, and those rows are th
 
 | Workflow | Works end to end? | Evidence | Hours to pass |
 |---|---|---|---:|
-| Record audio from a chosen interface at a chosen buffer size, monitor, punch, keep the takes | **no** | Device, rate and buffer are chosen in the Playback Engine window and, in the desktop app, by `setup.playback_engine` (headless returns `applied: false`). The mix still runs in fixed 512-sample blocks. Separate input and output streams. Takes are written to disk as they record (#84; long takes continue in a new file, #888). | 35–55 |
+| Record audio from a chosen interface at a chosen buffer size, monitor, punch, keep the takes | **no** | Device, rate and buffer are chosen in the Playback Engine window and, in the desktop app, by `setup.playback_engine` (headless returns `applied: false`). Up to 512 frames the mix follows the device buffer; larger callbacks are split into 512-sample blocks (#1034, in review, renders them in one block). Separate input and output streams. Takes are written to disk as they record (#84; long takes continue in a new file, #888). | 35–55 |
 | Record MIDI from a controller and play it back through an instrument | **unverified** | Built: keyboards play record-enabled instrument tracks live and are recorded into MIDI clips. On Linux, live play was checked with a hardware keyboard (Akai MPK mini 3) and recording with a virtual one; the row passes once it is checked on macOS and Windows too (G-02). | 2–4 |
 | Edit: select, trim, fade, comp playlists, Slip/Shuffle/Grid | yes (rough) | Every Edit menu command; property-tested with undo; open bugs #3, #5, #140 don't block the workflow | — |
 | Mix with built-in and third-party plugins, sends, busses, automation | partial (passes on CLAP/AU) | 28 built-in processors; CLAP and AU host on the signed macOS build, but its missing entitlement blocks third-party VST3 (#153). No AU plugin windows yet; VST3 windows on macOS, Windows and Linux/X11 | 1–2 (entitlement) |
@@ -88,6 +88,7 @@ There is no `cargo xtask scorecard` in this repo; the measured number is `cargo 
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-27 | minor | Alpha gate, recording row: up to 512 frames the mix follows the device buffer (since 2026-10-11); only larger callbacks are split into 512-sample blocks |
 | 2026-11-18 | minor | MIDI input devices landed (G-02 shrunk); the MIDI gate row is unverified until checked on macOS and Windows |
 | 2026-11-14 | minor | M13 is in progress with strict external-WAV AAF import; the exchange gate still fails without AAF export, OMF or `.ptx`; estimates unchanged |
 | 2026-11-09 | trivial | 28 built-in processors with the Frequency Shifter |

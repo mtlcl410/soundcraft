@@ -1,6 +1,6 @@
 # Target-app parity: SoundCraft vs Avid Pro Tools
 
-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-14 · **Change:** minor (Performance row: recording is to disk (#84, #888); scores unchanged; previously minor: strict external-WAV AAF import; previously trivial: Frequency Shifter: 28 built-in processors; G-09/localization: pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1 (bundle 26.4.1.179, macOS)
+> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-27 · **Change:** minor (Hardware row and Stage: device choice and the device-sized mix block; the MIDI bullet matches the alpha gate; scores unchanged; previously minor: Performance row: recording is to disk (#84, #888); scores unchanged; previously minor: strict external-WAV AAF import; previously trivial: Frequency Shifter: 28 built-in processors; G-09/localization: pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1 (bundle 26.4.1.179, macOS)
 
 The authoritative assessment of how close SoundCraft is to Pro Tools. [`ROADMAP.md`](../ROADMAP.md)
 summarizes it, [`gaps.md`](gaps.md) itemizes every shortfall, and the per-dimension docs go deeper:
@@ -82,7 +82,7 @@ post-production, tracking) can switch. "Ready" is depth, correctness and fidelit
 | Features | 45 % | **~45 %** | estimated | 520–810 | [area table](#feature-areas) | Menu breadth 94 % measured, but depth is thin: see the area table |
 | UI/UX fidelity | 10 % | **~55 %** | estimated | 60–100 | [ui-parity.md](ui-parity.md) | Edit/Mix windows, every menu, floating windows; open UX bugs #3 #5 #6 #7 #140 #144; shortcuts only recently right on Windows/Linux (#15, #41); generic plugin UIs |
 | File formats | 10 % | **~40 %** | estimated | 70–120 | [file-format-parity.md](file-format-parity.md) | WAV/BWF/RF64/AIFF/FLAC read+write, compressed formats read; strict external-WAV AAF import; no `.ptx`, AAF/OMF export, OMF import, ADM BWF, MP3/AAC export, video export |
-| Hardware | 10 % | **~12 %** | estimated | 110–180 | [hardware-parity.md](hardware-parity.md) | Default output and default input device only, fixed 512-sample block, no ASIO, no MIDI devices, no control surfaces, no sync |
+| Hardware | 10 % | **~12 %** | estimated | 110–180 | [hardware-parity.md](hardware-parity.md) | Device, rate and buffer chosen in the Playback Engine; the mix follows the device buffer up to 512 frames; separate input and output streams; ASIO only in an opt-in build; MIDI input devices but no MIDI output; no control surfaces, no sync |
 | Stability | 10 % | **~45 %** | estimated | 50–80 | [gaps.md](gaps.md) | Never-crash rules and proptests (random edits, mutated sessions, hostile params); but ~25 open correctness bugs, a launch failure (#142), an X11 llvmpipe failure (#107) |
 | Performance | 5 % | **~35 %** | estimated (unmeasured) | 40–70 | [hardware-parity.md](hardware-parity.md) | Parallel strip rendering and PDC exist; whole files decoded into RAM, recording to disk (#84; long takes #888), no track-count or latency benchmarks |
 | Ecosystem / plugins | 4 % | **~30 %** | estimated | in Features + Hardware | [plugin-parity.md](plugin-parity.md) | CLAP/VST3/AU hosting; no AAX (Pro Tools' only format), no ARA, no sidechain, no control-surface ecosystem, no content library |
@@ -199,10 +199,11 @@ Weights by what Pro Tools users actually spend time on. **Breadth** = the featur
 ([`roadmap.md`](roadmap.md#alpha-gate)) fails three of six Pro Tools workflows on macOS, the main
 platform:
 
-- Tracking from a chosen interface at a chosen buffer size: **no**. Only the default devices are
-  used, the mix runs in fixed 512-sample blocks, and input and output are separate
-  streams.
-- MIDI recording: **no**. There is no MIDI device layer.
+- Tracking from a chosen interface at a chosen buffer size: **no**. Device, rate and buffer are
+  chosen in the Playback Engine; up to 512 frames the mix follows the device buffer (larger
+  callbacks are split into 512-sample blocks); input and output are separate streams.
+- MIDI recording: **unverified**. Keyboards play and record into instrument tracks; the gate row
+  passes once that is checked on macOS and Windows (G-02).
 - Session interchange with Pro Tools or picture editors: **no**. Strict external-WAV AAF import works, but AAF export, OMF and `.ptx` do not.
 
 Editing, mixing with plugins, bouncing, and saving and reopening pass (with known bugs).
@@ -245,6 +246,7 @@ serializes more, because it needs hands-on testing.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-27 | minor | Hardware row evidence and the Stage tracking bullet name device choice and the device-sized mix block (up to 512 frames); the Hardware row also names MIDI input devices and the opt-in ASIO build; the Stage MIDI bullet says unverified as the alpha gate does; scores and hours unchanged |
 | 2026-11-14 | minor | Strict external-WAV AAF import added to format, interchange and alpha-gate evidence; readiness estimates unchanged |
 | 2026-11-09 | trivial | Built-in plugin counts: 28 processors + 3 instruments with the Frequency Shifter. Percentages unchanged |
 | 2026-11-05 | trivial | Localization row: English plus a near-complete pt-BR catalog for fixed UI strings (PR #1346), not native-reviewed. Percentages and hours unchanged |
