@@ -1,0 +1,3 @@
+merge on? False
+cursor {'clips': [], 'end': 144384, 'start': 144384, 'tracks': [1]}
+{"tag": "after Replace pass from 3.0 s", "undo": "MIDI Recording", "redo": null, "tracks": [{"name": "MIDI 1", "playlist": "MIDI 1", "playlists": 1, "arm": true, "clips": [{"id": 2, "name": "MIDI 1", "start_s": 0.0, "len_s": 3.008, "locked": null, "notes": [[72, 1910], [60, 4981], [64, 5737]]}, {"id": 3, "name": "MIDI 1", "start_s": 3.008, "len_s": 5.029, "locked": null, "notes": [[62, 958], [65, 6714]]}]}]}

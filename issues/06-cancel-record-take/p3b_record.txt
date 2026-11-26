@@ -1,0 +1,8 @@
+undo: press: 0
+
+{"tag": "after undo", "undo": "New...", "redo": "MIDI Recording", "tracks": [{"name": "MIDI 1", "playlist": "MIDI 1", "playlists": 1, "arm": true, "clips": []}]}
+{"tag": "after record from Record click", "undo": "MIDI Recording", "redo": null, "tracks": [{"name": "MIDI 1", "playlist": "MIDI 1", "playlists": 1, "arm": true, "clips": [{"id": 2, "name": "MIDI 1", "start_s": 0.0, "len_s": 5.013, "locked": null, "notes": [[60, 4981], [64, 5737], [67, 6515]]}]}]}
+status 'Recorded 1 clip(s)'
+playing after Cmd+. True
+{"tag": "after Cmd+. then Stop", "undo": "MIDI Recording", "redo": null, "tracks": [{"name": "MIDI 1", "playlist": "MIDI 1", "playlists": 1, "arm": true, "clips": [{"id": 2, "name": "MIDI 1", "start_s": 0.0, "len_s": 5.013, "locked": null, "notes": [[72, 1910], [60, 4981], [64, 5737], [67, 6515]]}]}]}
+status 'Recorded 1 clip(s)'

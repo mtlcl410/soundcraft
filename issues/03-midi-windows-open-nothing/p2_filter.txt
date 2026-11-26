@@ -1,0 +1,8 @@
+{'filtered': ['program']}
+thru to PT Synth: ['c207', 'b20132', '924864', '824800', '924a64', '824a00']
+clips on MIDI 1: [('MIDI 1', 0), ('MIDI 1', 576000)]
+last clip notes: [72, 74] events: {}
+{'filtered': ['program']}
+{'filtered': []}
+{"end": 882688, "fade_in": 0, "fade_out": 0, "gain_db": 0.0, "id": 4, "length": 306688, "locked": false, "muted": false, "name": "MIDI 1", "notes": 2, "start": 576000, "start_time": "0:12.000"}
+{"notes": [{"channel": 0, "length": 399, "pitch": 72, "release_velocity": 0, "start": 10262, "velocity": 100}, {"channel": 0, "length": 393, "pitch": 74, "release_velocity": 0, "start": 10759, "velocity": 100}]}

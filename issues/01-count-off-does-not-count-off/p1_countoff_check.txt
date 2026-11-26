@@ -1,0 +1,7 @@
+0.88 1497600 True None Recorded 1 clip(s)
+1.39 1523200 True None Recorded 1 clip(s)
+1.91 1547776 True None Recorded 1 clip(s)
+2.42 1571584 True None Recorded 1 clip(s)
+2.94 1597696 True None Recorded 1 clip(s)
+3.46 1621504 True None Recorded 1 clip(s)
+{'value': False}

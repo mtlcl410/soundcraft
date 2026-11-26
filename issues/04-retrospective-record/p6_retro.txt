@@ -1,0 +1,5 @@
+heard on PT Synth while playing along: ['923c64', '823c00', '924064', '824000', '924364', '824300', '924864', '824800']
+menu press: press: 0
+clips before/after menu: {'MIDI 1': 1, 'Inst 1': 0} {'MIDI 1': 1, 'Inst 1': 0} status: Nothing was recorded: the record-enabled tracks received no input
+after Option+Shift+Z: {'MIDI 1': 1, 'Inst 1': 0} status: Nothing was recorded: the record-enabled tracks received no input
+command with no notes: {'recorded': 0}

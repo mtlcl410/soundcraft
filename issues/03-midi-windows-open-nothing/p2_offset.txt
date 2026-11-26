@@ -1,0 +1,5 @@
+offset 0: 20/20 notes, median 0.27 ms, max 0.90 ms
+{'offsets': [{'name': 'MIDI 1', 'offset': 24000.0, 'track': 1}, {'name': 'Inst 1', 'offset': 0.0, 'track': 2}]}
+{'offsets': [{'name': 'MIDI 1', 'offset': 24000.0, 'track': 1}, {'name': 'Inst 1', 'offset': 0.0, 'track': 2}]}
+offset +500 ms: 20/20 notes, median 0.27 ms, max 0.34 ms
+{'offsets': [{'name': 'MIDI 1', 'offset': 0.0, 'track': 1}, {'name': 'Inst 1', 'offset': 0.0, 'track': 2}]}
