@@ -237,13 +237,14 @@ fn the_midi_keyboard_window_plays_the_key_held_down() {
     let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default());
     app.midi_inputs = Some(MidiInputs::with_port_names(Vec::new(), Vec::new()));
     app.ui.show_midi_keyboard = true;
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_ui_state(
-        |ui, app: &mut SoundApp| {
-            app.logic(&ui.ctx().clone());
-            app.ui(ui);
-        },
-        app,
-    );
+    let mut h =
+        Harness::builder().with_context_setup(soundcraft_ui_egui::framework::install_headless).with_size(vec2(1600.0, 1000.0)).build_ui_state(
+            |ui, app: &mut SoundApp| {
+                app.logic(&ui.ctx().clone());
+                app.ui(ui);
+            },
+            app,
+        );
     h.run_steps(3);
     let keys = h.get_by_label("MIDI Keyboard keys").rect();
     // The first white key (C3, note 48): half a key in from the left, low enough to miss the black keys.
@@ -303,13 +304,14 @@ fn a_click_within_one_pass_still_plays_the_key() {
     let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, Services::default());
     app.midi_inputs = Some(MidiInputs::with_port_names(Vec::new(), Vec::new()));
     app.ui.show_midi_keyboard = true;
-    let mut h = Harness::builder().with_size(vec2(1600.0, 1000.0)).build_ui_state(
-        |ui, app: &mut SoundApp| {
-            app.logic(&ui.ctx().clone());
-            app.ui(ui);
-        },
-        app,
-    );
+    let mut h =
+        Harness::builder().with_context_setup(soundcraft_ui_egui::framework::install_headless).with_size(vec2(1600.0, 1000.0)).build_ui_state(
+            |ui, app: &mut SoundApp| {
+                app.logic(&ui.ctx().clone());
+                app.ui(ui);
+            },
+            app,
+        );
     h.run_steps(3);
     let at = keyboard_c3(&h);
     h.event(Event::PointerMoved(at));
