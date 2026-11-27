@@ -146,31 +146,33 @@ pub(super) fn mini_keyboard(app: &mut SoundApp, ui: &mut Ui, track: &Track, row:
     let painter = ui.painter().with_clip_rect(lane.intersect(ui.clip_rect()));
     painter.rect_filled(Rect::from_min_max(pos2(x0, lane.min.y), pos2(x0 + MINI_KEYS_W, lane.max.y)), 0.0, t.panel_bg2);
     let held = app.auditioning().filter(|(id, _)| *id == track.id).map(|(_, p)| i32::from(p));
+    // The white keys as one column, then the black keys over them, a line where two white keys
+    // meet (B/C and E/F), and the octave numbers on top.
+    let ivory = Color32::from_rgb(222, 222, 222);
+    painter.rect_filled(keys, 0.0, ivory);
+    let edge = Stroke::new(1.0, Color32::from_rgb(120, 120, 120));
     for pitch in rows.bottom()..=rows.top {
         let Place::Row(y) = rows.place(pitch) else { continue };
         let black = matches!(pitch.rem_euclid(12), 1 | 3 | 6 | 8 | 10);
-        let key = Rect::from_min_size(pos2(x0, y), vec2(if black { MINI_KEYS_W * 0.6 } else { MINI_KEYS_W - 1.0 }, rows.row_h - 0.5));
-        let fill = if held == Some(pitch) {
-            t.accent
+        let row = Rect::from_min_size(pos2(x0, y), vec2(MINI_KEYS_W, rows.row_h));
+        if held == Some(pitch) {
+            painter.rect_filled(if black { Rect::from_min_size(row.min, vec2(MINI_KEYS_W * 0.6, rows.row_h)) } else { row }, 0.0, t.accent);
         } else if black {
-            Color32::from_rgb(24, 24, 24)
-        } else {
-            Color32::from_rgb(222, 222, 222)
-        };
-        painter.rect_filled(key, 0.5, fill);
-        if pitch.rem_euclid(12) == 0 {
-            painter.line_segment(
-                [pos2(x0, y + rows.row_h - 0.5), pos2(x0 + MINI_KEYS_W, y + rows.row_h - 0.5)],
-                Stroke::new(1.0, Color32::from_rgb(90, 90, 90)),
-            );
-            painter.text(
-                pos2(x0 + MINI_KEYS_W - 2.0, y + rows.row_h),
-                Align2::RIGHT_BOTTOM,
-                soundcraft_midi::note_name(pitch as u8),
-                regular(7.5),
-                Color32::from_rgb(40, 40, 40),
-            );
+            painter.rect_filled(Rect::from_min_size(row.min, vec2(MINI_KEYS_W * 0.6, rows.row_h)), 0.5, Color32::from_rgb(24, 24, 24));
         }
+        if matches!(pitch.rem_euclid(12), 0 | 5) {
+            painter.line_segment([pos2(x0, row.max.y - 0.5), pos2(x0 + MINI_KEYS_W, row.max.y - 0.5)], edge);
+        }
+    }
+    for pitch in (rows.bottom()..=rows.top).filter(|p| p.rem_euclid(12) == 0) {
+        let Place::Row(y) = rows.place(pitch) else { continue };
+        painter.text(
+            pos2(x0 + MINI_KEYS_W - 1.5, y + rows.row_h * 0.5),
+            Align2::RIGHT_CENTER,
+            soundcraft_midi::note_name(pitch as u8),
+            regular(7.5),
+            Color32::from_rgb(30, 30, 30),
+        );
     }
     painter.vline(x0 + MINI_KEYS_W, lane.y_range(), Stroke::new(1.0, t.border));
     let resp = ui.interact(keys, ui.scope_id().with(("mini_keyboard", track.id.0)), Sense::click_and_drag());
