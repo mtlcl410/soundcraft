@@ -11,11 +11,18 @@ pub struct Services {
     pub pick_save: Option<Box<dyn Fn(&str, &Path) -> Option<PathBuf>>>,
     /// The folder to start in.
     pub pick_folder: Option<Box<dyn Fn(&Path) -> Option<PathBuf>>>,
+    /// Opens the system's MIDI studio setup, where MIDI devices are named (macOS: Audio MIDI Setup,
+    /// Pro Tools Reference Guide p.196). Returns the name of what it opened. Absent where the system
+    /// has none.
+    pub open_midi_studio: Option<OpenMidiStudioFn>,
     /// The app binary's last step as the app leaves, run once at the end of its `on_exit`. On
     /// macOS every quit ends the process inside AppKit's terminate, after eframe's `on_exit`, so
     /// code after `eframe::run_native` never runs there.
     pub at_exit: Option<AtExitFn>,
 }
+
+/// Opens the system's MIDI studio setup ([`Services::open_midi_studio`]).
+pub type OpenMidiStudioFn = Box<dyn Fn() -> Result<String, String>>;
 
 /// Runs once when the app leaves ([`Services::at_exit`]).
 pub type AtExitFn = Box<dyn FnOnce()>;

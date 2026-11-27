@@ -29,6 +29,13 @@ The switches are app preferences: they are kept on this computer, for every sess
 device that was switched off stays off the next time it is plugged in. They are not part of the
 session file.
 
+Devices are listed by the names the system gives them. On macOS, **Setup › MIDI › MIDI Studio…**
+opens Audio MIDI Setup: in its MIDI Studio window (**Window › Show MIDI Studio** if it is not
+showing) you can add the instruments connected to a MIDI interface and name them. SoundCraft
+lists each port by the name macOS reports for it (its display name, which reflects that setup).
+Windows and Linux have no such app, and SoundCraft has
+no MIDI Studio window of its own yet: there the menu item says so.
+
 ## 2. Choose what a track listens to
 
 A MIDI or instrument track listens to **all devices on all channels** until told otherwise; its
@@ -97,4 +104,9 @@ shows how many messages were dropped.
 ## For agents
 
 `ui.inspect` reports `midi_inputs` (name, enabled, open), `midi_events` (messages received so far)
-and `midi_events_dropped`. See [control-protocol.md](control-protocol.md).
+and `midi_events_dropped`.
+
+`setup.midi_studio` replies with `ports`, the MIDI input ports as the system names them, and the
+`devices` names kept in the session (a list it stores, nothing more). With `{"open": true}`, as the
+menu item does, it opens Audio MIDI Setup on macOS (`opened` names it); elsewhere, or without the
+desktop app, it fails with the reason. See [control-protocol.md](control-protocol.md).

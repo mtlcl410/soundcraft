@@ -73,7 +73,7 @@ mod exit_hook_tests;
 #[cfg(test)]
 use app::{automation_step_due, editor_changes, editor_states_due, failed_plugin_status};
 pub use channel_titles::{os_title, os_title_with_section};
-pub use services::Services;
+pub use services::{OpenMidiStudioFn, Services};
 pub use state::{DragSource, MainWindow};
 
 /// The version line this build reports: the app binary sets the compiled identity once at start-up

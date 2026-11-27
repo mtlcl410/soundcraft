@@ -184,7 +184,23 @@ fn services() -> Services {
             d.save_file()
         })),
         pick_folder: Some(Box::new(|start: &std::path::Path| rfd::FileDialog::new().set_directory(start).pick_folder())),
+        open_midi_studio: open_midi_studio(),
         ..Services::default()
+    }
+}
+
+/// Setup › MIDI › MIDI Studio: on macOS, Audio MIDI Setup, where MIDI devices are named (Pro Tools
+/// Reference Guide p.196). Other systems have no such app.
+fn open_midi_studio() -> Option<soundcraft_ui_egui::OpenMidiStudioFn> {
+    if cfg!(target_os = "macos") {
+        Some(Box::new(|| {
+            // `open -b` launches the app by bundle id, or brings it forward if it is running.
+            let status =
+                std::process::Command::new("/usr/bin/open").args(["-b", "com.apple.audio.AudioMIDISetup"]).status().map_err(|e| e.to_string())?;
+            if status.success() { Ok("Audio MIDI Setup".to_string()) } else { Err(format!("open exited with {status}")) }
+        }))
+    } else {
+        None
     }
 }
 

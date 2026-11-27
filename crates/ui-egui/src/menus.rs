@@ -571,6 +571,11 @@ pub fn invoke_menu(app: &mut SoundApp, id: &str, path: &str) {
         let _ = app.run(id, json!({"value": true}));
         return;
     }
+    // Setup › MIDI › MIDI Studio opens the system's MIDI setup, as Pro Tools does (p.196).
+    if id == "setup.midi_studio" {
+        let _ = app.run(id, json!({"open": true}));
+        return;
+    }
     if let Some((_, w)) = MENU_WINDOWS.iter().find(|(p, _)| *p == path)
         && w.starts_with("window.")
     {
@@ -631,6 +636,9 @@ pub fn run_ui_command(app: &mut SoundApp, id: &str, p: &Value) -> Option<Result<
     // (`MENU_WINDOWS`). A programmatic call applies the open device instead.
     if matches!(id, "setup.playback_engine" | "setup.hardware") {
         return Some(crate::windows::setup_audio_command(app, id, p));
+    }
+    if id == "setup.midi_studio" {
+        return Some(crate::windows::midi_studio_command(app, p));
     }
     let toggle = |v: &mut bool| {
         *v = p.get("value").and_then(Value::as_bool).unwrap_or(!*v);

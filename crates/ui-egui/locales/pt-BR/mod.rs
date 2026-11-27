@@ -588,6 +588,13 @@ fn menu_translate(source: &str) -> Option<&'static str> {
         "MIDI Live Mode" => "Modo MIDI ao vivo",
         "MIDI Operations Window" => "Janela de operações MIDI",
         "MIDI Studio..." => "Estúdio MIDI...",
+        "MIDI Studio is not available on this system yet: SoundCraft lists MIDI devices by the names the system gives them." => {
+            "O Estúdio MIDI ainda não está disponível neste sistema: o SoundCraft lista os dispositivos MIDI pelos nomes que o sistema lhes dá."
+        }
+        "{} opened: name your MIDI devices in its MIDI Studio window (Window > Show MIDI Studio). SoundCraft lists MIDI ports by the names the system reports." => {
+            "{} aberto: dê nomes aos seus dispositivos MIDI na janela MIDI Studio (Window > Show MIDI Studio). O SoundCraft lista as portas MIDI pelos nomes que o sistema informa."
+        }
+        "Could not open the system's MIDI studio setup: {}" => "Não foi possível abrir a configuração de estúdio MIDI do sistema: {}",
         "MIDI Thru" => "MIDI Thru",
         "MIDI Track Offsets" => "Deslocamentos de faixa MIDI",
         "MIDI..." => "MIDI...",

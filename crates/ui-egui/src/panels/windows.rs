@@ -755,6 +755,49 @@ pub fn audio_device_command(app: &mut SoundApp, p: &serde_json::Value) -> Result
     Ok(out)
 }
 
+/// `setup.midi_studio` in the app: the engine keeps the device names, the reply adds the MIDI input
+/// ports as the system names them (`ports`; on macOS the names given in Audio MIDI Setup), and
+/// `open` (the menu item passes it) opens the system's MIDI studio setup, as Pro Tools' Setup › MIDI
+/// › MIDI Studio does on macOS (Reference Guide p.196). Where the system has none, it says so.
+pub fn midi_studio_command(app: &mut SoundApp, p: &serde_json::Value) -> Result<serde_json::Value, String> {
+    use serde_json::Value;
+    let open = p.get("open").and_then(Value::as_bool).unwrap_or(false);
+    let mut stored = p.clone();
+    if let Some(map) = stored.as_object_mut() {
+        map.remove("open");
+    }
+    let mut reply = app.engine.execute("setup.midi_studio", &stored).map_err(|e| e.to_string())?;
+    let ports: Vec<String> = app.midi_inputs.as_ref().map(|m| m.ports().iter().map(|port| port.name.clone()).collect()).unwrap_or_default();
+    reply["ports"] = json!(ports);
+    reply["opened"] = Value::Null;
+    if !open {
+        return Ok(reply);
+    }
+    let Some(open_studio) = app.services.open_midi_studio.as_ref() else {
+        let message = crate::localization::text(
+            "MIDI Studio is not available on this system yet: SoundCraft lists MIDI devices by the names the system gives them.",
+        )
+        .to_string();
+        app.ui.status = message.clone();
+        return Err(message);
+    };
+    match open_studio() {
+        Ok(name) => {
+            app.ui.status = crate::localized_format!(
+                "{} opened: name your MIDI devices in its MIDI Studio window (Window > Show MIDI Studio). SoundCraft lists MIDI ports by the names the system reports.",
+                name
+            );
+            reply["opened"] = json!(name);
+            Ok(reply)
+        }
+        Err(error) => {
+            let message = crate::localized_format!("Could not open the system's MIDI studio setup: {}", error);
+            app.ui.status = message.clone();
+            Err(message)
+        }
+    }
+}
+
 /// Programmatic `setup.playback_engine` / `setup.hardware`. `device` is the output name and
 /// `buffer_size` is any integer 16..=8192 or null (not rounded to the window's power-of-two list);
 /// both go through [`audio_device_command`]. Delay compensation still goes through the engine

@@ -94,7 +94,11 @@ pub fn specs() -> Vec<CommandSpec> {
                 .collect();
             Ok(json!({"shortcuts": rows}))
         }),
-        cmd!(noundo "setup.midi_studio", "MIDI Studio...", ["Setup", "MIDI"], None, "{devices?: [names]} — the MIDI devices in the studio", always, |e, p| {
+        cmd!(noundo "setup.midi_studio", "MIDI Studio...", ["Setup", "MIDI"], None, "{devices?: [names], open?: bool} — device names kept in the session; the desktop app also reports the MIDI input ports as the system names them (`ports`) and, with `open` or from the menu, opens the system's MIDI studio setup (macOS: Audio MIDI Setup)", always, |e, p| {
+            // Only the desktop app can open the system's MIDI setup (its `run_ui_command` takes this command first).
+            if p.get("open").and_then(Value::as_bool) == Some(true) {
+                return Err(bad("setup.midi_studio", "opening the system's MIDI studio setup needs the desktop app"));
+            }
             let s = e.session_mut();
             if let Some(a) = p.get("devices").and_then(Value::as_array) {
                 let names: Vec<&str> = a.iter().filter_map(Value::as_str).take(64).collect();
@@ -583,6 +587,13 @@ fn import_session_data(e: &mut Engine, p: &Value) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn midi_studio_refuses_to_open_without_the_desktop_app() {
+        let mut e = Engine::default();
+        assert!(e.execute("setup.midi_studio", &json!({"open": true})).is_err());
+        assert_eq!(e.execute("setup.midi_studio", &json!({"devices": ["Synth"]})).unwrap()["devices"], json!(["Synth"]));
+    }
     #[test]
     fn option_flags_toggle() {
         let mut e = Engine::default();
