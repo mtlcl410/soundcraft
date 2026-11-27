@@ -19,6 +19,7 @@ mod drag;
 mod header;
 mod input;
 mod layout;
+mod notes_view;
 mod overlay;
 mod rulers;
 mod scroll;

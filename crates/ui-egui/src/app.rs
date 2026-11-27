@@ -44,6 +44,9 @@ impl SoundApp {
             midi_inputs: None,
             midi_scan_at: 0.0,
             midi_keyboard_held: None,
+            audition: None,
+            audition_seen: false,
+            audition_until: 0.0,
             midi_output_ports: None,
             midi_output_scan_at: 0.0,
             applied_midi_output: None,
@@ -369,6 +372,8 @@ impl SoundApp {
         self.run_framework_dialogs(ui);
         // The sampler's drop rects are current now, so route any captured drop in this pass.
         self.route_dropped_files();
+        // A note auditioned from an editor that no widget held this frame ends.
+        self.end_audition_frame(&ctx);
         // A scripted key (`ui.key`) is acknowledged by the framework's idle signal, not by egui's event list.
         crate::control::injected_settled(self, &ctx);
         // The pass that actually received the injected events has already dispatched their widget

@@ -1,7 +1,7 @@
 //! MIDI input devices: opening them, following hotplug, and turning what is played during a
 //! record pass into MIDI clips.
 
-use super::{Range, Samples, SoundApp, json};
+use super::{Range, Samples, SoundApp, TrackId, json};
 use soundcraft_engine::io::{MidiPass, MidiTakeEvent};
 use soundcraft_playback::midi::MidiInputs;
 
@@ -38,6 +38,54 @@ impl SoundApp {
     fn send_midi_keyboard(&self, bytes: [u8; 3]) {
         if let Some(m) = &self.midi_inputs {
             m.feed().receive_keyboard(&bytes);
+        }
+    }
+
+    /// Audition `pitch` on `track` (a mini-keyboard key, or a note inserted, clicked or dragged
+    /// with Play MIDI Notes When Editing on): it sounds on that track only, on its instrument and
+    /// its MIDI output, like a live note that is never recorded (Pro Tools Reference Guide p.861,
+    /// p.1022). Call it on every frame the pointer holds the note: a frame without a call ends it
+    /// ([`Self::end_audition_frame`]), after at least [`AUDITION_MIN_SECONDS`] so a click is
+    /// heard. Another key or track ends the one before first.
+    pub(crate) fn audition_hold(&mut self, track: TrackId, pitch: u8, velocity: u8) {
+        let pitch = pitch.min(127);
+        if self.audition != Some((track, pitch)) {
+            self.audition_release();
+            self.send_audition(track, [0x90, pitch, velocity.clamp(1, 127)]);
+            self.audition = Some((track, pitch));
+            self.audition_until = self.uptime + AUDITION_MIN_SECONDS;
+        }
+        self.audition_seen = true;
+    }
+
+    /// End the auditioned note now.
+    pub(crate) fn audition_release(&mut self) {
+        if let Some((track, pitch)) = self.audition.take() {
+            self.send_audition(track, [0x80, pitch, 0]);
+        }
+    }
+
+    /// The auditioned note, if one sounds: its track and key.
+    pub fn auditioning(&self) -> Option<(TrackId, u8)> {
+        self.audition
+    }
+
+    /// End of a frame: a note no widget held in it ends (the pointer was let go, the editor
+    /// closed), once it has sounded for [`AUDITION_MIN_SECONDS`].
+    pub(crate) fn end_audition_frame(&mut self, ctx: &egui::Context) {
+        if self.audition.is_some() && !std::mem::take(&mut self.audition_seen) {
+            let left = self.audition_until - self.uptime;
+            if left <= 0.0 {
+                self.audition_release();
+            } else {
+                ctx.request_repaint_after(std::time::Duration::from_secs_f64(left));
+            }
+        }
+    }
+
+    fn send_audition(&self, track: TrackId, bytes: [u8; 3]) {
+        if let Some(m) = &self.midi_inputs {
+            m.feed().audition(track, bytes);
         }
     }
 
@@ -198,6 +246,9 @@ impl SoundApp {
         let _ = self.run("setup.midi_input_devices", json!({ if on { "enable" } else { "disable" }: [name] }));
     }
 }
+
+/// How long an auditioned note sounds at least: a click shorter than that is still heard.
+const AUDITION_MIN_SECONDS: f64 = 0.25;
 
 /// The velocity of the notes the MIDI Keyboard window plays.
 const MIDI_KEYBOARD_VELOCITY: u8 = 100;

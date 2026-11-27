@@ -95,6 +95,8 @@ pub(crate) struct AudioState {
     midi: Option<Arc<midi::MidiFeed>>,
     /// Live MIDI events of this callback not played yet: frames (session rate) until each is due.
     midi_pending: Vec<(i64, LiveMidi)>,
+    /// Notes auditioned from the editors that came in this callback, for its first block.
+    audition_pending: Vec<(TrackId, LiveMidi)>,
     /// The delay every live event gets so that all keep their spacing: one callback (frames).
     midi_delay: i64,
     /// Ports ([`midi_port_bit`]) that lost events and still have to let go of their notes in
@@ -153,6 +155,7 @@ pub(crate) const MIDI_EVENTS: usize = 256;
 fn new_engine(sr: f32) -> MixEngine {
     let mut m = MixEngine::new(sr, BLOCK);
     m.midi = Vec::with_capacity(MIDI_EVENTS);
+    m.audition = Vec::with_capacity(MIDI_EVENTS);
     m.set_external_instances(true);
     m.metronome = true;
     m
@@ -197,6 +200,7 @@ impl AudioState {
             recording: false,
             midi: None,
             midi_pending: Vec::with_capacity(MIDI_EVENTS),
+            audition_pending: Vec::with_capacity(MIDI_EVENTS),
             midi_delay: 0,
             midi_lost: 0,
             midi_loss_seen: [i64::MIN; 64],
@@ -621,6 +625,8 @@ impl AudioState {
             ring.pop_into(&mut self.mix.input, n, self.session.sample_rate.hz());
         }
         self.due_midi(n);
+        self.mix.audition.clear();
+        self.mix.audition.append(&mut self.audition_pending);
         self.mix.monitor_only = !self.playing;
         self.mix.recording = self.recording;
         self.mix.render(&self.session, self.pos, n, &mut self.pending);
@@ -748,7 +754,18 @@ impl AudioState {
         // input-monitored MIDI and instrument tracks.
         let midi_live = self.midi.as_ref().is_some_and(|f| f.live())
             && self.session.tracks.iter().any(|t| matches!(t.kind, TrackKind::Instrument | TrackKind::Midi) && midi_thru(&self.session, t));
-        let monitoring = midi_live || (self.input.is_some() && self.session.tracks.iter().any(|t| t.mixer.input_monitor || t.mixer.record_arm));
+        // A note auditioned from an editor plays on its track while it is held and while the
+        // instrument rings out after it (`soundcraft_mix::AUDITION_TAIL_SECONDS`).
+        if let Some(feed) = &self.midi {
+            while self.audition_pending.len() < self.audition_pending.capacity()
+                && let Some(e) = feed.next_audition()
+            {
+                self.audition_pending.push(e);
+            }
+        }
+        let auditioning = !self.audition_pending.is_empty() || self.mix.auditioning();
+        let monitoring =
+            midi_live || auditioning || (self.input.is_some() && self.session.tracks.iter().any(|t| t.mixer.input_monitor || t.mixer.record_arm));
         if !self.playing && !monitoring {
             self.drop_midi();
             out.iter_mut().for_each(|x| *x = 0.0);

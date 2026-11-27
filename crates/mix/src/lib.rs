@@ -61,6 +61,7 @@ use std::collections::HashMap;
 use std::ops::Bound;
 use std::sync::Arc;
 
+mod audition;
 mod automation;
 mod clips;
 mod instances;
@@ -73,6 +74,7 @@ mod routing;
 mod strip;
 mod threads;
 
+pub use audition::AUDITION_TAIL_SECONDS;
 use automation::{copy_with_gain, pan_at, pan_segment, send_level, transport_at, volume_level};
 pub use instances::{INSTRUMENT_SLOT, InstanceSpec, NewInstance, PluginFailures, PreparedInstance, create_instance, instance_specs, is_third_party};
 pub use live_midi::{LiveMidi, MAX_MIDI_PORTS, MAX_OWNERS, MidiPorts, NO_MIDI_THRU, midi_port_bit, midi_thru, midi_thru_enabled, own_echo};
@@ -148,6 +150,9 @@ pub struct MixEngine {
     /// Ports ([`midi_port_bit`]) whose events were dropped before this block, set by the audio
     /// host for one block: what they hold is released at its start, before `midi` is played.
     pub midi_lost: u64,
+    /// Notes auditioned from the editors for the next block, each with the track it plays on
+    /// (see `audition.rs`): not live input, never recorded. Set by the audio host like `midi`.
+    pub audition: Vec<(TrackId, LiveMidi)>,
     /// Transport stopped: only monitored inputs sound (no clips).
     pub monitor_only: bool,
     /// Recording: record-armed tracks hear their input (auto input).
@@ -191,6 +196,7 @@ impl MixEngine {
             midi: Vec::new(),
             midi_ports: None,
             midi_lost: 0,
+            audition: Vec::new(),
             monitor_only: false,
             recording: false,
             metronome: false,
@@ -423,6 +429,12 @@ impl MixEngine {
         self.write_output(s, blk, out);
     }
 
+    /// Whether a track still plays or rings out a note auditioned from an editor: the host
+    /// keeps rendering while stopped until it is done.
+    pub fn auditioning(&self) -> bool {
+        self.strips.iter().any(|(id, st)| st.audition.active(*id, &[]))
+    }
+
     /// The live audio and MIDI input of the block.
     fn live_input(&self) -> LiveInput<'_> {
         LiveInput {
@@ -430,6 +442,8 @@ impl MixEngine {
             midi: &self.midi,
             ports: self.midi_ports.as_deref(),
             midi_lost: self.midi_lost,
+            audition: &self.audition,
+            audition_tail: (self.sample_rate * AUDITION_TAIL_SECONDS) as usize,
             monitor_only: self.monitor_only,
             recording: self.recording,
         }
@@ -449,6 +463,7 @@ impl MixEngine {
                     st.held.clear();
                     st.chase = true;
                     st.live.clear();
+                    st.audition.clear();
                 }
             }
             self.last_end = pos.saturating_add(frames as i64);

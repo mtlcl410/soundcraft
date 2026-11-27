@@ -273,6 +273,34 @@ fn draw_clip_content(cl: &ClipLane<'_>, clip: &Clip, g: &ClipGeom<'_>) {
             }
         }
         ClipContent::Video { .. } => {} // thumbnails: video_track::draw_lane
+        ClipContent::Midi { sequence } if super::notes_view::in_notes_view(track) => {
+            // Notes view: on the pitch rows of the track's mini-keyboard; notes above or below
+            // them as single-pixel lines at the very top and bottom (p.861).
+            use super::notes_view::Place;
+            let rows = super::notes_view::note_rows(cl.app, track, cl.lane);
+            let base = s.tempo.samples_to_ticks(clip.start, s.sample_rate);
+            let p = painter.with_clip_rect(vis);
+            for n in &sequence.notes {
+                let a = s.tempo.tick_to_samples(base + n.start, s.sample_rate);
+                let b = s.tempo.tick_to_samples(base + n.start + n.length, s.sample_rate).min(clip.end());
+                let nx0 = x_of(s, tl, a);
+                let nx1 = x_of(s, tl, b).max(nx0 + 2.0);
+                if nx1 < vis.min.x || nx0 > vis.max.x {
+                    continue;
+                }
+                let (y0, y1) = match rows.place(i32::from(n.pitch)) {
+                    Place::Row(y) => (y, y + (rows.row_h - 0.5).max(1.0)),
+                    Place::Above => (rows.area.min.y, rows.area.min.y + 1.0),
+                    Place::Below => (rows.area.max.y - 1.0, rows.area.max.y),
+                };
+                let vcol = if crate::theme::is_light() {
+                    Color32::from_rgb(20, 20 + n.velocity, 40)
+                } else {
+                    wave.gamma_multiply(0.5 + f32::from(n.velocity) / 254.0)
+                };
+                p.rect_filled(Rect::from_min_max(pos2(nx0, y0), pos2(nx1, y1)), 0.5, if selected { Color32::from_rgb(16, 16, 16) } else { vcol });
+            }
+        }
         ClipContent::Midi { sequence } => {
             let (lo, hi) = sequence.notes.iter().fold((127u8, 0u8), |(lo, hi), n| (lo.min(n.pitch), hi.max(n.pitch)));
             let (lo, hi) = if lo > hi { (48, 72) } else { (lo.saturating_sub(2), hi.saturating_add(2)) };

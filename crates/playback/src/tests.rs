@@ -789,6 +789,40 @@ fn the_midi_keyboard_window_plays_a_stopped_instrument_with_no_device_connected(
 }
 
 #[test]
+fn an_auditioned_note_plays_its_track_while_stopped_and_is_never_recorded() {
+    let (mut st, tx, feed, mut s, t) = keyboard_session();
+    feed.set_clock(1);
+    feed.set_connected(0);
+    // Not record-enabled, no device: only the audition can make the track sound.
+    s.track_mut(t).unwrap().mixer.record_arm = false;
+    tx.send(Cmd::Session(0, Arc::new(s.clone()), Vec::new())).unwrap();
+    assert!(!heard(&mut st, 4));
+    feed.audition(t, [0x90, 60, 100]);
+    assert!(heard(&mut st, 4), "the key plays the track's instrument");
+    assert!(heard(&mut st, 4), "while it is held");
+    feed.audition(t, [0x80, 60, 0]);
+    heard(&mut st, 200);
+    assert!(!heard(&mut st, 4), "it ends on release, and the engine goes idle again");
+    // A note for another track does not play this one, and other bytes are not taken.
+    feed.audition(TrackId(t.0 + 99), [0x90, 60, 100]);
+    feed.audition(t, [0xB0, 7, 0]);
+    assert!(!heard(&mut st, 4));
+    // While recording, an auditioned note is heard but not written into the take.
+    s.track_mut(t).unwrap().mixer.record_arm = true;
+    tx.send(Cmd::Session(0, Arc::new(s), Vec::new())).unwrap();
+    tx.send(Cmd::Recording(true, 0)).unwrap();
+    tx.send(Cmd::Play { from: 48_000, end: None, looped: None }).unwrap();
+    heard(&mut st, 1);
+    feed.audition(t, [0x90, 64, 90]);
+    heard(&mut st, 1);
+    feed.audition(t, [0x80, 64, 0]);
+    heard(&mut st, 2);
+    let mut rec = Vec::new();
+    feed.take_recorded(&mut rec);
+    assert!(rec.is_empty(), "{rec:?}");
+}
+
+#[test]
 fn a_midi_keyboard_plays_and_records_through_a_record_enabled_instrument() {
     let (mut st, tx, feed, mut s, t) = keyboard_session();
     // The feed's clock stands still: an event's place does not depend on how fast the test runs.

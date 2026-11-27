@@ -21,15 +21,26 @@
 //! closed as no longer listed or bound to another port now ([`Thru::release_dest`]), and on Stop and All MIDI Notes Off ([`Thru::release_all`]); a key
 //! released after that sends nothing more.
 //!
+//! Notes auditioned from an editor ([`Thru::audition`]: a mini-keyboard key, a note inserted or
+//! dragged with Play MIDI Notes When Editing on) are owned by their track instead of an input:
+//! they go out on that track's MIDI output and channel when it is not muted there, whatever its
+//! record-enable, MIDI input and Options › MIDI Thru say (Pro Tools Reference Guide p.861: "You
+//! can click the mini-keyboard to play pitches using the track's selected MIDI output"). They are
+//! let go of like the rest: on their own release, when the track no longer reaches that
+//! destination, on Stop, All MIDI Notes Off and when the port closes. Input ports that lose
+//! events do not touch them.
+//!
 //! Nothing here allocates per message once the tables have grown; it runs on the MIDI output
 //! worker, which owns the ports.
 use crate::Session;
 use soundcraft_mix::{LiveMidi, MidiPorts, midi_output_muted, midi_port_bit, midi_thru};
-use soundcraft_model::{MidiInput, MidiOutput};
+use soundcraft_model::{MidiInput, MidiOutput, TrackId};
 
 /// A note Thru started on a destination.
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Held {
+    /// The track that auditioned the note; `None` for live input.
+    track: Option<TrackId>,
     /// Input port index ([`MidiPorts`]) and channel the key came from.
     port: u8,
     channel: u8,
@@ -87,7 +98,38 @@ fn reaches(s: &Session, names: &MidiPorts, at: i64, port: u8, channel: u8, dest:
     })
 }
 
+/// Where a note auditioned on `track` goes now: its MIDI output and channel, unless the track is
+/// gone, inactive, not a MIDI or instrument track, or muted there ([`midi_output_muted`]).
+fn audition_dest(s: &Session, at: i64, track: TrackId) -> Option<(&str, u8)> {
+    let t = s.track(track).filter(|t| t.kind.is_midi() && !t.inactive)?;
+    let o = MidiOutput::of(&s.edit, track)?;
+    (!midi_output_muted(s, t, at)).then_some((o.device, o.channel))
+}
+
+/// Whether the note `h` holds still reaches its destination now.
+fn still_reaches(s: &Session, names: &MidiPorts, at: i64, h: &Held) -> bool {
+    match h.track {
+        Some(track) => audition_dest(s, at, track) == Some((h.dest.as_str(), h.out)),
+        None => reaches(s, names, at, h.port, h.channel, &h.dest, h.out),
+    }
+}
+
 impl Thru {
+    /// Play `e`, a Note-On or Note-Off auditioned on `track`, on that track's MIDI output. A
+    /// second strike of a key the track holds ends it first; a release ends it where it went.
+    pub(crate) fn audition(&mut self, s: &Session, at: i64, track: TrackId, e: &LiveMidi, send: &mut dyn FnMut(&str, &[u8])) {
+        let (kind, key, velocity) = (e.status & 0xF0, e.data1 & 0x7F, e.data2 & 0x7F);
+        let ours = |h: &Held| h.track == Some(track) && h.key == key;
+        self.release_where(ours, 0, send);
+        if kind != 0x90 || velocity == 0 {
+            return;
+        }
+        let Some((dest, out)) = audition_dest(s, at, track) else { return };
+        self.wrote(dest, out);
+        self.held.push(Held { track: Some(track), port: u8::MAX, channel: 0, key, dest: dest.to_owned(), out });
+        send(dest, &[0x90 | out, key, velocity]);
+    }
+
     /// Send `e`, arrived from an input, to its destinations: `send(port label, bytes)`. `at` is
     /// the play position (for mute automation).
     pub(crate) fn route(&mut self, s: &Session, names: &MidiPorts, at: i64, e: &LiveMidi, send: &mut dyn FnMut(&str, &[u8])) {
@@ -95,7 +137,7 @@ impl Thru {
         let (data1, data2) = (e.data1 & 0x7F, e.data2 & 0x7F);
         if kind == 0x80 || (kind == 0x90 && data2 == 0) {
             // A release ends the note where it was started, wherever the track points now.
-            self.release_where(|h| h.port == e.port && h.channel == channel && h.key == data1, data2, send);
+            self.release_where(|h| h.track.is_none() && h.port == e.port && h.channel == channel && h.key == data1, data2, send);
             return;
         }
         let mut targets = std::mem::take(&mut self.targets);
@@ -107,7 +149,7 @@ impl Thru {
             }
             match kind {
                 0x90 => {
-                    let owner = Held { port: e.port, channel, key: data1, dest: dest.clone(), out: *out };
+                    let owner = Held { track: None, port: e.port, channel, key: data1, dest: dest.clone(), out: *out };
                     if !self.held.contains(&owner) {
                         self.held.push(owner);
                     }
@@ -138,14 +180,14 @@ impl Thru {
         if self.held.is_empty() && self.pedals.is_empty() {
             return;
         }
-        self.release_where(|h| !reaches(s, names, at, h.port, h.channel, &h.dest, h.out), 0, send);
+        self.release_where(|h| !still_reaches(s, names, at, h), 0, send);
         self.lift_where(|p| !reaches(s, names, at, p.port, p.channel, &p.dest, p.out), send);
     }
 
     /// The input ports in `lost` ([`midi_port_bit`]) lost events or closed: their keys' releases
     /// may never come.
     pub(crate) fn release_ports(&mut self, lost: u64, send: &mut dyn FnMut(&str, &[u8])) {
-        self.release_where(|h| lost & midi_port_bit(h.port) != 0, 0, send);
+        self.release_where(|h| h.track.is_none() && lost & midi_port_bit(h.port) != 0, 0, send);
         self.lift_where(|p| lost & midi_port_bit(p.port) != 0, send);
     }
 

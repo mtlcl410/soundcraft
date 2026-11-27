@@ -243,3 +243,58 @@ fn a_reopened_port_quiets_every_channel_thru_played_on_since_it_was_opened_even_
     play(&mut thru, &s, &names, &[ev(0, 0xB0, 1, 20)]);
     assert_eq!(thru.reopened("SYN"), 0);
 }
+
+fn audition(thru: &mut Thru, s: &Session, t: TrackId, status: u8, key: u8, velocity: u8) -> Wire {
+    let mut wire = Wire::new();
+    thru.audition(s, 0, t, &ev(u8::MAX, status, key, velocity), &mut |d, m| wire.push((d.to_owned(), m.to_vec())));
+    wire
+}
+
+#[test]
+fn an_auditioned_note_plays_on_its_track_output_without_record_enable_or_thru() {
+    let (mut s, names) = (session(), names());
+    let synth = track(&mut s, TrackKind::Midi, "PC1X", 2);
+    let other = track(&mut s, TrackKind::Instrument, "Pads", 5);
+    s.track_mut(synth).unwrap().mixer.record_arm = false;
+    s.edit.set_flag(soundcraft_mix::NO_MIDI_THRU, true);
+    let mut thru = Thru::default();
+    // Only the auditioned track's output and channel, whatever channel the editor used.
+    assert_eq!(audition(&mut thru, &s, synth, 0x90, 60, 90), [w("PC1X", &[0x92, 60, 90])]);
+    assert!(thru.holds());
+    // Following the session keeps it: the track is not record-enabled, and need not be.
+    assert!(follow(&mut thru, &s, &names).is_empty());
+    // A lost input port does not end it, nor does a live release of the same key.
+    thru.release_ports(u64::MAX, &mut |_, _| panic!("an input loss is not the audition's"));
+    assert!(play(&mut thru, &s, &names, &[ev(u8::MAX, 0x80, 60, 0)]).is_empty());
+    // A second strike ends the note first; the release ends it where it went.
+    assert_eq!(audition(&mut thru, &s, synth, 0x90, 60, 70), [w("PC1X", &[0x82, 60, 0]), w("PC1X", &[0x92, 60, 70])]);
+    assert_eq!(audition(&mut thru, &s, synth, 0x80, 60, 0), [w("PC1X", &[0x82, 60, 0])]);
+    assert!(!thru.holds());
+    assert!(audition(&mut thru, &s, synth, 0x80, 60, 0).is_empty(), "nothing is held any more");
+    // The other track was not touched.
+    assert!(audition(&mut thru, &s, other, 0x80, 60, 0).is_empty());
+}
+
+#[test]
+fn an_auditioned_note_respects_mute_and_ends_when_the_output_changes() {
+    let (mut s, names) = (session(), names());
+    let synth = track(&mut s, TrackKind::Midi, "PC1X", 0);
+    let mut thru = Thru::default();
+    s.track_mut(synth).unwrap().mixer.mute = true;
+    assert!(audition(&mut thru, &s, synth, 0x90, 60, 90).is_empty(), "a muted MIDI track sends nothing");
+    s.track_mut(synth).unwrap().mixer.mute = false;
+    assert_eq!(audition(&mut thru, &s, synth, 0x90, 60, 90), [w("PC1X", &[0x90, 60, 90])]);
+    // Routed elsewhere while held: the note ends where it started.
+    MidiOutput::store(&mut s.edit, synth, Some(MidiOutput { device: "Other", channel: 0 }));
+    assert_eq!(follow(&mut thru, &s, &names), [w("PC1X", &[0x80, 60, 0])]);
+    assert!(!thru.holds());
+    // A track without a MIDI output auditions on its instrument only.
+    MidiOutput::store(&mut s.edit, synth, None);
+    assert!(audition(&mut thru, &s, synth, 0x90, 60, 90).is_empty());
+    // Stop and All MIDI Notes Off end what is held.
+    MidiOutput::store(&mut s.edit, synth, Some(MidiOutput { device: "PC1X", channel: 0 }));
+    audition(&mut thru, &s, synth, 0x90, 64, 90);
+    let mut wire = Wire::new();
+    thru.release_all(&mut |d, m| wire.push((d.to_owned(), m.to_vec())));
+    assert_eq!(wire, [w("PC1X", &[0x80, 64, 0])]);
+}

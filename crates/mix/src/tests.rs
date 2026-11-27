@@ -1770,6 +1770,43 @@ fn live_midi_plays_record_enabled_instruments_while_stopped() {
     assert!(live_peak(&mut eng, &s, &[], 400) < 1e-4);
 }
 
+/// Renders `blocks` stopped blocks with the audition events in the first one, and returns the
+/// last block's peak.
+fn audition_peak(eng: &mut MixEngine, s: &Session, events: &[(TrackId, u8, u8, u8)], blocks: usize) -> f32 {
+    let mut out = vec![vec![0.0f32; 512]; 2];
+    eng.monitor_only = true;
+    eng.audition.clear();
+    eng.audition
+        .extend(events.iter().map(|&(t, status, data1, data2)| (t, LiveMidi { offset: 0, port: u8::MAX, status, data1, data2, echo: false })));
+    for _ in 0..blocks {
+        eng.render(s, 0, 512, &mut out);
+        eng.audition.clear();
+    }
+    peak(&out[0])
+}
+
+#[test]
+fn an_auditioned_note_sounds_on_its_track_while_stopped_without_record_enable() {
+    let mut s = synth_session(-6.0);
+    let t = s.tracks[0].id;
+    let mut eng = MixEngine::new(48_000.0, 512);
+    // Neither record-enabled nor input-monitored, and MIDI Thru off: an audition still sounds.
+    s.edit.set_flag(crate::NO_MIDI_THRU, true);
+    assert!(audition_peak(&mut eng, &s, &[(t, 0x90, 60, 100)], 8) > 0.01, "the key sounds");
+    assert!(audition_peak(&mut eng, &s, &[], 40) > 0.01, "while it is held");
+    assert!(audition_peak(&mut eng, &s, &[(t, 0x80, 60, 0)], 400) < 1e-4, "and ends on release");
+    // A note for another track is not this one's.
+    assert_eq!(audition_peak(&mut eng, &s, &[(TrackId(9999), 0x90, 60, 100)], 8), 0.0);
+    // The track's mute applies to what it auditions.
+    s.track_mut(t).unwrap().mixer.mute = true;
+    assert_eq!(audition_peak(&mut eng, &s, &[(t, 0x90, 62, 100)], 8), 0.0, "a muted track is not heard");
+    // Live input still needs the track to be record-enabled: the audition is not live input.
+    s.track_mut(t).unwrap().mixer.mute = false;
+    s.edit.set_flag(crate::NO_MIDI_THRU, false);
+    assert!(audition_peak(&mut eng, &s, &[(t, 0x80, 62, 0)], 400) < 1e-4);
+    assert_eq!(live_peak(&mut eng, &s, &[(0x90, 60, 100)], 8), 0.0);
+}
+
 #[test]
 fn options_midi_thru_off_silences_live_input_and_releases_held_keys() {
     let mut s = synth_session(-6.0);

@@ -1,6 +1,6 @@
 # UI parity
 
-> **Last reviewed:** 2026-10-25 · **Last updated:** 2026-10-27 · **Change:** minor (Cancel Zoom Toggle; Tracks and Groups and Clips in dock columns; Alt-click returns a plugin parameter to its default) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-10-25 · **Last updated:** 2026-11-27 · **Change:** minor (Notes view mini-keyboard and MIDI audition; previously minor: Cancel Zoom Toggle; Tracks and Groups and Clips in dock columns; Alt-click returns a plugin parameter to its default) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 How SoundCraft feels in the hands of a Pro Tools user: tools, modes, modifiers, shortcuts,
 windows, meters. Measured from `crates/model/src/session.rs` (tools, modes), the command
@@ -45,7 +45,8 @@ Legend: ✅ matches · 🟡 partial · ❌ missing.
 |---|---|---|
 | Edit window: rulers, track headers, view columns, Clip List, Groups, Tracks list | ✅ | Track Pin (new in 2026.4) ✅ (`track.pin`); Tracks and Groups and the Clip List sit in full-height dock columns at the window's sides |
 | Mix window: strips, views (inserts, sends, I/O, comments, EQ curve, preamps, instruments, object) | ✅ | Narrow Mix ✅; Mix and Edit on screen at once (Window › Mix in Separate Window, its own native window) ✅; Delay Compensation view and HEAT missing |
-| MIDI Editor, Score Editor, Event List | 🟡 | Dock height bug fixed (#113); notation editing shallow |
+| MIDI Editor, Score Editor, Event List | 🟡 | Dock height bug fixed (#113); notation editing shallow; the MIDI Editor's keyboard plays and selects by pitch, and Play MIDI Notes When Editing plays inserted, clicked and dragged notes |
+| Notes view mini-keyboard (Edit window) | ✅ | Octave numbers, keys play the track, scroll arrows from Medium height up, out-of-range notes as edge lines (p.861); no note selection from it in the Edit window |
 | Transport, Big Counter, Memory Locations, Automation, Video, Universe, Renderer, UI Customization | ✅ present | |
 | Workspace / sound browser with previews | ❌ | G-16 |
 | I/O Setup | 🟡 | Busses and paths; no hardware channel matrix (G-01) |

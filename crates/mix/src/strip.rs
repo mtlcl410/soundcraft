@@ -1,3 +1,4 @@
+use super::audition::Audition;
 use super::automation::{Level, apply_gain, transport_at, volume_level};
 use super::clips::{ClipFx, clip_fx_params, render_clip};
 use super::instances::{INSTRUMENT_SLOT, PluginFailures, PreparedInstance, create_instance_for, is_third_party};
@@ -48,6 +49,8 @@ pub(crate) struct Strip {
     pub(crate) held: Vec<u8>,
     /// Notes held by live MIDI input.
     pub(crate) live: LiveNotes,
+    /// Notes auditioned from the editors.
+    pub(crate) audition: Audition,
     /// The instrument's next block starts somewhere new: send it the controllers in effect there.
     pub(crate) chase: bool,
     /// The last block played the clips: stopped monitoring has their sustain pedal to let go of.
@@ -150,6 +153,7 @@ impl Strip {
             sample: None,
             held: Vec::new(),
             live: LiveNotes::default(),
+            audition: Audition::default(),
             chase: true,
             clips_played: false,
             muted: false,
@@ -220,6 +224,10 @@ pub(crate) struct LiveInput<'a> {
     pub(crate) ports: Option<&'a MidiPorts>,
     /// Ports whose events were dropped before this block.
     pub(crate) midi_lost: u64,
+    /// Notes auditioned from the editors, with their track; [`super::AUDITION_TAIL_SECONDS`]
+    /// in frames.
+    pub(crate) audition: &'a [(TrackId, LiveMidi)],
+    pub(crate) audition_tail: usize,
     pub(crate) monitor_only: bool,
     pub(crate) recording: bool,
 }
@@ -371,6 +379,9 @@ fn render_instrument(s: &Session, t: &Track, strip: &mut Strip, live: &LiveInput
             // Live controllers moved the instrument: the next block sets them from the clips.
             strip.chase = true;
         }
+        // Auditioned notes: this track's only, whatever its input and record-enable say.
+        let (held, live_notes) = (&strip.held, &strip.live);
+        strip.audition.play(t.id, inst.plugin.as_mut(), live.audition, frames, live.audition_tail, |n| held.contains(&n) || live_notes.holds(n));
         if strip.buf.len() >= 2 {
             inst.plugin.process(&mut strip.buf, frames);
         } else if let Some(c0) = strip.buf.first_mut() {
@@ -472,7 +483,8 @@ pub(crate) fn process_strip(s: &Session, t: &Track, strip: &mut Strip, busses: &
         TrackKind::Audio if live.monitor_only => {}
         // Stopped: only a track that plays live MIDI input sounds (and one that just stopped
         // doing so, to release its notes).
-        TrackKind::Instrument | TrackKind::Midi if live.monitor_only && !midi_thru(s, t) && !strip.live.touched() => {}
+        TrackKind::Instrument | TrackKind::Midi
+            if live.monitor_only && !midi_thru(s, t) && !strip.live.touched() && !strip.audition.active(t.id, live.audition) => {}
         TrackKind::Audio => render_audio_clips(s, t, strip, blk),
         TrackKind::Aux | TrackKind::Folder => read_aux_bus(t, strip, busses, frames),
         TrackKind::Instrument | TrackKind::Midi => render_instrument(s, t, strip, live, blk, &transport),

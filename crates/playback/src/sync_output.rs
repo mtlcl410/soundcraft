@@ -734,6 +734,11 @@ impl LiveThru {
             let at = *at.get_or_insert_with(|| play_position(view, now));
             thru.route(session, f.ports(), at, &e, &mut |name, msg| send_thru(ports, name, msg, f, stats, Some(arrived)));
         }
+        // Notes auditioned from an editor, on their track's own output.
+        while let Some((track, e)) = f.next_thru_audition() {
+            let at = *at.get_or_insert_with(|| play_position(view, now));
+            thru.audition(session, at, track, &e, &mut |name, msg| send_thru(ports, name, msg, f, stats, None));
+        }
         let playing = view.lock().unwrap_or_else(std::sync::PoisonError::into_inner).transport_state().is_some_and(|(_, playing)| playing);
         if std::mem::replace(&mut self.was_playing, playing) && !playing {
             thru.release_all(&mut |name, msg| send_thru(ports, name, msg, f, stats, None));

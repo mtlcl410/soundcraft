@@ -174,7 +174,38 @@ you play it. This is what Pro Tools calls MIDI Thru (Options › MIDI Thru, on b
   channel or device), the key's own release sends nothing more, but the pedal's own release
   still goes through when you let go of it: a second pedal-up is harmless.
 
-## 6. Troubleshooting
+## 6. Auditioning notes from the editors
+
+Clicking a key plays it on the track you click it on, through the same path as a live note: the
+track's instrument and its MIDI output, whether or not the track is record-enabled and whatever
+Options › MIDI Thru says. Nothing auditioned is recorded.
+
+- **Edit window, Notes view**: MIDI and instrument tracks show a mini-keyboard with octave
+  numbers at the left edge of the playlist (Pro Tools Reference Guide p.861). Hold a key to hear
+  its pitch; drag over the keys to play each one you pass. Clicking it clears the Edit selection.
+  The arrows at its top and bottom scroll the notes a semitone per click, and keep scrolling
+  while held; they are not there at Small height and below. The rows show as many pitches as
+  the track height holds; notes above or below them are drawn as single-pixel lines at the very
+  top and bottom of the track. Until you scroll a track, its rows are centred on its notes.
+- **MIDI Editor**: the keyboard left of the piano roll plays the same way and selects the notes
+  of the key's pitch; drag over keys to select a range, Shift-click to extend it, Alt-click to
+  play without selecting (p.1030–1031).
+- **Play MIDI Notes When Editing** (the speaker button in the Edit window toolbar and the MIDI
+  Editor header, one setting for both, on by default): a note sounds as it is inserted with the
+  Pencil, clicked, or dragged (at the pitch it is dragged to), and a velocity changed in the
+  velocity lane is played at its new velocity when you let go (p.1022, p.1028, p.1040, p.1074).
+  Keys of the keyboards play whether it is on or off.
+- An auditioned note sounds while you hold it, at least a quarter of a second, and ends when you
+  let go, move to another key, or close the editor. On the MIDI output, Stop and **Event › All
+  MIDI Notes Off** end it too, as do the changes that end a note held through MIDI Thru (output
+  changed, MIDI track muted, port closed).
+- **Mute**: a muted track is not heard. On a MIDI track, mute and solo silence its MIDI output
+  as for the clips; on an instrument track they act on its audio, and its MIDI output still
+  plays the auditioned note, as it does what the clips play.
+- A key auditioned on the instrument keeps it sounding for two seconds after the release while
+  the transport is stopped, so its release tail is heard.
+
+## 7. Troubleshooting
 
 - **Doubled or stuck notes on a keyboard synth**: switch its Local Control off if you also play its
   own keys while SoundCraft plays it, and when you play it through MIDI Thru from its own keys
@@ -184,11 +215,13 @@ you play it. This is what Pro Tools calls MIDI Thru (Options › MIDI Thru, on b
 - **A port is missing from the list**: SoundCraft lists ports every two seconds. A port whose driver
   gives two ports the same identity is not offered, because SoundCraft could not tell them apart.
 
-## 7. Automation interface
+## 8. Automation interface
 
 - `track.midi_output {tracks?, output: "MIDI:<channel 1-16>:<device>" | "none"}` sets a track's
   output; see [control-protocol.md](control-protocol.md).
 - `ui.midi_output_compensation {value?: bool}` reads or sets the delay compensation preference.
+- `options.play_midi_notes {value?: bool}` sets Play MIDI Notes When Editing, or toggles it
+  without `value`; on by default (session flag `midi.no_play_notes_when_editing` when off).
 - `options.midi_thru {value?: bool}` sets Options › MIDI Thru, or toggles it without `value`;
   the answer is the new state. It is on by default.
 - `ui.inspect` reports the ports (`midi_output_ports`), each track's output (`midi_outputs`) and

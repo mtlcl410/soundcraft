@@ -72,6 +72,9 @@ track; recording goes on regardless.
 - Several devices or channels can play one track. A note held on two of them sounds until both
   let go, and each has its own sustain pedal.
 - Taking the track out of record, or switching its monitor off, ends the notes that are held.
+- Keys clicked on a track's mini-keyboard or in the MIDI Editor are not live input: they play
+  that one track whether or not it is record-enabled, and are never recorded (see
+  [midi-output.md](midi-output.md#6-auditioning-notes-from-the-editors)).
 
 ## 4. Record
 

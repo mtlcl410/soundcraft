@@ -64,6 +64,12 @@ pub struct EditLayout {
     /// The current swipe's movement per axis until either passes 6 points; it scrolls only along the larger.
     #[serde(skip)]
     pub(super) swipe: egui::Vec2,
+    /// Notes view: the highest pitch shown on each track that was scrolled (`notes_view.rs`).
+    #[serde(skip)]
+    pub(crate) notes_top: std::collections::HashMap<soundcraft_model::TrackId, i32>,
+    /// While a mini-keyboard arrow is held: when it scrolls again (`ui.input` time).
+    #[serde(skip)]
+    pub(super) notes_arrow_at: Option<f64>,
 }
 
 impl EditLayout {

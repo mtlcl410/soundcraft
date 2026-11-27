@@ -68,6 +68,9 @@ pub(crate) const INCOMING: usize = 1024;
 const RECORDED: usize = 16_384;
 /// Events waiting for the MIDI output worker (MIDI Thru), which is woken for each.
 const THRU: usize = 1024;
+/// Audition events waiting for the audio thread or the output worker. The UI writes a few per
+/// click; a full queue drops the event (its key's release is then sent by the next strike).
+const AUDITION: usize = 256;
 /// How long after SoundCraft sent a message to an output the same bytes arriving on an input of
 /// that device count as its echo, in microseconds. A loop through the system (IAC) takes well
 /// under a millisecond, one through DIN and a USB interface a few.
@@ -196,6 +199,8 @@ struct ThruLink {
     sent: Mutex<Sent>,
     /// Echoes thru did not send on so far.
     echoes: AtomicU64,
+    /// Audition events for the worker ([`MidiFeed::audition`]), stamped with their track id.
+    audition: Ring,
 }
 
 impl Default for ThruLink {
@@ -207,6 +212,7 @@ impl Default for ThruLink {
             lost: AtomicU64::new(0),
             sent: Mutex::new(Sent::default()),
             echoes: AtomicU64::new(0),
+            audition: Ring::new(AUDITION),
         }
     }
 }
@@ -307,6 +313,10 @@ pub struct MidiFeed {
     stop_pass: AtomicU64,
     /// The way to the MIDI output worker (MIDI Thru).
     thru: ThruLink,
+    /// Audition events for the audio thread ([`Self::audition`]), stamped with their track id.
+    audition: Ring,
+    /// Audition events taken so far and the last one, for the "did my click play" readout.
+    auditioned: Mutex<(u32, Option<(soundcraft_model::TrackId, [u8; 3])>)>,
     /// A clock set by a test in place of the real one (`i64::MIN`: the real one).
     #[cfg(test)]
     test_clock: AtomicI64,
@@ -338,6 +348,8 @@ impl Default for MidiFeed {
             stop_at: AtomicI64::new(0),
             stop_pass: AtomicU64::new(0),
             thru: ThruLink::default(),
+            audition: Ring::new(AUDITION),
+            auditioned: Mutex::new((0, None)),
             #[cfg(test)]
             test_clock: AtomicI64::new(i64::MIN),
         }
@@ -411,6 +423,43 @@ impl MidiFeed {
         if port != u8::MAX {
             self.receive(port, bytes);
         }
+    }
+
+    /// A note auditioned from an editor (a mini-keyboard key, or a note inserted, clicked or
+    /// dragged with Play MIDI Notes When Editing on), on `track` only: its instrument (the audio
+    /// thread, [`Self::next_audition`]) and its MIDI output (the output worker,
+    /// [`Self::next_thru_audition`]). It is not live input: it is never recorded, and it plays
+    /// whatever the track's record-enable, input and Options › MIDI Thru say. Only Note-On and
+    /// Note-Off are taken. One writer at a time (the UI thread).
+    pub fn audition(&self, track: soundcraft_model::TrackId, bytes: [u8; 3]) {
+        if !matches!(bytes[0] & 0xF0, 0x80 | 0x90) {
+            return;
+        }
+        let e = pack(&LiveMidi { offset: 0, port: u8::MAX, status: bytes[0], data1: bytes[1] & 0x7F, data2: bytes[2] & 0x7F, echo: false });
+        let stamp = i64::try_from(track.0).unwrap_or(i64::MAX);
+        {
+            let mut log = self.auditioned.lock().unwrap_or_else(PoisonError::into_inner);
+            *log = (log.0.wrapping_add(1), Some((track, [bytes[0], bytes[1] & 0x7F, bytes[2] & 0x7F])));
+        }
+        self.audition.push(stamp, e);
+        if self.thru.attached.load(Ordering::Acquire) && self.thru.audition.push(stamp, e) {
+            self.thru.wake();
+        }
+    }
+
+    /// How many audition events were taken so far, and the last one with its track.
+    pub fn auditioned(&self) -> (u32, Option<(soundcraft_model::TrackId, [u8; 3])>) {
+        *self.auditioned.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    /// Audio thread: the next auditioned note and its track.
+    pub(crate) fn next_audition(&self) -> Option<(soundcraft_model::TrackId, LiveMidi)> {
+        self.audition.pop().map(|(t, e)| (soundcraft_model::TrackId(u64::try_from(t).unwrap_or(0)), unpack(e)))
+    }
+
+    /// Worker: the next auditioned note for the track's MIDI output.
+    pub(crate) fn next_thru_audition(&self) -> Option<(soundcraft_model::TrackId, LiveMidi)> {
+        self.thru.audition.pop().map(|(t, e)| (soundcraft_model::TrackId(u64::try_from(t).unwrap_or(0)), unpack(e)))
     }
 
     /// [`Self::receive`] for a connection that can be shut off: once `open` is false
@@ -518,6 +567,7 @@ impl MidiFeed {
             self.thru.attached.store(false, Ordering::Release);
             *waker = None;
             while self.thru.events.pop().is_some() {}
+            while self.thru.audition.pop().is_some() {}
         }
     }
 
@@ -529,7 +579,9 @@ impl MidiFeed {
     /// Worker: whether live events are waiting for it.
     pub(crate) fn thru_pending(&self) -> bool {
         let t = &self.thru;
-        t.events.write.load(Ordering::Acquire) != t.events.read.load(Ordering::Relaxed) || t.lost.load(Ordering::Acquire) != 0
+        t.events.write.load(Ordering::Acquire) != t.events.read.load(Ordering::Relaxed)
+            || t.audition.write.load(Ordering::Acquire) != t.audition.read.load(Ordering::Relaxed)
+            || t.lost.load(Ordering::Acquire) != 0
     }
 
     /// Worker: the ports ([`midi_port_bit`]) whose input was lost or closed since it last asked:

@@ -25,6 +25,7 @@ mod midi;
 mod mix;
 mod more_util;
 mod options;
+pub use options::{NO_PLAY_MIDI_NOTES, play_midi_notes_when_editing};
 mod plugin_state;
 mod query;
 pub(crate) mod sampler;

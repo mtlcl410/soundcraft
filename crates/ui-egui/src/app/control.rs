@@ -141,6 +141,12 @@ impl SoundApp {
             "midi_inputs": self.midi_inputs.as_ref().map(|m| m.ports().iter().map(|p| json!({"name": p.name, "enabled": p.enabled, "open": p.open})).collect::<Vec<_>>()),
             "midi_events": self.midi_inputs.as_ref().map(|m| m.feed().activity().0),
             "midi_events_dropped": self.midi_inputs.as_ref().map(|m| m.feed().dropped()),
+            // Notes auditioned from the editors: how many messages, the last one, and the key
+            // sounding now.
+            "midi_audition": self.midi_inputs.as_ref().map(|m| {
+                let (count, last) = m.feed().auditioned();
+                json!({"messages": count, "last": last.map(|(t, b)| json!({"track": t.0, "bytes": b})), "held": self.auditioning().map(|(t, k)| json!({"track": t.0, "key": k}))})
+            }),
             "midi_output_ports": self.midi_output_ports,
             "midi_outputs": self.midi_outputs_inspect(),
             "midi_output_error": self.player.as_ref().and_then(|p| p.midi_output_error()),

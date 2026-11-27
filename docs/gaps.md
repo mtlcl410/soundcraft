@@ -1,6 +1,6 @@
 # Where SoundCraft falls short of Pro Tools
 
-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-26 · **Change:** minor (G-02 shrunk: MIDI Thru plays a keyboard through to external MIDI outputs; previously minor: G-02 shrunk: MIDI and instrument tracks play to external MIDI ports; previously trivial: G-04: Number of Loops accepts up to 1,000; crossfade remains open; previously minor: G-06: recording to disk is done (#84, long takes #888); streaming sources remain; previously minor: G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-27 · **Change:** minor (G-02 shrunk: auditioning from the mini-keyboard and the MIDI Editor; previously minor: G-02 shrunk: MIDI Thru plays a keyboard through to external MIDI outputs; previously minor: G-02 shrunk: MIDI and instrument tracks play to external MIDI ports; previously trivial: G-04: Number of Loops accepts up to 1,000; crossfade remains open; previously minor: G-06: recording to disk is done (#84, long takes #888); streaming sources remain; previously minor: G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 Every known shortfall, one entry each, ranked by how much it stops a Pro Tools user from doing
 real work in SoundCraft. This is the work list: pick from the top. Rows marked **alpha blocker**
@@ -98,11 +98,21 @@ When you close a gap, delete its entry (or shrink it) in the same PR, and bump t
   [midi-output.md](midi-output.md) section 5. Measured on macOS from the IAC bus to a virtual
   CoreMIDI port, and tried on Windows 11 between two virtual ports (the fixes that test called
   for are not yet re-run there); **not yet with hardware or on Linux**.
+- **Done (2026-11-27):** auditioning from the editors: the Edit window's Notes view has a
+  mini-keyboard with octave numbers, scroll arrows (not at Small height and below) and
+  out-of-range notes as single-pixel lines (Pro Tools p.861); its keys and the MIDI Editor's
+  play the track's instrument and MIDI output like a live note that is never recorded, whatever
+  the record-enable and Options › MIDI Thru say (`MidiFeed::audition`, `crates/mix/src/audition.rs`,
+  `Thru::audition`). Play MIDI Notes When Editing (`options.play_midi_notes`, on by default)
+  plays notes as they are inserted, clicked or dragged in the MIDI Editor. User guide:
+  [midi-output.md](midi-output.md) section 6. Checked on macOS to a virtual CoreMIDI port and
+  the built-in synth; **not yet on Linux or Windows**.
 - **Missing:** system exclusive and Real-Time Properties through MIDI Thru, MIDI Input
   Monitoring Follows Selected Track, MIDI activity on a MIDI track's meter, note chasing, a default program and bank per track,
   several destinations per track, MIDI mute and solo on instrument tracks, the Global MIDI
   Playback Offset, MIDI clock/MTC out, loop and merge recording (a MIDI take replaces what it covers; a loop pass piles every
-  pass into one clip), audition from the MIDI editor (`midi_editor.rs:288`), computer-keyboard
+  pass into one clip), selecting notes from the Edit window's mini-keyboard (the Edit window has no
+  note selection), computer-keyboard
   keys in the MIDI Keyboard window (clicked keys play live), MIDI
   input on FreeBSD and the web. `setup.midi_input_devices` and `setup.midi_studio` still only
   store names in the session; the real device switches are app preferences.
