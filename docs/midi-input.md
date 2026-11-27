@@ -4,9 +4,10 @@ SoundCraft plays MIDI keyboards and pads through its instruments and records wha
 MIDI clips.
 
 **Where it works.** Linux (ALSA sequencer), macOS (CoreMIDI) and Windows (WinMM). It has been
-played and recorded on Linux only; on macOS and Windows the code builds but has not been tried
-with a device yet. There is no MIDI input on FreeBSD or in the web version. MIDI output, MIDI
-clock and loop or merge recording are not there yet (see [gaps.md](gaps.md), G-02).
+played and recorded with hardware keyboards on Linux, macOS and Windows, including a keyboard on
+5-pin DIN through a USB MIDI interface. There is no MIDI input on FreeBSD or in the web version.
+MIDI output, MIDI clock and loop or merge recording are not there yet (see [gaps.md](gaps.md),
+G-02).
 
 ## 1. Switch a device on
 

@@ -1,6 +1,6 @@
 # Where SoundCraft falls short of Pro Tools
 
-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-23 · **Change:** trivial (G-04: Number of Loops accepts up to 1,000; crossfade remains open; previously minor: G-06: recording to disk is done (#84, long takes #888); streaming sources remain; previously minor: G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-27 · **Change:** minor (G-02: MIDI input checked on macOS and Windows as well as Linux; the alpha gate's MIDI row passes, so G-02 is no longer an alpha blocker; previously trivial: G-04: Number of Loops accepts up to 1,000; crossfade remains open; previously minor: G-06: recording to disk is done (#84, long takes #888); streaming sources remain; previously minor: G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 Every known shortfall, one entry each, ranked by how much it stops a Pro Tools user from doing
 real work in SoundCraft. This is the work list: pick from the top. Rows marked **alpha blocker**
@@ -16,7 +16,7 @@ When you close a gap, delete its entry (or shrink it) in the same PR, and bump t
 | # | Gap | Dimension | Doc | Est. (h) |
 |---|---|---|---|---:|
 | G-01 | **Alpha blocker.** No channel routing or duplex low-latency path (device, rate and buffer choice done; ASIO opt-in) | Hardware | [hardware-parity.md](hardware-parity.md) | 15–25 |
-| G-02 | **Alpha blocker.** MIDI devices: input works (checked on Linux only); no output, clock or loop/merge recording | Hardware / MIDI | [hardware-parity.md](hardware-parity.md) | 12–22 |
+| G-02 | MIDI devices: input works (checked on Linux, macOS and Windows); no output, clock or loop/merge recording | Hardware / MIDI | [hardware-parity.md](hardware-parity.md) | 12–22 |
 | G-03 | **Alpha blocker.** Session exchange remains incomplete (strict external-WAV AAF import only; no AAF/OMF export, OMF import or `.ptx`) | File formats | [file-format-parity.md](file-format-parity.md) | 50–90 |
 | G-04 | Open correctness bugs in features counted as done (~25 issues) | Stability | this file | 25–40 |
 | G-05 | (Entitlement part: alpha blocker for the mix row) Third-party VST3s blocked in the signed macOS build; AU editors missing | Ecosystem | [plugin-parity.md](plugin-parity.md) | 10–15 |
@@ -72,8 +72,12 @@ When you close a gap, delete its entry (or shrink it) in the same PR, and bump t
   full input queue releases the notes of its device and marks the take incomplete. The device
   switches (Setup › Playback Engine, also opened by Setup › MIDI › MIDI Input Devices) are app
   preferences. User guide: [midi-input.md](midi-input.md). On Linux, live play was checked with
-  a hardware keyboard (Akai MPK mini 3) and recording with a virtual one;
-  **not yet on macOS or Windows** (type-checked only).
+  a hardware keyboard (Akai MPK mini 3) and recording with a virtual one. On macOS (Core Audio,
+  an Arturia MiniLab mkII over USB) live play, recording with controllers and pitch bend, and
+  playback of the take were checked, with no events dropped; a Kurzweil PC1X on 5-pin DIN
+  through a Roland UM-ONE reaches CoreMIDI too. On Windows (a TASCAM Model 12's MIDI OUT on
+  5-pin DIN into a Roland UM-ONE) live play, recording of notes, program change, CC1 and pitch
+  bend, and the MIDI input filter were checked.
 - **Missing:** MIDI output (external synths, MIDI tracks without an instrument), MIDI clock/MTC
   out, loop and merge recording (a MIDI take replaces what it covers; a loop pass piles every
   pass into one clip), audition from the MIDI editor (`midi_editor.rs:288`), MIDI
@@ -252,6 +256,7 @@ missing. Out of scope unless the owner decides otherwise.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-27 | minor | G-02: MIDI input checked with hardware keyboards on macOS (Arturia MiniLab mkII; Kurzweil PC1X through a Roland UM-ONE) and Windows (TASCAM Model 12 through a Roland UM-ONE); the alpha gate's MIDI row passes, so G-02 is no longer marked an alpha blocker; output, clock and loop/merge recording remain; estimates unchanged |
 | 2026-11-23 | trivial | G-04: Clip Looping Number of Loops accepts up to 1,000; crossfade remains open; estimates unchanged |
 | 2026-11-14 | minor | G-03: strict external-WAV AAF import with bounded property caching; AAF/OMF export, OMF import and `.ptx` remain; estimates unchanged |
 | 2026-11-13 | trivial | G-09: the pt-BR catalog now covers tooltips localized inside buttons and toggles, the Edit-window status bar, the remove-session question, the send help text and engine errors shown in the status line; estimates unchanged |

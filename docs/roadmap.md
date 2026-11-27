@@ -1,6 +1,6 @@
 # SoundCraft roadmap: milestones and what's next
 
-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-18 · **Change:** minor (M6: long takes continue in a new file (#888); previously minor: MIDI input landed, the gate row needs checking on macOS and Windows; strict external-WAV AAF import; previously trivial: 28 built-in processors with the Frequency Shifter; G-05 estimate after Linux/X11 plugin editors; M15: partial pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-27 · **Change:** minor (alpha gate: the MIDI recording row passes on macOS and Windows; two workflows fail; previously minor: M6: long takes continue in a new file (#888); previously minor: MIDI input landed, the gate row needs checking on macOS and Windows; strict external-WAV AAF import; previously trivial: 28 built-in processors with the Frequency Shifter; G-05 estimate after Linux/X11 plugin editors; M15: partial pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 Forward-looking plan. Status and numbers: [`../ROADMAP.md`](../ROADMAP.md) and
 [`target-app-parity.md`](target-app-parity.md); the ranked work list: [`gaps.md`](gaps.md).
@@ -11,7 +11,7 @@ Hours are Opus 5.5 agent-hours.
 1. **Merge or close the open bug-fix PRs** (#123–#134, #146, #148, #75) and fix the rest of the
    correctness backlog (G-04). ≈ 15–25 h.
 2. **Audio interface basics** (G-01): device selection, buffer size, duplex stream, ASIO. ≈ 25–40 h.
-3. **MIDI devices** (G-02): input to armed tracks and instruments is in (checked on Linux); macOS and Windows checks, output, thru to gear, clock remain. ≈ 12–22 h.
+3. **MIDI devices** (G-02): input to armed tracks and instruments is in (checked on Linux, macOS and Windows); output, thru to gear, clock remain. ≈ 12–22 h.
 4. **macOS plugin hosting** (G-05): library-validation entitlement now (#153), then AU editors and embedded CLAP editors on macOS. ≈ 10–15 h.
 5. **A PR CI that runs `cargo xtask ci`** on Linux, macOS and Windows (G-14). ≈ 5–10 h.
 
@@ -23,13 +23,13 @@ main platform). Any **no** keeps SoundCraft **pre-alpha**, and those rows are th
 | Workflow | Works end to end? | Evidence | Hours to pass |
 |---|---|---|---:|
 | Record audio from a chosen interface at a chosen buffer size, monitor, punch, keep the takes | **no** | Device, rate and buffer are chosen in the Playback Engine window and, in the desktop app, by `setup.playback_engine` (headless returns `applied: false`). The mix still runs in fixed 512-sample blocks. Separate input and output streams. Takes are written to disk as they record (#84; long takes continue in a new file, #888). | 35–55 |
-| Record MIDI from a controller and play it back through an instrument | **unverified** | Built: keyboards play record-enabled instrument tracks live and are recorded into MIDI clips. On Linux, live play was checked with a hardware keyboard (Akai MPK mini 3) and recording with a virtual one; the row passes once it is checked on macOS and Windows too (G-02). | 2–4 |
+| Record MIDI from a controller and play it back through an instrument | yes | Keyboards play record-enabled instrument tracks live and are recorded into MIDI clips with velocities, controllers and pitch bend, which play back through the instrument. Checked with hardware keyboards on Linux (Akai MPK mini 3), macOS (Arturia MiniLab mkII over USB; a Kurzweil PC1X on 5-pin DIN through a Roland UM-ONE reaches CoreMIDI too) and Windows (a TASCAM Model 12's MIDI OUT into a Roland UM-ONE). MIDI output, clock and loop/merge recording remain in G-02, outside this row. | — |
 | Edit: select, trim, fade, comp playlists, Slip/Shuffle/Grid | yes (rough) | Every Edit menu command; property-tested with undo; open bugs #3, #5, #140 don't block the workflow | — |
 | Mix with built-in and third-party plugins, sends, busses, automation | partial (passes on CLAP/AU) | 28 built-in processors; CLAP and AU host on the signed macOS build, but its missing entitlement blocks third-party VST3 (#153). No AU plugin windows yet; VST3 windows on macOS, Windows and Linux/X11 | 1–2 (entitlement) |
 | Bounce mix and stems; save and reopen the session | yes (rough) | WAV/BWF/AIFF/FLAC bounce, stems, `.scraft` save/reopen with plugin state; bugs #59, #103 in bus bounce and aux latency (PRs open) | — |
 | Exchange a session with Pro Tools or a picture editor | **no** | Strict external-WAV AAF import works, but AAF export, OMF and `.ptx` do not (#40, G-03) | 50–90 |
 
-**Result: pre-alpha.** Three workflows fail. Passing them is ~110–180 h, about 70 % of it
+**Result: pre-alpha.** Two workflows fail. Passing them is ~110–180 h, about 70 % of it
 parallelizable (interfaces, MIDI and AAF are independent crates).
 
 ## Milestones
@@ -88,6 +88,7 @@ There is no `cargo xtask scorecard` in this repo; the measured number is `cargo 
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-27 | minor | Alpha gate: the MIDI recording row passes, checked with hardware keyboards on macOS and Windows as well as Linux; two workflows fail; hours unchanged |
 | 2026-11-18 | minor | MIDI input devices landed (G-02 shrunk); the MIDI gate row is unverified until checked on macOS and Windows |
 | 2026-11-14 | minor | M13 is in progress with strict external-WAV AAF import; the exchange gate still fails without AAF export, OMF or `.ptx`; estimates unchanged |
 | 2026-11-09 | trivial | 28 built-in processors with the Frequency Shifter |
