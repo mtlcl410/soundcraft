@@ -280,30 +280,33 @@ fn event_list(app: &mut SoundApp, ctx: &egui::Context) {
     app.ui.show_event_list = open;
 }
 
-/// How many notes and white keys the MIDI Keyboard window shows.
+/// How many notes the MIDI Keyboard window shows: four octaves.
 const KEYBOARD_NOTES: u8 = 48;
-const KEYBOARD_WHITES: usize = 28;
-/// The highest lowest note the window shows (C4), so its four octaves end at B7.
-const KEYBOARD_TOP_BASE: u8 = 72;
+/// The highest lowest note the window shows (C6), so the octave at C8 is drawn too; the keys end at
+/// G8, the highest MIDI note.
+const KEYBOARD_TOP_BASE: u8 = 84;
 
 fn is_black(note: u8) -> bool {
     matches!(note % 12, 1 | 3 | 6 | 8 | 10)
 }
 
-/// The lowest note the MIDI Keyboard window shows: an octave below the one the computer keys play,
-/// so those keys are drawn with room to either side (C2 for the default C3).
-fn keyboard_base(app: &SoundApp) -> u8 {
-    crate::panels::midi_keyboard_keys::octave(app).saturating_sub(12).min(KEYBOARD_TOP_BASE)
+/// The lowest note the MIDI Keyboard window shows for the computer keys' `octave`: an octave below
+/// it, so those keys and their letters are drawn with room to either side (C2 for the first octave,
+/// C3) wherever Z/X move it, C-2 to C8.
+fn keyboard_base(octave: u8) -> u8 {
+    octave.saturating_sub(12).min(KEYBOARD_TOP_BASE)
 }
 
 /// Each key of the MIDI Keyboard window drawn in `r` from `base`: its note and rectangle, the white
-/// keys first, then the black keys that sit over them.
+/// keys first, then the black keys that sit over them. The white keys share the width, so the
+/// shorter top range (C6 to G8) fills it too.
 fn keyboard_keys(r: egui::Rect, base: u8) -> Vec<(u8, egui::Rect)> {
-    let w = r.width() / KEYBOARD_WHITES as f32;
+    let notes = base..base.saturating_add(KEYBOARD_NOTES).min(128);
+    let w = r.width() / notes.clone().filter(|n| !is_black(*n)).count().max(1) as f32;
     let mut keys = Vec::with_capacity(usize::from(KEYBOARD_NOTES));
     let mut white = 0usize;
     let mut blacks = Vec::new();
-    for note in base..base + KEYBOARD_NOTES {
+    for note in notes {
         if is_black(note) {
             blacks
                 .push((note, egui::Rect::from_min_size(egui::pos2(r.min.x + white as f32 * w - w * 0.3, r.min.y), vec2(w * 0.6, r.height() * 0.6))));
@@ -387,10 +390,16 @@ fn midi_keyboard(app: &mut SoundApp, ctx: &egui::Context) {
     win(ctx, &mut open, "MIDI Keyboard", vec2(640.0, 150.0), |ui| {
         ui.horizontal(|ui| {
             let mut on = app.ui.midi_keyboard_computer_keys;
-            let switch = ui.toggle_value(&mut on, crate::localization::text("Computer Keyboard"));
-            // Switched on, the keys play at once: the switch does not keep the keyboard.
-            if switch.clicked() && on {
-                switch.surrender_focus();
+            // A framed button lit while on, as the Mix window's OBJECT/BED switch: unlike egui's
+            // toggle (a bare label when off) it reads as a switch in both states, and it tells
+            // assistive technology whether it is pressed.
+            let switch = ui.add(egui::Button::new(crate::localization::text("Computer Keyboard")).selected(on));
+            if switch.clicked() {
+                on = !on;
+                // Switched on, the keys play at once: the switch does not keep the keyboard.
+                if on {
+                    switch.surrender_focus();
+                }
             }
             switch.on_hover_text(crate::localization::text("Play notes from the computer keyboard: A to K play the octave, Z/X move it down/up, C/V lower/raise the velocity. While on, those keys do not run shortcuts."));
             app.ui.midi_keyboard_computer_keys = on;
@@ -399,8 +408,13 @@ fn midi_keyboard(app: &mut SoundApp, ctx: &egui::Context) {
                 soundcraft_midi::note_name(keys::octave(app)),
                 keys::velocity(app)
             ));
+            // Switched off, the letters run shortcuts again (C copies, V pastes in Commands
+            // Keyboard Focus): say so where the keys are typed.
+            if !on {
+                ui.label(crate::localization::text("Computer Keyboard off: keys go to shortcuts"));
+            }
         });
-        let base = keyboard_base(app);
+        let base = keyboard_base(keys::octave(app));
         let (r, resp) = ui.allocate_exact_size(vec2(ui.available_width().max(400.0), 80.0), Sense::click_and_drag());
         resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Group, true, crate::localization::text("MIDI Keyboard keys")));
         let rects = keyboard_keys(r, base);
@@ -1111,5 +1125,27 @@ mod audio_health_tests {
         let mut output = ctx.run_ui(egui::RawInput::default(), |ui| audio_health(&mut app, ui.ctx()));
         output.textures_delta.clear();
         assert!(app.audio_health_report.is_some());
+    }
+}
+
+#[cfg(test)]
+mod midi_keyboard_range_tests {
+    use super::*;
+
+    /// Wherever Z/X move the computer-key octave (C-2 to C8, Pro Tools p.827), every note it can
+    /// play is drawn, so its letters stay in view; nothing above G8 (127) is drawn.
+    #[test]
+    fn the_drawn_keys_follow_the_computer_key_octave() {
+        let r = egui::Rect::from_min_size(egui::Pos2::ZERO, vec2(640.0, 80.0));
+        for octave in (0..=120u8).step_by(12) {
+            let keys = keyboard_keys(r, keyboard_base(octave));
+            let drawn: Vec<u8> = keys.iter().map(|(n, _)| *n).collect();
+            for n in octave..=(octave + 12).min(127) {
+                assert!(drawn.contains(&n), "octave {octave}: note {n} is drawn ({drawn:?})");
+            }
+            assert!(drawn.iter().all(|n| *n <= 127), "octave {octave}: {drawn:?}");
+            assert!(keys.iter().all(|(_, k)| r.contains_rect(*k)), "octave {octave}: the keys fit the area");
+        }
+        assert_eq!(keyboard_base(60), 48, "C2 to B5 for the first octave, C3");
     }
 }

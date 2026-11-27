@@ -3,7 +3,10 @@
 //! Computer Keyboard switch is on, those keys play instead of running shortcuts; a note ends when
 //! its key comes up, when the switch goes off, when the window closes and when the app loses focus.
 use egui::{Event, Key, Modifiers, vec2};
-use egui_kittest::{Harness, kittest::Queryable};
+use egui_kittest::{
+    Harness,
+    kittest::{NodeT, Queryable},
+};
 use serde_json::json;
 use soundcraft_playback::midi::MidiInputs;
 use soundcraft_ui_egui::{Services, SoundApp};
@@ -193,4 +196,68 @@ fn computer_keys_step_enter_chords_outside_a_record_pass() {
     let notes = notes["notes"].as_array().cloned().unwrap_or_default();
     assert_eq!(notes.len(), 2, "{notes:?}");
     assert_eq!(notes[0]["start"], notes[1]["start"], "a chord: {notes:?}");
+}
+
+/// The Computer Keyboard switch reads as a button whether it is on or off, says its state to
+/// assistive technology, explains itself in a tooltip, and the window says when the letters go to
+/// the shortcuts instead.
+#[test]
+fn the_computer_keyboard_switch_shows_its_state() {
+    use egui::accesskit::{Role, Toggled};
+    const OFF_HINT: &str = "Computer Keyboard off: keys go to shortcuts";
+    let mut h = harness();
+    let state = |h: &AppHarness| h.get_by_role_and_label(Role::Button, "Computer Keyboard").accesskit_node().toggled();
+    assert_eq!(state(&h), Some(Toggled::True), "on when the window opens");
+    assert!(h.query_by_label(OFF_HINT).is_none(), "no hint while on");
+    h.get_by_role_and_label(Role::Button, "Computer Keyboard").hover();
+    h.run_steps(30);
+    assert!(h.query_by_label_contains("A to K play the octave").is_some(), "the tooltip says what the keys do");
+    h.get_by_role_and_label(Role::Button, "Computer Keyboard").click();
+    h.run_steps(2);
+    assert_eq!(state(&h), Some(Toggled::False), "off after a click");
+    assert!(h.query_by_label(OFF_HINT).is_some(), "the window says where the keys go now");
+    h.get_by_role_and_label(Role::Button, "Computer Keyboard").click();
+    h.run_steps(2);
+    assert_eq!(state(&h), Some(Toggled::True));
+    assert!(h.query_by_label(OFF_HINT).is_none());
+}
+
+/// No key the window uses, typed with or without Shift, with the switch on or off, opens the New
+/// Tracks dialog (seen once during a hand test with rapid key presses).
+#[test]
+fn the_window_s_keys_never_open_new_tracks() {
+    let mut h = harness();
+    h.state_mut().run("options.keyboard_focus", json!({"focus": "commands"})).unwrap();
+    let keys = [
+        Key::A,
+        Key::W,
+        Key::S,
+        Key::E,
+        Key::D,
+        Key::F,
+        Key::T,
+        Key::G,
+        Key::Y,
+        Key::H,
+        Key::U,
+        Key::J,
+        Key::K,
+        Key::Z,
+        Key::X,
+        Key::C,
+        Key::V,
+        Key::N,
+    ];
+    for on in [true, false] {
+        h.state_mut().ui.midi_keyboard_computer_keys = on;
+        for k in keys {
+            for mods in [Modifiers::NONE, Modifiers::SHIFT] {
+                key(&mut h, k, true, mods);
+                key(&mut h, k, false, mods);
+                assert_eq!(h.state().dialogs.open_name(), None, "{k:?} {mods:?} switch on: {on}");
+                // Shift+K closes the window: open it again.
+                h.state_mut().ui.show_midi_keyboard = true;
+            }
+        }
+    }
 }

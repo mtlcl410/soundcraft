@@ -71,13 +71,18 @@ across the keys. It counts as a MIDI device called *MIDI Keyboard*, so a record 
 plays even when no device is connected.
 
 The window also plays from the computer keyboard while its **Computer Keyboard** switch is on (it
-is on when the window opens; **Shift+K** opens and closes the window):
+is on when the window opens; **Shift+K** opens and closes the window). The switch is lit while it
+is on; while it is off the window says "Computer Keyboard off: keys go to shortcuts" and the
+letters are not drawn on the keys.
 
 - **A W S E D F T G Y H U J K** play one octave, from its C (A) to the next C (K): A is C, T is
   F#/Gb. The letters are shown on the keys they play.
 - **Z** and **X** move that octave down and up, from C-2 to C8 (C3, middle C, when the window
   first opens). **C** and **V** lower and raise the velocity, 1 to 127, in steps of 10. The window
   shows the octave and velocity.
+- The window draws four octaves, starting an octave below the one the letters play (C2 to B5 at
+  first), and moves them with Z and X, so the lettered keys are always in view. At the top it shows
+  C6 to G8, the highest MIDI note: at C8 the keys above G8 (H, U, J, K) play nothing.
 - A note sounds while its key is held and ends when it comes up. Keys are read by their position,
   so the layout is the same on any keyboard.
 - While the switch is on, these keys play instead of running their single-key shortcuts (T's Zoom

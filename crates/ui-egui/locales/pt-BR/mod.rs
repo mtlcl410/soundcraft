@@ -329,6 +329,7 @@ pub(super) fn translate(source: &str) -> Option<&'static str> {
             "Toque notas pelo teclado do computador: de A a K tocam a oitava, Z/X a movem para baixo/cima, C/V diminuem/aumentam a velocidade. Enquanto ativado, essas teclas não executam atalhos."
         }
         "Octave: {} · Velocity: {}" => "Oitava: {} · Velocidade: {}",
+        "Computer Keyboard off: keys go to shortcuts" => "Teclado do computador desativado: as teclas vão para os atalhos",
         "Bus name: {name}" => "Nome do bus: {name}",
         "Model" => "Modelo",
         "Version" => "Versão",
