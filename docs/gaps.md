@@ -1,6 +1,6 @@
 # Where SoundCraft falls short of Pro Tools
 
-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-25 · **Change:** minor (G-02: the MIDI Keyboard window plays and records; previously trivial: G-04: Number of Loops accepts up to 1,000; crossfade remains open; previously minor: G-06: recording to disk is done (#84, long takes #888); streaming sources remain; previously minor: G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-27 · **Change:** minor (G-02: the MIDI Keyboard window plays from the computer keyboard; previously minor: G-02: the MIDI Keyboard window plays and records; previously trivial: G-04: Number of Loops accepts up to 1,000; crossfade remains open; previously minor: G-06: recording to disk is done (#84, long takes #888); streaming sources remain; previously minor: G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 Every known shortfall, one entry each, ranked by how much it stops a Pro Tools user from doing
 real work in SoundCraft. This is the work list: pick from the top. Rows marked **alpha blocker**
@@ -77,6 +77,10 @@ When you close a gap, delete its entry (or shrink it) in the same PR, and bump t
 - **Done (2026-11-25):** the MIDI Keyboard window plays what is clicked through the live MIDI path,
   as a device called "MIDI Keyboard": record-enabled and monitored instruments play it and a MIDI
   pass records it, also with no MIDI device connected (#1752).
+- **Done (2026-11-27):** the MIDI Keyboard window also plays from the computer keyboard, as in Pro
+  Tools (Reference Guide p.827–828): A to K play an octave from C, Z/X move it between C-2 and C8,
+  C/V change the velocity. Its Computer Keyboard switch (on by default) shows and toggles the mode;
+  while on, those keys play instead of running single-key shortcuts (#1209).
 - **Missing:** MIDI output (external synths, MIDI tracks without an instrument), MIDI clock/MTC
   out, loop and merge recording (a MIDI take replaces what it covers; a loop pass piles every
   pass into one clip), audition from the MIDI editor (`midi_editor.rs:288`), MIDI
@@ -255,6 +259,7 @@ missing. Out of scope unless the owner decides otherwise.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-27 | minor | G-02: the MIDI Keyboard window plays from the computer keyboard (#1209); estimates unchanged |
 | 2026-11-25 | minor | G-02: the MIDI Keyboard window plays and records like a MIDI device (#1752); estimates unchanged |
 | 2026-11-23 | trivial | G-04: Clip Looping Number of Loops accepts up to 1,000; crossfade remains open; estimates unchanged |
 | 2026-11-14 | minor | G-03: strict external-WAV AAF import with bounded property caching; AAF/OMF export, OMF import and `.ptx` remain; estimates unchanged |

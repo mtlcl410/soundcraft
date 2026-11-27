@@ -139,6 +139,12 @@ pub struct UiState {
     pub show_metadata: bool,
     pub show_event_list: bool,
     pub show_midi_keyboard: bool,
+    /// Whether the MIDI Keyboard window plays notes from the computer keyboard (#1209).
+    pub midi_keyboard_computer_keys: bool,
+    /// The lowest note the MIDI Keyboard window's computer keys play (a C, C-2 to C8).
+    pub midi_keyboard_octave: u8,
+    /// The velocity the MIDI Keyboard window plays at (1–127).
+    pub midi_keyboard_velocity: u8,
     pub show_workspace: bool,
     pub show_configurations: bool,
     pub show_playback_engine: bool,
@@ -219,6 +225,9 @@ impl Default for UiState {
             show_metadata: false,
             show_event_list: false,
             show_midi_keyboard: false,
+            midi_keyboard_computer_keys: true,
+            midi_keyboard_octave: 60,
+            midi_keyboard_velocity: 100,
             show_workspace: false,
             show_configurations: false,
             show_playback_engine: false,

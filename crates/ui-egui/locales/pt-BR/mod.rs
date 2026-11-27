@@ -321,9 +321,14 @@ pub(super) fn translate(source: &str) -> Option<&'static str> {
         "No engine" => "Sem mecanismo de áudio",
         "default buffer" => "buffer padrão",
         "MIDI Keyboard keys" => "Teclas do teclado MIDI",
-        "Click and hold keys to play the record-enabled or monitored instruments; outside a record pass, a click also step-enters the note into the selected MIDI clip at the insertion point." => {
-            "Clique e segure as teclas para tocar os instrumentos habilitados para gravação ou monitorados; fora de uma gravação, um clique também insere a nota no clipe MIDI selecionado, no ponto de inserção."
+        "Click and hold keys, or type them with Computer Keyboard on, to play the record-enabled or monitored instruments; outside a record pass, a key also step-enters the note into the selected MIDI clip at the insertion point." => {
+            "Clique e segure as teclas, ou digite-as com Teclado do computador ativado, para tocar os instrumentos habilitados para gravação ou monitorados; fora de uma gravação, uma tecla também insere a nota no clipe MIDI selecionado, no ponto de inserção."
         }
+        "Computer Keyboard" => "Teclado do computador",
+        "Play notes from the computer keyboard: A to K play the octave, Z/X move it down/up, C/V lower/raise the velocity. While on, those keys do not run shortcuts." => {
+            "Toque notas pelo teclado do computador: de A a K tocam a oitava, Z/X a movem para baixo/cima, C/V diminuem/aumentam a velocidade. Enquanto ativado, essas teclas não executam atalhos."
+        }
+        "Octave: {} · Velocity: {}" => "Oitava: {} · Velocidade: {}",
         "Bus name: {name}" => "Nome do bus: {name}",
         "Model" => "Modelo",
         "Version" => "Versão",

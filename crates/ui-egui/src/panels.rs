@@ -24,6 +24,7 @@ use transport::{big_counter, transport_window};
 
 pub mod extra_windows;
 pub mod midi_editor;
+pub(crate) mod midi_keyboard_keys;
 pub mod sampler_window;
 pub mod score_editor;
 pub mod video_window;

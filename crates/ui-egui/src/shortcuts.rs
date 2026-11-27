@@ -60,7 +60,7 @@ fn search_chord(m: Modifiers, mac: bool) -> bool {
 const REPEATING: [&str; 3] = ["view.zoom_in", "view.zoom_out", "view.waveform_zoom"];
 
 /// Whether a dialog that holds back the shortcuts is open.
-fn dialog_open(app: &SoundApp) -> bool {
+pub(crate) fn dialog_open(app: &SoundApp) -> bool {
     app.dialogs.open.is_some() || app.ui.show_preferences
 }
 
@@ -83,12 +83,16 @@ pub fn handle(app: &mut SoundApp, ctx: &egui::Context) {
     // an event's `repeat` flag from the physical key state, which says nothing about whether that
     // particular event was injected.
     let scripted = app.scripted_key_press_indices();
+    // The MIDI Keyboard window's computer keys play notes instead (#1209), auto-repeats included.
     let events: Vec<(Key, Modifiers, bool)> = ctx.input(|i| {
         i.events
             .iter()
             .enumerate()
             .filter_map(|(index, e)| match e {
-                egui::Event::Key { key, pressed: true, repeat, modifiers, .. } => Some((*key, *modifiers, *repeat && !scripted.contains(&index))),
+                egui::Event::Key { key, physical_key, pressed: true, repeat, modifiers } => {
+                    (!crate::panels::midi_keyboard_keys::takes(app, *key, *physical_key, *modifiers))
+                        .then(|| (*key, *modifiers, *repeat && !scripted.contains(&index)))
+                }
                 _ => None,
             })
             .collect()

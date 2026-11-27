@@ -929,3 +929,21 @@ fn shared_base64_retains_control_wire_bytes() {
         assert_eq!(craft_mime::base64::STANDARD.decode(&encoded).unwrap(), bytes[..len]);
     }
 }
+
+/// A key typed by script (`ui.key`, the framework's injected input) plays the MIDI Keyboard
+/// window's computer keys (#1209), as a host key does, so agents can play it too.
+#[test]
+fn a_scripted_key_plays_the_midi_keyboard_window() {
+    let (mut a, ctx) = (app(), egui::Context::default());
+    crate::framework::install_headless(&ctx);
+    a.midi_inputs = Some(soundcraft_playback::midi::MidiInputs::with_port_names(Vec::new(), Vec::new()));
+    a.ui.show_midi_keyboard = true;
+    a.advance_test_clock(Duration::ZERO);
+    warm(&mut a, &ctx);
+    let (req, reply) = ControlRequest::new("ui.key", json!({"key": "a"}));
+    assert!(handle(&mut a, &ctx, &req).is_none());
+    deliver_gestures(&mut a, &ctx);
+    assert_eq!(reply.try_recv().unwrap()["ok"], true);
+    let (count, last) = a.midi_inputs.as_ref().unwrap().feed().activity();
+    assert_eq!((count, last.map(|m| m.status & 0xF0)), (2, Some(0x80)), "A sent a note on, then its note off");
+}

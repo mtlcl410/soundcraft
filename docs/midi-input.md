@@ -70,6 +70,25 @@ Without a keyboard, **Window › MIDI Keyboard** plays the same way: click and h
 across the keys. It counts as a MIDI device called *MIDI Keyboard*, so a record pass takes what it
 plays even when no device is connected.
 
+The window also plays from the computer keyboard while its **Computer Keyboard** switch is on (it
+is on when the window opens; **Shift+K** opens and closes the window):
+
+- **A W S E D F T G Y H U J K** play one octave, from its C (A) to the next C (K): A is C, T is
+  F#/Gb. The letters are shown on the keys they play.
+- **Z** and **X** move that octave down and up, from C-2 to C8 (C3, middle C, when the window
+  first opens). **C** and **V** lower and raise the velocity, 1 to 127, in steps of 10. The window
+  shows the octave and velocity.
+- A note sounds while its key is held and ends when it comes up. Keys are read by their position,
+  so the layout is the same on any keyboard.
+- While the switch is on, these keys play instead of running their single-key shortcuts (T's Zoom
+  In, and the Commands Keyboard Focus keys among them, such as Z for Undo); keys with Cmd, Ctrl, Alt or Shift, and every other key (Space,
+  Return), still run theirs. Switch it off to give the letters back to the shortcuts.
+- Held notes end when the switch goes off, the window closes, a text field or dialog takes the
+  keyboard, or SoundCraft loses focus.
+- Outside a record pass a key also step-enters its note into the selected MIDI clip at the
+  insertion point, as a click does. Keys held together go in as a chord, and the insertion point
+  moves on when the last one comes up.
+
 ## 4. Record
 
 Record-enable one or more MIDI or instrument tracks and record as usual (**Record**, then
