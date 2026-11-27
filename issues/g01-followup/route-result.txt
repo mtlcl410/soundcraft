@@ -1,0 +1,8 @@
+busses at start []
+track.output Gtr 'Mian' -> {'output': {'Bus': 3}} ['Mian']
+undo -> {'undone': True} []
+track.output Gtr 'Mian' create_bus false -> {'output': {'Hardware': 'Mian'}} []
+track.input Verb 'Mic 1' -> {'input': {'Bus': 3}} ['Mic 1']
+track.input Gtr 'Inn 3' -> {'input': {'Bus': 4}} ['Mic 1', 'Inn 3']
+status ''
+WARN/ERROR ["2026-11-27T06:53:42.703Z WARN  [main] craft_update::updater: SoundCraft update check failed: GitHub's request limit was reached"]
