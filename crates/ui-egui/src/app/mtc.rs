@@ -550,6 +550,25 @@ mod tests {
     }
 
     #[test]
+    fn ui_set_changing_the_mtc_input_ends_the_chase_like_the_mtc_command() {
+        let mut app = app();
+        app.midi_inputs.as_mut().unwrap().set_port_names(vec!["Sender".into(), "Other".into()]);
+        let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
+        let src = feed.ports().assign("Sender");
+        send_cycle(&feed, src, 0);
+        send_cycle(&feed, src, 2);
+        app.service_mtc_chase();
+        app.handle_transport(0.0);
+        assert!(app.is_playing() && app.mtc_chasing);
+        app.run("ui.set", json!({"mtc_input_port":"Other"})).unwrap();
+        assert_eq!(app.ui.mtc_input_port.as_deref(), Some("Other"));
+        assert!(!app.mtc_chasing, "the chase of the old input is still active");
+        assert_eq!(app.mtc_status, "Waiting for timecode");
+        app.handle_transport(0.0);
+        assert!(!app.is_playing(), "playback chasing the old input did not stop");
+    }
+
+    #[test]
     fn mtc_chase_input_recovers_and_online_mode_refuses_recording() {
         let mut app = app();
         let feed = app.midi_inputs.as_ref().unwrap().feed().clone();

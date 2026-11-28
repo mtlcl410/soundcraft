@@ -914,6 +914,13 @@ pub fn run_ui_command(app: &mut SoundApp, id: &str, p: &Value) -> Option<Result<
                         if app.mtc_online && ns.gen_mtc {
                             return Some(Err("Take MTC chase offline before enabling the generator".into()));
                         }
+                        // A new MTC input goes through the same transition as setup.mtc: it
+                        // ends the chase of the old input and stops the playback it drove.
+                        if app.ui.mtc_input_port != ns.mtc_input_port
+                            && let Err(error) = app.mtc_command(&serde_json::json!({"input": ns.mtc_input_port}))
+                        {
+                            return Some(Err(error));
+                        }
                         let closed_preferences = app.ui.show_preferences && !ns.show_preferences;
                         crate::docking::cancel_replaced_state(app, &ns);
                         let source_changed = app.ui.clock_follow_input != ns.clock_follow_input;
