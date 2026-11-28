@@ -209,6 +209,9 @@ pub struct MidiFeed {
     pass_begin: AtomicI64,
     /// A pass was begun whose start command the audio thread has not read yet.
     begin_pending: AtomicBool,
+    /// A replaced engine abandoned a pending start ([`Self::forgive_passes`]). The next
+    /// producer access drops its tentative suffix, so only the producer moves the cursor.
+    discard_pending: AtomicBool,
     /// When each port last had an event dropped by the full queue, by the place of its bit in
     /// `lost`; `i64::MIN` before the first time. Kept apart from `lost_at`, which a later close
     /// of the port moves on.
@@ -259,6 +262,7 @@ impl Default for MidiFeed {
             pass_end: AtomicI64::new(i64::MAX),
             pass_begin: AtomicI64::new(i64::MIN),
             begin_pending: AtomicBool::new(false),
+            discard_pending: AtomicBool::new(false),
             overflow_at: (0..64).map(|_| AtomicI64::new(i64::MIN)).collect(),
             stop_at: AtomicI64::new(0),
             stop_pass: AtomicU64::new(0),
@@ -714,6 +718,7 @@ impl MidiFeed {
     /// Put a recorded entry in the queue to the UI thread. One that does not fit is counted, and
     /// the next that fits is preceded by a [`RecordedMidi::LOST`] for all ports.
     fn record_entry(&self, at: Samples, entry: u32) {
+        self.discard_abandoned_start();
         let pending = self.begin_pending();
         let (gap, losses) = if pending { (&self.pending_gap, &self.pending_lost) } else { (&self.record_gap, &self.recorded_lost) };
         if gap.load(Ordering::Relaxed) {
@@ -755,6 +760,7 @@ impl MidiFeed {
 
     /// Audio thread: the command that starts the pass was read.
     pub(crate) fn finish_pending_start(&self, accepted: bool) {
+        self.discard_abandoned_start();
         if !self.begin_pending.swap(false, Ordering::AcqRel) {
             return;
         }
@@ -768,6 +774,16 @@ impl MidiFeed {
             self.recorded_visible.store(self.recorded.write.load(Ordering::Relaxed), Ordering::Release);
         } else {
             // No consumer has seen the tentative suffix. Rewind only the producer cursor.
+            self.recorded.write.store(self.recorded_visible.load(Ordering::Relaxed), Ordering::Relaxed);
+        }
+    }
+
+    /// Audio thread: drop the tentative suffix of a start a replaced engine abandoned, with
+    /// its pending loss and gap, before this producer records anything else.
+    fn discard_abandoned_start(&self) {
+        if self.discard_pending.swap(false, Ordering::AcqRel) {
+            self.pending_lost.store(0, Ordering::Relaxed);
+            self.pending_gap.store(false, Ordering::Relaxed);
             self.recorded.write.store(self.recorded_visible.load(Ordering::Relaxed), Ordering::Relaxed);
         }
     }
@@ -843,8 +859,12 @@ impl MidiFeed {
     }
 
     /// The audio engine that owed the passes ended so far is gone (another one takes the feed):
-    /// nothing is owed any more.
+    /// nothing is owed any more. A start it never read is abandoned: its tentative events
+    /// stay out of the next take.
     pub fn forgive_passes(&self) {
+        if self.begin_pending.swap(false, Ordering::AcqRel) {
+            self.discard_pending.store(true, Ordering::Release);
+        }
         self.pass_end.store(i64::MAX, Ordering::Release);
         self.captures_done.fetch_max(self.passes.load(Ordering::Acquire), Ordering::AcqRel);
     }

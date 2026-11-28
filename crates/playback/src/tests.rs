@@ -2287,3 +2287,38 @@ fn a_stopped_locate_keeps_a_held_keyboard_note_sounding() {
     feed.receive(0, &[0x80, 60, 0]);
     assert!(!heard(&mut st, 60));
 }
+
+#[test]
+fn an_abandoned_start_on_a_replaced_engine_leaves_no_tentative_note_in_the_next_take() {
+    let (mut old, tx, feed, s, _) = keyboard_session();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    old.fill(&mut [0.; 128], 2);
+    // A pass begins, the old engine stages a note, then stops before it reads the start command.
+    feed.begin_pass();
+    feed.receive(0, &[0x90, 60, 100]);
+    old.fill(&mut [0.; 128], 2);
+    drop(old);
+    feed.forgive_passes();
+    assert!(!feed.begin_pending());
+    // A new engine takes the same feed, and the next accepted pass records only its own note.
+    let shared = Arc::new(Shared {
+        position: AtomicI64::new(0),
+        playing: AtomicBool::new(false),
+        speed: AtomicU32::new(1000),
+        meters: Mutex::new(MeterSnapshot::default()),
+    });
+    let (tx, rx) = channel();
+    let mut new = AudioState::new(rx, shared, Arc::new(s), 48_000.0, channel().0);
+    tx.send(Cmd::Midi(Arc::clone(&feed))).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    new.fill(&mut [0.; 128], 2);
+    let mut events = Vec::new();
+    feed.take_recorded(&mut events);
+    events.clear();
+    feed.begin_pass();
+    feed.receive(0, &[0x90, 67, 100]);
+    tx.send(Cmd::Recording(true, 0)).unwrap();
+    new.fill(&mut [0.; 128], 2);
+    feed.take_recorded(&mut events);
+    assert_eq!(events.iter().filter(|e| e.status & 0xf0 == 0x90).map(|e| e.data1).collect::<Vec<_>>(), [67], "{events:?}");
+}
