@@ -1,6 +1,6 @@
 # Where SoundCraft falls short of Pro Tools
 
-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-27 · **Change:** minor (G-02: MIDI input checked on macOS and Windows as well as Linux; the alpha gate's MIDI row passes, so G-02 is no longer an alpha blocker; previously minor: G-01: the Playback Engine shows the current device choice after a command changes it, and a buffer size the driver does not take is reported; previously trivial: G-04: Number of Loops accepts up to 1,000; crossfade remains open; previously minor: G-06: recording to disk is done (#84, long takes #888); streaming sources remain; previously minor: G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-28 · **Change:** minor (G-02: MIDI input checked on macOS and Windows as well as Linux; the alpha gate's MIDI row passes, so G-02 is no longer an alpha blocker; previously minor: G-01: the Playback Engine shows the current device choice after a command changes it, and a buffer size the driver does not take is reported; previously trivial: G-04: Number of Loops accepts up to 1,000; crossfade remains open; previously minor: G-06: recording to disk is done (#84, long takes #888); streaming sources remain; previously minor: G-02 shrunk: MIDI input devices work; G-03: strict external-WAV AAF import; previously minor: G-05: plugin editors on Linux/X11; previously trivial: G-09: the pt-BR catalog now covers helper-passed tooltips, the status bar, the remove-session prompt and engine error text; G-08: Frequency Shifter, 28 processors; G-04: volume automation read at every sample, #1354; G-01: `setup.playback_engine` applies the device buffer in the desktop app; G-04: Clip Looping crossfade and loop count) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 Every known shortfall, one entry each, ranked by how much it stops a Pro Tools user from doing
 real work in SoundCraft. This is the work list: pick from the top. Rows marked **alpha blocker**
@@ -89,9 +89,10 @@ When you close a gap, delete its entry (or shrink it) in the same PR, and bump t
   a hardware keyboard (Akai MPK mini 3) and recording with a virtual one. On macOS (Core Audio,
   an Arturia MiniLab mkII over USB) live play, recording with controllers and pitch bend, and
   playback of the take were checked, with no events dropped; a Kurzweil PC1X on 5-pin DIN
-  through a Roland UM-ONE reaches CoreMIDI too. On Windows (a TASCAM Model 12's MIDI OUT on
-  5-pin DIN into a Roland UM-ONE) live play, recording of notes, program change, CC1 and pitch
-  bend, and the MIDI input filter were checked.
+  through a Roland UM-ONE reaches CoreMIDI too. On Windows (WinMM; notes, a program change, CC1
+  and pitch bend sent over 5-pin DIN from a TASCAM Model 12's MIDI OUT into a Roland UM-ONE, the
+  track's input set to All) live play, recording and the MIDI input filter were checked, with no
+  events dropped.
 - **Missing:** MIDI output (external synths, MIDI tracks without an instrument), MIDI clock/MTC
   out, loop and merge recording (a MIDI take replaces what it covers; a loop pass piles every
   pass into one clip), audition from the MIDI editor (`midi_editor.rs:288`), MIDI
@@ -270,7 +271,7 @@ missing. Out of scope unless the owner decides otherwise.
 
 | Date | Change | Summary |
 |---|---|---|
-| 2026-11-27 | minor | G-02: MIDI input checked with hardware keyboards on macOS (Arturia MiniLab mkII; Kurzweil PC1X through a Roland UM-ONE) and Windows (TASCAM Model 12 through a Roland UM-ONE); the alpha gate's MIDI row passes, so G-02 is no longer marked an alpha blocker; output, clock and loop/merge recording remain; estimates unchanged |
+| 2026-11-28 | minor | G-02: MIDI input checked on macOS (Arturia MiniLab mkII; a Kurzweil PC1X through a Roland UM-ONE reaches CoreMIDI) and Windows (a TASCAM Model 12's MIDI OUT into a Roland UM-ONE); the alpha gate's MIDI row passes, so G-02 is no longer marked an alpha blocker; output, clock and loop/merge recording remain; estimates unchanged |
 | 2026-11-25 | minor | G-01: the Playback Engine shows the current device choice after a command changes it, and Apply keeps it; a buffer size the driver does not take is reported, with the driver's range (#1757); estimates unchanged |
 | 2026-11-23 | trivial | G-04: Clip Looping Number of Loops accepts up to 1,000; crossfade remains open; estimates unchanged |
 | 2026-11-14 | minor | G-03: strict external-WAV AAF import with bounded property caching; AAF/OMF export, OMF import and `.ptx` remain; estimates unchanged |

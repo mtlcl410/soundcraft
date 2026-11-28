@@ -1,6 +1,6 @@
 # Target-app parity: SoundCraft vs Avid Pro Tools
 
-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-27 · **Change:** minor (Stage: MIDI recording passes the alpha gate, two of six workflows fail; MIDI area: input devices work; scores unchanged; previously minor: Performance row: recording is to disk (#84, #888); scores unchanged; previously minor: strict external-WAV AAF import; previously trivial: Frequency Shifter: 28 built-in processors; G-09/localization: pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1 (bundle 26.4.1.179, macOS)
+> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-28 · **Change:** minor (Stage: MIDI recording passes the alpha gate, two of six workflows fail; MIDI area: input devices work; scores unchanged; previously minor: Performance row: recording is to disk (#84, #888); scores unchanged; previously minor: strict external-WAV AAF import; previously trivial: Frequency Shifter: 28 built-in processors; G-09/localization: pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1 (bundle 26.4.1.179, macOS)
 
 The authoritative assessment of how close SoundCraft is to Pro Tools. [`ROADMAP.md`](../ROADMAP.md)
 summarizes it, [`gaps.md`](gaps.md) itemizes every shortfall, and the per-dimension docs go deeper:
@@ -204,8 +204,8 @@ platform:
   streams.
 - Session interchange with Pro Tools or picture editors: **no**. Strict external-WAV AAF import works, but AAF export, OMF and `.ptx` do not.
 
-Editing, mixing with plugins, bouncing, saving and reopening, and MIDI recording from a keyboard
-(checked on Linux, macOS and Windows) pass (with known bugs).
+Editing, mixing with plugins, bouncing, saving and reopening, and MIDI recording from a
+controller (checked on Linux, macOS and Windows) pass (with known bugs).
 
 **Distance to alpha: ~5 points of readiness and ~110–180 agent-hours** (G-01, G-03, part of
 G-06, and the #153 entitlement). **Distance to beta: ~35 points and ~350–570 agent-hours**
@@ -245,7 +245,7 @@ serializes more, because it needs hands-on testing.
 
 | Date | Change | Summary |
 |---|---|---|
-| 2026-11-27 | minor | Stage: MIDI recording passes the alpha gate (checked on Linux, macOS and Windows), so two of six workflows fail; MIDI area row: input devices work, output and clock are missing; G-02 leaves the distance-to-alpha list; scores and hours unchanged |
+| 2026-11-28 | minor | Stage: MIDI recording passes the alpha gate (checked on Linux, macOS and Windows), so two of six workflows fail; MIDI area row: input devices work, output and clock are missing; G-02 leaves the distance-to-alpha list; scores and hours unchanged |
 | 2026-11-14 | minor | Strict external-WAV AAF import added to format, interchange and alpha-gate evidence; readiness estimates unchanged |
 | 2026-11-09 | trivial | Built-in plugin counts: 28 processors + 3 instruments with the Frequency Shifter. Percentages unchanged |
 | 2026-11-05 | trivial | Localization row: English plus a near-complete pt-BR catalog for fixed UI strings (PR #1346), not native-reviewed. Percentages and hours unchanged |

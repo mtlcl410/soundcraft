@@ -1,6 +1,6 @@
 # Hardware parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-27 · **Change:** minor (MIDI input devices checked with hardware keyboards on macOS and Windows; previously minor: the Playback Engine shows the current device choice after a command changes it; buffer sizes verified on Core Audio; one the driver does not take is reported; previously minor: record to disk: done, #84 and #888, previously trivial: bounces of a bus fed by an aux compensate its latency, #246; previously minor: MIDI input devices, live play-through with controllers, and MIDI recording) · **Target:** Avid Pro Tools Ultimate 2026.4.1
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-11-28 · **Change:** minor (MIDI input devices checked on macOS and Windows; previously minor: the Playback Engine shows the current device choice after a command changes it; buffer sizes verified on Core Audio; one the driver does not take is reported; previously minor: record to disk: done, #84 and #888, previously trivial: bounces of a bus fed by an aux compensate its latency, #246; previously minor: MIDI input devices, live play-through with controllers, and MIDI recording) · **Target:** Avid Pro Tools Ultimate 2026.4.1
 
 A DAW is judged by how it drives audio interfaces, MIDI gear, control surfaces and sync. This is
 SoundCraft's weakest dimension. Ours is measured from `crates/playback` (cpal) and the absence of
@@ -31,7 +31,7 @@ Legend: ✅ works · 🟡 partial · ❌ missing.
 
 | Feature | Pro Tools | SoundCraft (all platforms) |
 |---|---|---|
-| MIDI input devices (keyboards, pads) | ✅ | 🟡 Linux (ALSA sequencer), macOS (CoreMIDI) and Windows (WinMM) through `midir`: every input port is opened, hot-plugged devices are picked up, ports can be switched off in Setup › Playback Engine; each MIDI/instrument track chooses a device and channel at its input selector. Notes are recorded into MIDI clips with controllers, pitch bend and aftertouch. On Linux, live play was checked with a hardware keyboard (Akai MPK mini 3) and recording with a virtual one; on macOS with an Arturia MiniLab mkII (and a Kurzweil PC1X through a Roland UM-ONE) and on Windows with a TASCAM Model 12 through a Roland UM-ONE; there is none on FreeBSD or the web |
+| MIDI input devices (keyboards, pads) | ✅ | 🟡 Linux (ALSA sequencer), macOS (CoreMIDI) and Windows (WinMM) through `midir`: every input port is opened, hot-plugged devices are picked up, ports can be switched off in Setup › Playback Engine; each MIDI/instrument track chooses a device and channel at its input selector. Notes are recorded into MIDI clips with controllers, pitch bend and aftertouch. On Linux, live play was checked with a hardware keyboard (Akai MPK mini 3) and recording with a virtual one; on macOS live play, recording and playback with an Arturia MiniLab mkII (a Kurzweil PC1X through a Roland UM-ONE reaches CoreMIDI too); on Windows live play and recording through a Roland UM-ONE fed over 5-pin DIN from a TASCAM Model 12's MIDI OUT; there is none on FreeBSD or the web |
 | MIDI output to external gear | ✅ | ❌ |
 | MIDI Thru, input filter | ✅ | 🟡 record-enabled and input-monitored MIDI/instrument tracks play the keyboard through their instrument (notes, the sustain pedal, controllers, pitch bend, aftertouch and program changes); the input filter keeps the filtered kinds out of recordings. No thru to external gear |
 | MIDI Beat Clock out, MTC generate/chase | ✅ | ❌ |
@@ -72,7 +72,7 @@ Legend: ✅ works · 🟡 partial · ❌ missing.
 
 | Date | Change | Summary |
 |---|---|---|
-| 2026-11-27 | minor | MIDI input devices: live play and recording checked with hardware keyboards on macOS (Arturia MiniLab mkII; Kurzweil PC1X through a Roland UM-ONE) and Windows (TASCAM Model 12 through a Roland UM-ONE) |
+| 2026-11-28 | minor | MIDI input devices: live play and recording checked on macOS (Arturia MiniLab mkII; a Kurzweil PC1X through a Roland UM-ONE reaches CoreMIDI) and Windows (a TASCAM Model 12's MIDI OUT into a Roland UM-ONE) |
 | 2026-11-25 | minor | Choosing the playback and input device verified on macOS; the Playback Engine shows a choice made by command; buffer sizes 16–2048 verified on Core Audio; a size the driver does not take is reported with its range (#1757) |
 | 2026-11-18 | minor | MIDI input devices (`midir`): live play-through to record-enabled MIDI and instrument tracks (notes, pedal, controllers, pitch bend, aftertouch), MIDI recording into clips, per-track device and channel, device switches in Playback Engine; guide in `midi-input.md` |
 | 2026-10-30 | minor | Record to disk: takes are written to disk as they record (#84) and long takes continue in a new file (#888) |
