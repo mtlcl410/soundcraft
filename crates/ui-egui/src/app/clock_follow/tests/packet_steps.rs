@@ -244,7 +244,11 @@ fn first_usb_batches_mid_song_render_at_their_wire_time() {
                         let residual = error - wire;
                         late = late.max(residual);
                         early = early.min(*error);
-                        valid &= *error >= -48 && residual <= if k == first { 480 } else { 288 };
+                        // No attack precedes the packet that delivers its pulse. The first batch
+                        // pulse is the exception: the previous, individually timed pulse already
+                        // admits it through the ordinary one-pulse horizon.
+                        let admitted_before_batch = k * 12 == start;
+                        valid &= *error >= -48 && residual <= if k == first { 480 } else { 288 } && (admitted_before_batch || residual >= -48);
                         if verbose {
                             eprintln!("ONSET_NOTE {label} eighth={k} wire_samples={wire} measured_samples={error} residual_samples={residual}");
                         }
