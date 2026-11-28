@@ -56,8 +56,8 @@ fn onsets(pcm: &[f32]) -> Vec<usize> {
     starts
 }
 
-/// Signed error (samples) of each eighth heard after the nudge starts.
-fn nudge_errors(case: Case) -> Vec<(usize, i64)> {
+/// Signed error (samples) of each eighth from shortly before the nudge; None if it never sounded.
+fn nudge_errors(case: Case) -> Vec<(usize, Option<i64>)> {
     let (ideal, arrivals) = wire(case);
     let sample = |us: f64| (us * RATE as f64 / 1e6).round() as i64;
     let inputs = MidiInputs::with_port_names(vec![], vec!["wire".into()]);
@@ -78,6 +78,8 @@ fn nudge_errors(case: Case) -> Vec<(usize, i64)> {
     let first_callback = sample(ideal[CUT - 48]);
     let mut callback = 0;
     let mut pulse = 0;
+    // Session sample (and heard time) of pcm[0]: the first captured callback's position.
+    let mut origin = None;
     while callback + lead < sample(ideal[PULSES - 1]) {
         while pulse < PULSES && arrivals[pulse] <= micros(callback) {
             feed.set_clock(arrivals[pulse]);
@@ -101,17 +103,19 @@ fn nudge_errors(case: Case) -> Vec<(usize, i64)> {
                 mix.render_with_clock_limit(&song, at, n, &mut audio, limit);
             }
             if callback >= first_callback {
+                origin.get_or_insert(at);
                 pcm.extend_from_slice(&audio[0][..n]);
             }
         }
         callback += case.buffer as i64;
     }
-    // pcm[0] is session sample (and heard time) first_callback + lead.
-    let heard: Vec<i64> = onsets(&pcm).into_iter().map(|i| first_callback + lead + i as i64).collect();
+    let origin = origin.expect("the capture window was rendered");
+    let heard: Vec<i64> = onsets(&pcm).into_iter().map(|i| origin + i as i64).collect();
+    // The last eighth is left out: its tail may run past the end of the capture.
     ((CUT - 36) / 12..PULSES / 12 - 1)
-        .filter_map(|note| {
+        .map(|note| {
             let target = sample(ideal[note * 12]);
-            heard.iter().map(|&h| h - target).filter(|e| e.abs() < 2_400).min_by_key(|e| e.abs()).map(|e| (note * 12, e))
+            (note * 12, heard.iter().map(|&h| h - target).filter(|e| e.abs() < 2_400).min_by_key(|e| e.abs()))
         })
         .collect()
 }
@@ -123,12 +127,14 @@ fn small_sustained_nudges_keep_eighths_on_the_beat_behind_device_lead() {
         for jitter_us in [0, 500] {
             let case = Case { pct, jitter_us, buffer: 256, lead_ms: 7 };
             let errors = nudge_errors(case);
+            let missing: Vec<_> = errors.iter().filter(|(_, e)| e.is_none()).map(|(p, _)| *p).collect();
+            assert!(missing.is_empty(), "{case:?}: no attack for the eighths at pulses {missing:?}");
+            let errors: Vec<(usize, i64)> = errors.into_iter().filter_map(|(p, e)| e.map(|e| (p, e))).collect();
             // Eighths before the nudge give the rig's fixed onset offset.
             let before: Vec<_> = errors.iter().filter(|(p, _)| *p <= CUT).map(|(_, e)| *e).collect();
             assert!(before.len() >= 3, "{case:?}: no reference eighths");
             let baseline = before.iter().sum::<i64>() / before.len() as i64;
             let after: Vec<_> = errors.iter().filter(|(p, _)| *p > CUT).map(|(p, e)| (*p - CUT, *e - baseline)).collect();
-            assert!(after.len() >= (PULSES - CUT) / 12 - 3, "{case:?}: {} eighths heard", after.len());
             // The first eighth after each change (the nudge and its release) is held at the
             // wire, as a slowdown may follow. It may be late but never early.
             let first_after_change = |p: usize| p == 12 || p == NUDGE + 12;
