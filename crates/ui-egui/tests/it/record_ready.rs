@@ -83,7 +83,7 @@ fn space_starts_the_pass_and_record_again_or_stop_disarms_without_recording() {
         assert!(state(&mut h).0);
         click(&mut h, leave);
         assert_eq!(state(&mut h), (false, false, false), "{leave} leaves Record Ready");
-        assert!(!h.state().ui.status.contains("Record Ready"), "{leave}: {}", h.state().ui.status);
+        assert!(h.state().ui.status.starts_with("Record Ready off: "), "{leave} says why: {}", h.state().ui.status);
     }
     assert_eq!(h.state().engine.session().tracks[0].clips().len(), clips, "nothing recorded");
     assert_eq!(h.state().engine.undo_label().map(str::to_owned), undo, "no undo step");

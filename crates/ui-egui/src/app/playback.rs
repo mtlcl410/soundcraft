@@ -32,6 +32,7 @@ impl SoundApp {
         if self.engine.transport.playing { self.engine.transport.position } else { self.engine.session().edit.selection.start }
     }
 
+    #[track_caller]
     fn start_play(&mut self, from: Samples, end: Option<Samples>, looped: Option<Range>) {
         // Record Ready holds only while stopped: any start ends it (a record pass has left it already).
         self.leave_record_ready();
@@ -54,9 +55,10 @@ impl SoundApp {
         self.edit_layout.last_follow_to = None;
     }
 
+    #[track_caller]
     pub(crate) fn stop_play(&mut self) {
         // Stop in Record Ready disarms it, recording nothing.
-        self.leave_record_ready();
+        self.disarm_record_ready("Record Ready off: Stop was pressed.");
         if let Some(p) = &self.player {
             // Half-speed is a separate command. Stop must not leave that rate for the next Play.
             p.set_speed(1.0);
@@ -112,14 +114,30 @@ impl SoundApp {
             return;
         }
         self.engine.transport.record_ready = true;
+        log::info!("Record Ready on");
         self.ui.status = crate::localization::text(RECORD_READY).into();
     }
 
     /// Leave Record Ready without recording: nothing is recorded and no undo step is made. Its
-    /// status line message goes with it; a later message stays.
+    /// status line message goes with it; a later message stays. The log names the caller, so an
+    /// unexpected end can be traced.
+    #[track_caller]
     pub(crate) fn leave_record_ready(&mut self) {
-        if std::mem::take(&mut self.engine.transport.record_ready) && self.ui.status == crate::localization::text(RECORD_READY) {
+        if !std::mem::take(&mut self.engine.transport.record_ready) {
+            return;
+        }
+        log::info!("Record Ready off ({})", std::panic::Location::caller());
+        if self.ui.status == crate::localization::text(RECORD_READY) {
             self.ui.status.clear();
+        }
+    }
+
+    /// Record again or Stop in Record Ready: leave it and say so (`why` is the status line).
+    #[track_caller]
+    fn disarm_record_ready(&mut self, why: &'static str) {
+        if self.record_ready() {
+            self.leave_record_ready();
+            self.ui.status = crate::localization::text(why).into();
         }
     }
 
@@ -151,6 +169,7 @@ impl SoundApp {
     /// the pass can start; when it cannot, the transport stays stopped and the status line says
     /// why. From stop the pass starts at `from` when given (`transport.play {from}`, no punch or
     /// pre-roll), otherwise at the selection (punch, pre-roll, Loop Record).
+    #[track_caller]
     pub(crate) fn start_recording(&mut self, from: Option<Samples>) {
         self.leave_record_ready();
         if !self.record_enabled_or_hint() {
@@ -473,7 +492,7 @@ impl SoundApp {
         } else if !button || self.is_playing() {
             self.start_recording(None);
         } else if self.record_ready() {
-            self.leave_record_ready();
+            self.disarm_record_ready("Record Ready off: Record was pressed again.");
         } else {
             self.enter_record_ready();
         }
@@ -761,6 +780,46 @@ mod tests {
                     assert!(app.record_ready(), "{case}");
                 }
             }
+        }
+    }
+
+    /// Windows hands-on: Record Ready once ended 18 s after a Reconnect with nothing on the status
+    /// line. Reopening the devices (Reconnect, a device change) and idle frames with a real player
+    /// keep it; it ends only through a gesture or a lost device, and says so.
+    #[test]
+    fn record_ready_survives_a_reconnect_a_device_change_and_idle_frames() {
+        let engine = soundcraft_engine::Engine::default();
+        let player = soundcraft_playback::Player::new(engine.session_arc());
+        let mut app = SoundApp::new(engine, Some(player), crate::Services::default());
+        app.run("track.new", json!({"name": "Vox", "format": "mono"})).unwrap();
+        app.run("mix.record_arm", json!({"value": true})).unwrap();
+        app.run("transport.record_ready", json!({})).unwrap();
+        app.handle_transport(1.0 / 60.0);
+        let ready = app.ui.status.clone();
+        assert!(app.record_ready(), "{ready}");
+        app.reconnect_audio();
+        let _ = app.apply_audio_config(app.ui.audio.clone());
+        for _ in 0..120 {
+            app.watch_output();
+            app.watch_input();
+            app.handle_transport(1.0 / 60.0);
+        }
+        assert!(app.record_ready() && !app.is_playing() && !app.engine.transport.recording);
+        assert_eq!(app.ui.status, ready, "the Record Ready message stays");
+    }
+
+    /// Record again and Stop end Record Ready with a message, never an empty status line.
+    #[test]
+    fn leaving_record_ready_by_a_gesture_says_so() {
+        for (cmd, says) in [("transport.record_ready", "Record was pressed again"), ("transport.stop", "Stop was pressed")] {
+            let mut app = armed("audio");
+            app.run("transport.record_ready", json!({})).unwrap();
+            app.handle_transport(1.0 / 60.0);
+            assert!(app.record_ready());
+            app.run(cmd, json!({})).unwrap();
+            app.handle_transport(1.0 / 60.0);
+            assert!(!app.record_ready());
+            assert!(app.ui.status.starts_with("Record Ready off: ") && app.ui.status.contains(says), "{cmd}: {:?}", app.ui.status);
         }
     }
 }

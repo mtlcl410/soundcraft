@@ -309,6 +309,9 @@ impl Engine {
     /// input" existed is upgraded ([`no_input::upgrade_legacy_inputs`]).
     pub fn replace_session(&mut self, mut s: Session) {
         no_input::upgrade_legacy_inputs(&mut s);
+        if self.transport.record_ready {
+            log::info!("Record Ready off (the session was replaced)");
+        }
         self.transport = TransportStatus { position: s.edit.selection.start.max(0), ..TransportStatus::default() };
         self.transport_requests.clear();
         self.transport_requests.push(TransportRequest::ResetSession);

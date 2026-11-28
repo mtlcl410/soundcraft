@@ -1320,6 +1320,8 @@ fn menu_translate(source: &str) -> Option<&'static str> {
         }
         "Recording stopped: {cause} The take is kept up to there. {then}" => "Gravação interrompida: {cause} A gravação foi mantida até aqui. {then}",
         "Recording stopped: {what} The take is kept up to there. {then}" => "Gravação interrompida: {what} A gravação foi mantida até aqui. {then}",
+        "Record Ready off: Record was pressed again." => "Pronto para gravar desligado: Gravar foi pressionado de novo.",
+        "Record Ready off: Stop was pressed." => "Pronto para gravar desligado: Parar foi pressionado.",
         "Record Ready cancelled: {cause} {then}" => "Pronto para gravar cancelado: {cause} {then}",
         "Record Ready cancelled: {what} {then}" => "Pronto para gravar cancelado: {what} {then}",
         "Remove configuration" => "Remover configuração",
