@@ -155,7 +155,13 @@ const NO_HORIZON: i64 = i64::MAX >> 1;
 
 /// Pack a render pulse (`i64::MAX` for none) and the coalesced flag into one word.
 const fn pack_horizon(pulse: i64, coalesced: bool) -> i64 {
-    let pulse = if pulse == i64::MAX { NO_HORIZON } else if pulse >= NO_HORIZON { NO_HORIZON - 1 } else { pulse };
+    let pulse = if pulse == i64::MAX {
+        NO_HORIZON
+    } else if pulse >= NO_HORIZON {
+        NO_HORIZON - 1
+    } else {
+        pulse
+    };
     pulse.wrapping_shl(1) | coalesced as i64
 }
 
