@@ -361,13 +361,16 @@ fn a_single_client_port_is_shared_and_send_errors_trigger_reconnect() {
     assert_eq!(trouble.lock().unwrap().as_deref(), Some("DIN: device disappeared"));
     assert!(!stats.connected().contains("DIN"));
     let mut bytes = Vec::new();
+    // One deadline per expected message: a stream of other packets cannot extend the wait.
+    let deadline = Instant::now() + Duration::from_secs(4);
     while !bytes.contains(&vec![CLOCK]) {
-        bytes.push(got.recv_timeout(Duration::from_secs(4)).unwrap());
+        bytes.push(got.recv_timeout(deadline.saturating_duration_since(Instant::now())).unwrap());
     }
     assert!(stats.connected().contains("DIN"));
     tx.send(Update::Encoder(Some(("DIN".into(), 0)), true, Box::new(Quarter))).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(4);
     while !bytes.contains(&vec![0xf1, 0]) {
-        bytes.push(got.recv_timeout(Duration::from_secs(4)).unwrap());
+        bytes.push(got.recv_timeout(deadline.saturating_duration_since(Instant::now())).unwrap());
     }
     assert!(bytes.contains(&vec![START]) && bytes.contains(&vec![CLOCK]));
     assert_eq!(attempts.load(Relaxed), 2, "one failed connection and one shared replacement");
@@ -1127,7 +1130,8 @@ fn a_failed_stop_on_route_removal_reports_and_reconnects() {
     assert_eq!(wire.recv_timeout(Duration::from_secs(1)).unwrap().1, [START]);
     tx.send(Update::Encoder(Some(("DIN".into(), 0)), true, Box::new(Messages(vec![])))).unwrap();
     tx.send(Update::Beats(vec![], true)).unwrap();
-    while wire.recv_timeout(Duration::from_secs(1)).unwrap().1 != [STOP] {}
+    let deadline = Instant::now() + Duration::from_secs(1);
+    while wire.recv_timeout(deadline.saturating_duration_since(Instant::now())).unwrap().1 != [STOP] {}
     let until = Instant::now() + Duration::from_millis(200);
     while trouble.lock().unwrap().is_none() && Instant::now() < until {
         std::thread::yield_now();
