@@ -39,7 +39,11 @@ impl SoundApp {
         // From here on what is played belongs to the pass (punching in while playing: also what
         // the audio engine takes in before it hears of the pass).
         if let Some(m) = &self.midi_inputs {
-            m.feed().begin_pass();
+            // Wait for Note: the pass begins with the event that started it.
+            match self.note_start {
+                Some(at) => m.feed().begin_pass_at(at),
+                None => m.feed().begin_pass(),
+            }
         }
     }
 

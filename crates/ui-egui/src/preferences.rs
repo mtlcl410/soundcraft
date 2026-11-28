@@ -170,10 +170,12 @@ struct PreferencesDraft {
     reduce_visual_effects: ReduceVisualEffects,
     undo_levels: usize,
     sends_default: SendsDefault,
+    f11_wait_for_note: bool,
     theme_edited: bool,
     reduce_visual_effects_edited: bool,
     undo_levels_edited: bool,
     sends_default_edited: bool,
+    f11_wait_for_note_edited: bool,
 }
 
 impl PreferencesDraft {
@@ -184,10 +186,12 @@ impl PreferencesDraft {
             reduce_visual_effects: app.ui.reduce_visual_effects,
             undo_levels: app.ui.undo_levels,
             sends_default: app.ui.sends_default,
+            f11_wait_for_note: app.ui.f11_wait_for_note,
             theme_edited: false,
             reduce_visual_effects_edited: false,
             undo_levels_edited: false,
             sends_default_edited: false,
+            f11_wait_for_note_edited: false,
         }
     }
 
@@ -205,6 +209,9 @@ impl PreferencesDraft {
         if !self.sends_default_edited {
             self.sends_default = app.ui.sends_default;
         }
+        if !self.f11_wait_for_note_edited {
+            self.f11_wait_for_note = app.ui.f11_wait_for_note;
+        }
     }
 
     /// Remembers which values the user changed during the current UI frame.
@@ -213,6 +220,7 @@ impl PreferencesDraft {
         self.reduce_visual_effects_edited |= self.reduce_visual_effects != before.reduce_visual_effects;
         self.undo_levels_edited |= self.undo_levels != before.undo_levels;
         self.sends_default_edited |= self.sends_default != before.sends_default;
+        self.f11_wait_for_note_edited |= self.f11_wait_for_note != before.f11_wait_for_note;
     }
 }
 
@@ -246,6 +254,7 @@ enum Control {
     ReduceVisualEffects,
     UndoLevels,
     SendsDefault,
+    F11WaitForNote,
 }
 
 impl Control {
@@ -262,6 +271,7 @@ impl Control {
             Self::ReduceVisualEffects => "Reduce Visual Effects",
             Self::UndoLevels => "Levels of Undo",
             Self::SendsDefault => "Sends Default to",
+            Self::F11WaitForNote => "Use F11 for Wait for Note",
         }
     }
 
@@ -677,7 +687,7 @@ const MIDI: &[Section] = &[
             Control::Check("Remove Range Selection after Opening a MIDI or Score Editor"),
             Control::Check("Use MIDI to Tap Tempo"),
             Control::Check("Display Events as Modified by Real-Time Properties"),
-            Control::Check("Use F11 for Wait for Note"),
+            Control::F11WaitForNote,
             Control::Check("Automatically Create Click Track in New Sessions"),
             Control::Check("MIDI Input Monitoring Follows Selected Track"),
             Control::Value("Pencil Resolution for Controller Data", "30 ms"),
@@ -877,6 +887,7 @@ pub fn show(app: &mut SoundApp, ctx: &egui::Context) {
             let _ = app.run("ui.reduce_visual_effects", json!({"mode": draft.reduce_visual_effects.id()}));
             let _ = app.run("ui.undo_levels", json!({"levels": draft.undo_levels}));
             let _ = app.run("ui.sends_default", json!({"level": draft.sends_default.id()}));
+            let _ = app.run("ui.f11_wait_for_note", json!({"value": draft.f11_wait_for_note}));
             open = false;
             app.preferences.discard_draft();
         }
@@ -1034,6 +1045,15 @@ fn control_ui(ui: &mut egui::Ui, page: PreferencesPage, section: &str, index: us
                     }
                 },
             );
+        }
+        Control::F11WaitForNote => {
+            // macOS gives F11 to Show Desktop unless the user frees it (p. 813).
+            let hint = if cfg!(target_os = "macos") {
+                "F11 turns Wait for Note on and off. On a Mac, F11 is the system's Show Desktop key first: free it in System Settings › Keyboard › Keyboard Shortcuts."
+            } else {
+                "F11 turns Wait for Note on and off."
+            };
+            ui.checkbox(&mut draft.f11_wait_for_note, label("Use F11 for Wait for Note")).on_hover_text(crate::localization::text(hint));
         }
         Control::Check(text) => {
             let mut value = false;

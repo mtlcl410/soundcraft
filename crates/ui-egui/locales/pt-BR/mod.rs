@@ -1987,6 +1987,26 @@ fn menu_translate(source: &str) -> Option<&'static str> {
         "UI Theme" => "Tema da interface",
         "Use Absolute Pan Linking" => "Usar vinculação de pan absoluta",
         "Use F11 for Wait for Note" => "Usar F11 para Aguardar nota",
+        "Wait for Note" => "Aguardar nota",
+        "Wait for Note: recording starts with the first MIDI event you play. Stop or Record again cancels." => {
+            "Aguardar nota: a gravação começa com o primeiro evento MIDI que você tocar. Parar ou Gravar de novo cancela."
+        }
+        "Record Ready: Wait for Note waits only for MIDI, and no MIDI or instrument track is record-enabled. Press Play or Space to record." => {
+            "Pronto para gravar: Aguardar nota só espera por MIDI, e nenhuma faixa MIDI ou de instrumento está habilitada para gravação. Pressione Reproduzir ou Espaço para gravar."
+        }
+        "Wait for Note cancelled: no connected MIDI input device is one that a record-enabled track listens to (Setup > Playback Engine lists them)." => {
+            "Aguardar nota cancelado: nenhum dispositivo de entrada MIDI conectado é escutado por uma faixa habilitada para gravação (Configuração > Mecanismo de reprodução os lista)."
+        }
+        "Cannot wait for a note: no connected MIDI input device is one that a record-enabled track listens to (Setup > Playback Engine lists them)." => {
+            "Não é possível aguardar uma nota: nenhum dispositivo de entrada MIDI conectado é escutado por uma faixa habilitada para gravação (Configuração > Mecanismo de reprodução os lista)."
+        }
+        "Wait for Note: Record from stop waits, and the first MIDI event you play starts the pass at the start point" => {
+            "Aguardar nota: Gravar com o transporte parado espera, e o primeiro evento MIDI que você tocar inicia a passagem no ponto inicial"
+        }
+        "F11 turns Wait for Note on and off. On a Mac, F11 is the system's Show Desktop key first: free it in System Settings › Keyboard › Keyboard Shortcuts." => {
+            "F11 liga e desliga Aguardar nota. No Mac, F11 é antes a tecla Mostrar Mesa do sistema: libere-a em Ajustes do Sistema › Teclado › Atalhos de Teclado."
+        }
+        "F11 turns Wait for Note on and off." => "F11 liga e desliga Aguardar nota.",
         "Use MIDI to Tap Tempo" => "Usar MIDI para marcar o andamento",
         "User Media and Settings Location" => "Local da mídia e das configurações do usuário",
         "Use Separate Play and Stop Keys" => "Usar teclas separadas de reproduzir e parar",

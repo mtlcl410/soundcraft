@@ -26,7 +26,9 @@ pub(super) fn transport_window(app: &mut SoundApp, ctx: &egui::Context) {
                 ] {
                     let record = cmd == "transport.record_ready";
                     let lit = record && crate::toolbar::record_lit(app, ui.ctx());
-                    let resp = crate::widgets::icon_button(ui, vec2(34.0, 26.0), icon, (cmd == "transport.play" && app.is_playing()) || lit, cmd);
+                    // Waiting for a note, Play flashes with Record (p. 828 step 8).
+                    let play = cmd == "transport.play" && (app.is_playing() || crate::toolbar::note_wait_lit(app, ui.ctx()) == Some(true));
+                    let resp = crate::widgets::icon_button(ui, vec2(34.0, 26.0), icon, play || lit, cmd);
                     if record {
                         // Its state for assistive technology holds while the button flashes.
                         let on = app.engine.transport.recording || app.record_ready();
@@ -76,7 +78,18 @@ pub(super) fn transport_window(app: &mut SoundApp, ctx: &egui::Context) {
                     let e = &app.engine.session().edit;
                     (e.click, e.countoff, e.midi_merge, e.loop_record, e.pre_post_roll)
                 };
+                // Wait for Note: lit while on, flashing while the transport waits for a MIDI event.
+                let wait_for_note = app.wait_for_note();
+                let wait_lit = crate::toolbar::note_wait_lit(app, ui.ctx()).unwrap_or(wait_for_note);
                 ui.horizontal(|ui| {
+                    let resp = ui.selectable_label(wait_lit, crate::localization::text("Wait for Note"));
+                    // Its state for assistive technology holds while it flashes.
+                    resp.widget_info(|| {
+                        egui::WidgetInfo::selected(egui::Role::Button, true, wait_for_note, crate::localization::text("Wait for Note"))
+                    });
+                    if resp.on_hover_text(crate::toolbar::wait_for_note_tip()).clicked() {
+                        let _ = app.run("options.wait_for_note", json!({}));
+                    }
                     for (label, on, cmd) in [
                         ("Click", click, "options.click"),
                         ("Count Off", countoff, "options.countoff"),

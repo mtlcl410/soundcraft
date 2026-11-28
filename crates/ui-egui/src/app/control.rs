@@ -136,6 +136,8 @@ impl SoundApp {
             "playing": self.is_playing(),
             "recording": self.engine.transport.recording,
             "record_ready": self.record_ready(),
+            "wait_for_note": self.wait_for_note(),
+            "waiting_for_note": self.waiting_for_note(),
             // The Record buttons: lit while recording, flashing in Record Ready.
             "record_button": if self.engine.transport.recording { "lit" } else if self.record_ready() { "flashing" } else { "off" },
             "position": self.position(),

@@ -15,6 +15,7 @@ mod input;
 mod midi;
 mod playback;
 mod plugins;
+mod wait_note;
 
 #[cfg(test)]
 pub(crate) use playback::automation_step_due;
@@ -118,6 +119,8 @@ impl SoundApp {
             sim: None,
             record_hint: None,
             record_ready_lost: None,
+            note_wait: false,
+            note_start: None,
             quit_requested: false,
             arrange_request: false,
             touched: std::collections::HashSet::new(),
@@ -229,6 +232,7 @@ impl SoundApp {
         self.write_automation();
         self.autosave();
         self.service_midi(self.uptime);
+        self.service_wait_for_note(ctx);
         if self.recorder.is_none() && !self.recorder_failed && audio::wants_audio_input(self.engine.session()) {
             self.ensure_input();
         }

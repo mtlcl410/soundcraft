@@ -83,6 +83,7 @@ pub const UI_COMMANDS: &[(&str, &str, &str, Option<&str>)] = &[
     ("ui.reduce_visual_effects", "Reduce Visual Effects", "", None),
     ("ui.undo_levels", "Levels of Undo", "", None),
     ("ui.sends_default", "Sends Default to", "", None),
+    ("ui.f11_wait_for_note", "Use F11 for Wait for Note", "", None),
 ];
 
 /// Extra catalog mappings handled by the UI layer.
@@ -863,6 +864,15 @@ pub fn run_ui_command(app: &mut SoundApp, id: &str, p: &Value) -> Option<Result<
             };
             app.ui.sends_default = level;
             json!({"level": level.id()})
+        }
+        "ui.f11_wait_for_note" => {
+            // No `value` reads the setting back.
+            match p.get("value") {
+                None => {}
+                Some(Value::Bool(on)) => app.ui.f11_wait_for_note = *on,
+                Some(other) => return Some(Err(format!("value must be true or false, not {other}"))),
+            }
+            json!({"value": app.ui.f11_wait_for_note})
         }
         "ui.set" => match serde_json::to_value(&app.ui) {
             Ok(mut cur) => {

@@ -73,6 +73,28 @@ transport (Record Ready: the button flashes and nothing moves), then **Play** or
 pass; Record again or Stop disarms. F12 or Cmd+Space (Ctrl+Space on Windows and Linux) record at
 once. No audio input is needed for a pass that records MIDI only.
 
+**Wait for Note** (the first button of the Transport window's MIDI controls, View › Transport ›
+MIDI Controls, and the note key beside Count Off in the toolbar) makes the pass wait for you:
+with it on, Record (or F12, Cmd+Space / Ctrl+Space) arms the transport and Record, Play and Wait
+for Note flash; the first MIDI event you play starts the pass, and that event is recorded at
+the start point (the insertion point, or the start of the punch or loop range). Don't press
+Play: Play still starts the pass at once.
+
+- What starts it: a note, a controller, pitch bend, aftertouch or a program change from a
+  device and channel that a record-enabled MIDI or instrument track listens to, of a kind the
+  MIDI Input Filter records. A key release (left over from before Record) does not start it.
+- The pre-roll is not played: the pass starts with the note. A loop pass waits for its first
+  round only.
+- It cannot be on with Count Off: switching one on switches the other off.
+- Stop or Record again cancels the wait; nothing is recorded.
+- With only audio tracks record-enabled there is nothing to wait for: Record arms as usual and
+  the status line says so. With no connected device that a record-enabled track listens to,
+  Record says so instead of waiting, and a wait whose device is unplugged is cancelled with a
+  message.
+- With **Setup › Preferences › MIDI › Use F11 for Wait for Note** on, F11 switches it (on a
+  Mac, free F11 from Show Desktop in System Settings first). Scripts use
+  `options.wait_for_note`; `transport.status` reports `waiting_for_note`.
+
 When the pass stops, each track that was record-enabled and active when it started gets a MIDI
 clip with what its input received: notes with their velocities, controllers, pitch bend, aftertouch and
 program changes. What a pass records is settled when it starts: a track put in record while it

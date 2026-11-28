@@ -118,6 +118,10 @@ pub(crate) struct AudioState {
     /// running: should the pass also end in this callback, its last read of the queue still
     /// counts from when it began.
     midi_started: bool,
+    /// Wait for Note: the events that arrived since the one that starts the pass, while the
+    /// transport is stopped ([`midi::MidiFeed::waited_event`]). The pass is not running yet; the
+    /// command that starts it ([`Cmd::PlayFromEvent`]) writes them into the take.
+    midi_held: Vec<(i64, LiveMidi)>,
     /// Called between taking the MIDI in and reading the commands, for tests of what arrives
     /// right there.
     #[cfg(test)]
@@ -187,6 +191,7 @@ impl AudioState {
             midi_ended: None,
             midi_stopped: None,
             midi_started: false,
+            midi_held: Vec::with_capacity(MIDI_EVENTS),
             #[cfg(test)]
             before_commands: None,
             #[cfg(test)]
@@ -204,6 +209,7 @@ impl AudioState {
                 Cmd::Midi(f) => {
                     self.mix.midi_ports = Some(Arc::clone(f.ports()));
                     self.midi = Some(f);
+                    self.midi_held.clear();
                     // Another feed: releases of what is held now would never come.
                     self.midi_pending.clear();
                     self.midi_lost = u64::MAX;
@@ -258,7 +264,25 @@ impl AudioState {
                     }
                 }
                 Cmd::OldSessions(tx) => self.old_sessions = Some(tx),
+                Cmd::PlayFromEvent { from, end, looped, at } => {
+                    let looped = looped.filter(|r| super::loops(*r));
+                    // The playhead is where it would be had it started with the event, inside
+                    // what is to be played.
+                    let room = looped.map(|l| l.end).or(end).map_or(i64::MAX, |e| e.saturating_sub(from).saturating_sub(1).max(0));
+                    let since = self.midi.as_ref().map_or(0, |f| self.frames_since(f.clock(), at)).min(room);
+                    self.pos = from.saturating_add(since);
+                    self.end = end;
+                    self.looped = looped;
+                    self.midi_wraps = 0;
+                    self.midi_stopped = None;
+                    self.playing = true;
+                    self.pending_len = 0;
+                    self.read = 0.0;
+                    self.mix.reset();
+                    self.write_held(from, at);
+                }
                 Cmd::Play { from, end, looped } => {
+                    self.midi_held.clear();
                     self.pos = from;
                     self.end = end;
                     self.looped = looped.filter(|r| super::loops(*r));
@@ -270,6 +294,7 @@ impl AudioState {
                     self.mix.reset();
                 }
                 Cmd::Stop => {
+                    self.midi_held.clear();
                     self.midi_stopped = (self.playing && self.recording).then(|| self.midi.as_ref().map_or(i64::MAX, |f| f.clock()));
                     self.playing = false;
                     self.end = None;
@@ -277,6 +302,7 @@ impl AudioState {
                     self.mix.reset();
                 }
                 Cmd::Locate(at) => {
+                    self.midi_held.clear();
                     self.midi_stopped = None;
                     self.pos = at;
                     self.pending_len = 0;
@@ -292,6 +318,27 @@ impl AudioState {
         }
         self.send_garbage();
         self.shared.playing.store(self.playing, Ordering::Relaxed);
+    }
+
+    /// Session frames (at normal speed) from `since` to `now`, both on the feed's clock.
+    fn frames_since(&self, now: i64, since: i64) -> i64 {
+        (now.saturating_sub(since).max(0) as f64 * self.session.sample_rate.as_f64() / 1e6) as i64
+    }
+
+    /// Wait for Note: write the events held since the one that arrived at `at` into the take, at
+    /// their places from `from` on (never past the playhead), and let the rest go.
+    fn write_held(&mut self, from: Samples, at: i64) {
+        let held = std::mem::take(&mut self.midi_held);
+        if let Some(feed) = &self.midi
+            && self.recording
+        {
+            for (stamp, e) in held.iter().filter(|(stamp, _)| *stamp >= at && *stamp <= feed.record_until()) {
+                let place = from.saturating_add(self.frames_since(*stamp, at)).min(self.pos.saturating_sub(1).max(from));
+                feed.record(place, e);
+            }
+        }
+        self.midi_held = held;
+        self.midi_held.clear();
     }
 
     fn send_garbage(&mut self) {
@@ -477,6 +524,13 @@ impl AudioState {
             }
             // Asked for every event: a pass may begin while the queue is being read.
             take.event(stamp, take_age, &e);
+            // Wait for Note: from the event that starts the pass on, kept for the command that
+            // starts it. Once the UI has begun the pass, the time it begun it from counts (the
+            // UI may stop waiting before this thread reads the command).
+            let waited = feed.waited_event().or_else(|| feed.begin_pending().then(|| feed.record_from()));
+            if !pass.playing && !pass.running && waited.is_some_and(|w| stamp >= w) && self.midi_held.len() < self.midi_held.capacity() {
+                self.midi_held.push((stamp, e));
+            }
             // From before its port's loss: its release may be among what was lost.
             if input_lost & midi_port_bit(e.port) != 0 && stamp <= feed.lost_at(e.port) {
                 continue;

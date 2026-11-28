@@ -1,6 +1,6 @@
 # Target-app parity: SoundCraft vs Avid Pro Tools
 
-> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-28 · **Change:** trivial (Recording row: Record from stop arms the transport (Record Ready) and Play starts the pass; scores unchanged; previously minor: Performance row: recording is to disk (#84, #888); scores unchanged; previously minor: strict external-WAV AAF import; previously trivial: Frequency Shifter: 28 built-in processors; G-09/localization: pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1 (bundle 26.4.1.179, macOS)
+> **Last reviewed:** 2026-11-14 · **Last updated:** 2026-11-28 · **Change:** trivial (Recording row: Wait for Note; scores unchanged; previously trivial: Recording row: Record from stop arms the transport (Record Ready) and Play starts the pass; scores unchanged; previously minor: Performance row: recording is to disk (#84, #888); scores unchanged; previously minor: strict external-WAV AAF import; previously trivial: Frequency Shifter: 28 built-in processors; G-09/localization: pt-BR catalog; readiness estimates unchanged) · **Target:** Avid Pro Tools Ultimate 2026.4.1 (bundle 26.4.1.179, macOS)
 
 The authoritative assessment of how close SoundCraft is to Pro Tools. [`ROADMAP.md`](../ROADMAP.md)
 summarizes it, [`gaps.md`](gaps.md) itemizes every shortfall, and the per-dimension docs go deeper:
@@ -177,7 +177,7 @@ Weights by what Pro Tools users actually spend time on. **Breadth** = the featur
 
 | Area | Weight | Breadth | Ready | Remaining (h) | What's there / what's missing |
 |---|---:|---:|---:|---:|---|
-| Recording and monitoring | 12 % | 75 % | **40 %** | 40–60 | Record Ready (Record arms, Play starts; F12 / Cmd+Space record at once), punch in/out, QuickPunch-style punch on the fly, pre/post-roll, loop record into playlists, input monitoring through the strip, autosave/recovery. Missing: input/output device choice, buffer size, duplex low-latency path, record straight to disk (#84 open), per-channel hardware input routing, TrackPunch/destructive punch beyond flags, monitoring opt-out (#42) |
+| Recording and monitoring | 12 % | 75 % | **40 %** | 40–60 | Record Ready (Record arms, Play starts; F12 / Cmd+Space record at once), Wait for Note (the first MIDI event starts the pass at the start point), punch in/out, QuickPunch-style punch on the fly, pre/post-roll, loop record into playlists, input monitoring through the strip, autosave/recovery. Missing: input/output device choice, buffer size, duplex low-latency path, record straight to disk (#84 open), per-channel hardware input routing, TrackPunch/destructive punch beyond flags, monitoring opt-out (#42) |
 | Editing | 15 % | 92 % | **65 %** | 40–60 | Slip/Shuffle/Spot/Grid, every Edit menu command, fades/crossfades, playlists and comping, clip groups, nudge, Tab to transient, separate/heal/consolidate/strip silence. Open bugs: #3, #5 (Multitool handles), #140 (Heal shortcut), #86, #91, #92; no batch fade presets, no field-recorder workflows |
 | Mixing and routing | 12 % | 85 % | **60 %** | 35–50 | Faders, pan, sends, busses, aux, masters, VCAs, folders, 10 inserts, PDC, solo modes, I/O Setup. Missing: sidechain inputs, hardware-channel I/O mapping, bus/AFL/PFL paths verified, HEAT; bugs #59, #103 |
 | Automation | 7 % | 80 % | **55 %** | 20–30 | Lanes for volume/pan/mute/sends/plugin params, trim, Write/Touch/Latch, glide/thin/coalesce. Missing: surround-pan and object automation, Touch/Latch prime and preview modes, automation on control surfaces; bug #104 |
@@ -245,6 +245,7 @@ serializes more, because it needs hands-on testing.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-11-28 | trivial | Recording row: Wait for Note in the Transport and toolbar MIDI controls: the first MIDI event a record-enabled track listens to starts the pass and is recorded at the start point; no pre-roll; exclusive with Count Off; F11 preference (Pro Tools p.812–813, p.818, p.828, p.175); percentages unchanged |
 | 2026-11-28 | trivial | Recording row: Record from stop arms the transport (Record Ready, the button flashes) and Play or Space starts the pass; F12 and Cmd+Space (Ctrl+Space) still record at once (Pro Tools p.788, p.789, p.269); percentages unchanged |
 | 2026-11-14 | minor | Strict external-WAV AAF import added to format, interchange and alpha-gate evidence; readiness estimates unchanged |
 | 2026-11-09 | trivial | Built-in plugin counts: 28 processors + 3 instruments with the Frequency Shifter. Percentages unchanged |

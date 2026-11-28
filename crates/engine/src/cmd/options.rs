@@ -31,7 +31,8 @@ pub fn specs() -> Vec<CommandSpec> {
         toggle!("options.markers_follow_edit", "Markers Follow Edit", ["Options"], None, markers_follow_edit),
         toggle!("options.layered_editing", "Layered Editing", ["Options"], None, layered_editing),
         toggle!("options.click", "Click", ["Options"], None, click),
-        toggle!("options.countoff", "Count Off", [], None, countoff),
+        cmd!(noundo "options.countoff", "Count Off", [], None, "{value?: bool} — turning it on turns Wait for Note off", always, countoff),
+        cmd!(noundo "options.wait_for_note", "Wait for Note", [], None, "{value?: bool} — a record pass from stop starts with the first MIDI event; turning it on turns Count Off off", always, wait_for_note),
         toggle!("options.midi_merge", "MIDI Merge", [], None, midi_merge),
         toggle!("options.pre_fader_metering", "Pre-Fader Metering", ["Options"], None, pre_fader_metering),
         toggle!("options.delay_compensation", "Delay Compensation", ["Options"], None, delay_compensation),
@@ -90,6 +91,31 @@ pub fn specs() -> Vec<CommandSpec> {
     ]
 }
 
+/// The session flag of Wait for Note: a record pass from stop waits for the first MIDI event a
+/// record-enabled MIDI or instrument track listens to, and starts with it at the start point.
+pub const WAIT_FOR_NOTE: &str = "options.wait_for_note";
+
+/// Count Off and Wait for Note cannot both be on: turning one on turns the other off (Pro Tools
+/// Reference Guide p. 812).
+fn countoff(e: &mut Engine, p: &Value) -> Result<Value> {
+    let s = e.session_mut();
+    s.edit.countoff = p.get("value").and_then(Value::as_bool).unwrap_or(!s.edit.countoff);
+    if s.edit.countoff {
+        s.edit.set_flag(WAIT_FOR_NOTE, false);
+    }
+    Ok(json!({"value": s.edit.countoff}))
+}
+
+fn wait_for_note(e: &mut Engine, p: &Value) -> Result<Value> {
+    let s = e.session_mut();
+    let on = p.get("value").and_then(Value::as_bool).unwrap_or(!s.edit.flag(WAIT_FOR_NOTE));
+    s.edit.set_flag(WAIT_FOR_NOTE, on);
+    if on {
+        s.edit.countoff = false;
+    }
+    Ok(json!({"value": on}))
+}
+
 fn record_mode(e: &mut Engine, p: &Value, mode: &str) -> Result<Value> {
     let s = e.session_mut();
     let on = p.get("value").and_then(Value::as_bool).unwrap_or(s.edit.record_mode != mode);
@@ -126,4 +152,31 @@ fn session_setup(e: &mut Engine, p: &Value) -> Result<Value> {
         s.name = n.to_string();
     }
     Ok(json!({"frame_rate": s.frame_rate.label(), "bit_depth": s.bit_depth, "sample_rate": s.sample_rate.hz()}))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::WAIT_FOR_NOTE;
+    use crate::Engine;
+    use serde_json::json;
+
+    /// Count Off and Wait for Note are never both on, whichever is turned on last and by which
+    /// command (Pro Tools Reference Guide p. 812).
+    #[test]
+    fn wait_for_note_and_count_off_turn_each_other_off() {
+        let mut e = Engine::default();
+        let both = |e: &Engine| (e.session().edit.countoff, e.session().edit.flag(WAIT_FOR_NOTE));
+        e.execute("options.countoff", &json!({"value": true})).unwrap();
+        assert_eq!(e.execute("options.wait_for_note", &json!({})).unwrap()["value"], true);
+        assert_eq!(both(&e), (false, true));
+        e.execute("options.countoff", &json!({})).unwrap();
+        assert_eq!(both(&e), (true, false));
+        e.execute("options.wait_for_note", &json!({"value": true})).unwrap();
+        e.execute("setup.click_countoff", &json!({"countoff": true})).unwrap();
+        assert_eq!(both(&e), (true, false));
+        // Turning one off leaves the other off.
+        e.execute("options.countoff", &json!({"value": false})).unwrap();
+        e.execute("options.wait_for_note", &json!({"value": false})).unwrap();
+        assert_eq!(both(&e), (false, false));
+    }
 }

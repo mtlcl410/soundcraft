@@ -65,6 +65,7 @@ mod panic_probe {
 pub use file::bounce_job;
 
 pub(crate) use edit::remember_selection;
+pub use options::WAIT_FOR_NOTE;
 pub use strip_silence::strip_silence_scan;
 pub use tab::tab_stop_ahead;
 

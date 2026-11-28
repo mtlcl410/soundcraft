@@ -29,7 +29,7 @@ use std::sync::Arc;
 
 use dirty::same_document;
 
-pub use cmd::{CommandInfo, CommandSpec, command_specs, find_command};
+pub use cmd::{CommandInfo, CommandSpec, WAIT_FOR_NOTE, command_specs, find_command};
 pub use soundcraft_model as model;
 
 /// Upper bound on journaled commands, so a long session cannot grow memory without limit.
@@ -112,6 +112,9 @@ pub struct TransportStatus {
     /// Record Ready: Record was pressed with the transport stopped, and Play starts the pass. Only
     /// while stopped; the host clears it when a pass or playback starts.
     pub record_ready: bool,
+    /// Record Ready with Wait for Note on: the first MIDI event a record-enabled MIDI or
+    /// instrument track listens to starts the pass. The host sets it.
+    pub waiting_for_note: bool,
     pub position: Samples,
 }
 

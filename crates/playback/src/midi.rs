@@ -189,6 +189,15 @@ pub struct MidiFeed {
     /// Where the audio thread's playhead stood when it finished `stop_pass`.
     stop_at: AtomicI64,
     stop_pass: AtomicU64,
+    /// Wait for Note ([`Self::wait_for_event`]): for each channel, the ports ([`midi_port_bit`])
+    /// whose events on it start the pass. All zero: nothing is waited for.
+    wait_ports: [AtomicU64; 16],
+    /// Wait for Note: the kinds of message that start the pass, a bit per status nibble
+    /// (`1 << (status >> 4 & 7)`, note-on to pitch bend).
+    wait_kinds: AtomicU32,
+    /// When the first event that starts the pass arrived (the clock of the stamps); `i64::MAX`
+    /// while none has.
+    waited: AtomicI64,
     /// A clock set by a test in place of the real one (`i64::MIN`: the real one).
     #[cfg(test)]
     test_clock: AtomicI64,
@@ -218,6 +227,9 @@ impl Default for MidiFeed {
             overflow_at: (0..64).map(|_| AtomicI64::new(i64::MIN)).collect(),
             stop_at: AtomicI64::new(0),
             stop_pass: AtomicU64::new(0),
+            wait_ports: std::array::from_fn(|_| AtomicU64::new(0)),
+            wait_kinds: AtomicU32::new(0),
+            waited: AtomicI64::new(i64::MAX),
             #[cfg(test)]
             test_clock: AtomicI64::new(i64::MIN),
         }
@@ -306,6 +318,11 @@ impl MidiFeed {
                     break;
                 }
                 *owed &= !(1u64 << bit);
+            }
+            // Wait for Note: the first event that starts the pass, noted before it is in the
+            // queue, so the audio thread that takes it out sees that it does.
+            if self.starts_waiting_pass(port, status, data(2)) {
+                self.waited.fetch_min(now, Ordering::AcqRel);
             }
             if *owed != 0 || !self.incoming.push(now, e) {
                 // The queue is full. This may be a release, so the port's notes have to go.
@@ -542,6 +559,56 @@ impl MidiFeed {
     pub fn forgive_passes(&self) {
         self.pass_end.store(i64::MAX, Ordering::Release);
         self.captures_done.fetch_max(self.passes.load(Ordering::Acquire), Ordering::AcqRel);
+    }
+
+    /// UI thread: Wait for Note. Until [`Self::stop_waiting`], note the first event of a kind in
+    /// `kinds` (a bit per status nibble, `1 << (status >> 4 & 7)`) that arrives from a port in
+    /// `ports[channel]` ([`midi_port_bit`]): [`Self::waited_event`] says when. A note-off (or a
+    /// note-on of velocity 0) never counts: it is the release of a key pressed before. Called
+    /// again with other inputs (a track's input changed, a device came or went), it keeps an
+    /// event already noted.
+    pub fn wait_for_event(&self, ports: [u64; 16], kinds: u32) {
+        for (slot, p) in self.wait_ports.iter().zip(ports) {
+            slot.store(p, Ordering::Release);
+        }
+        self.wait_kinds.store(kinds, Ordering::Release);
+    }
+
+    /// UI thread: stop waiting for an event, and forget one that came.
+    pub fn stop_waiting(&self) {
+        self.wait_kinds.store(0, Ordering::Release);
+        for slot in &self.wait_ports {
+            slot.store(0, Ordering::Release);
+        }
+        self.waited.store(i64::MAX, Ordering::Release);
+    }
+
+    /// When the first event that [`Self::wait_for_event`] waits for arrived, on the clock of the
+    /// stamps ([`Self::now_micros`]); `None` while none has.
+    pub fn waited_event(&self) -> Option<i64> {
+        Some(self.waited.load(Ordering::Acquire)).filter(|at| *at != i64::MAX)
+    }
+
+    /// Whether a message from `port` starts the pass that waits for one.
+    fn starts_waiting_pass(&self, port: u8, status: u8, data2: u8) -> bool {
+        let kinds = self.wait_kinds.load(Ordering::Acquire);
+        let kind = status >> 4;
+        let release = kind == 0x8 || (kind == 0x9 && data2 == 0);
+        kinds & (1 << (kind & 7)) != 0
+            && !release
+            && self.wait_ports.get(usize::from(status & 0x0F)).is_some_and(|p| p.load(Ordering::Acquire) & midi_port_bit(port) != 0)
+    }
+
+    /// The clock the events are stamped with, in microseconds.
+    pub fn now_micros(&self) -> i64 {
+        self.now()
+    }
+
+    /// UI thread: [`Self::begin_pass`] for a pass that started with an event that arrived at
+    /// `at` ([`Self::waited_event`]): that event and what came after it belong to the pass.
+    pub fn begin_pass_at(&self, at: i64) {
+        self.pass_begin.store(at.min(self.now()), Ordering::Release);
+        self.begin_pending.store(true, Ordering::Release);
     }
 
     /// UI thread: how many recorded events were dropped since the last call (the UI did not
@@ -1205,5 +1272,37 @@ mod tests {
         f.take_recorded(&mut out);
         f.take_recorded(&mut out);
         assert_eq!(out, [RecordedMidi { at: 48_000, port: 2, status: 0x91, data1: 64, data2: 90 }]);
+    }
+
+    #[test]
+    fn wait_for_note_notes_the_first_event_a_listening_input_sends_and_nothing_else() {
+        let f = MidiFeed::default();
+        let notes_and_cc = 1 << (0x9 & 7) | 1 << (0xB & 7);
+        let mut ports = [0u64; 16];
+        ports[0] = midi_port_bit(1);
+        f.set_clock(100);
+        f.receive(1, &[0x90, 60, 100]);
+        assert_eq!(f.waited_event(), None, "nothing is waited for yet");
+        f.wait_for_event(ports, notes_and_cc);
+        f.set_clock(200);
+        // Not what the pass waits for: a release, another port, another channel, a filtered kind.
+        f.receive(1, &[0x80, 60, 0]);
+        f.receive(1, &[0x90, 60, 0]);
+        f.receive(2, &[0x90, 60, 100]);
+        f.receive(1, &[0x91, 60, 100]);
+        f.receive(1, &[0xE0, 0, 64]);
+        assert_eq!(f.waited_event(), None);
+        f.set_clock(300);
+        f.receive(1, &[0xB0, 1, 20]);
+        f.set_clock(400);
+        f.receive(1, &[0x90, 62, 100]);
+        assert_eq!(f.waited_event(), Some(300), "the first one counts, a controller as much as a note");
+        // New inputs keep what came; stopping forgets it.
+        f.wait_for_event(ports, notes_and_cc);
+        assert_eq!(f.waited_event(), Some(300));
+        f.stop_waiting();
+        assert_eq!(f.waited_event(), None);
+        f.receive(1, &[0x90, 62, 100]);
+        assert_eq!(f.waited_event(), None);
     }
 }

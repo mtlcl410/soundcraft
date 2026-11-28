@@ -416,6 +416,10 @@ fn click_countoff(e: &mut Engine, p: &Value) -> Result<Value> {
     store_value(&mut s.edit, p, "normal_velocity", "click.normal_velocity", 1.0, 127.0);
     if let Some(v) = p.get("countoff").and_then(Value::as_bool) {
         s.edit.countoff = v;
+        if v {
+            // Not both (p. 812).
+            s.edit.set_flag(super::options::WAIT_FOR_NOTE, false);
+        }
     }
     if let Some(b) = p.get("countoff_bars").and_then(Value::as_u64) {
         s.edit.countoff_bars = b.clamp(1, 16) as u32;

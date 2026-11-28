@@ -13,7 +13,7 @@ pub(crate) fn automation_step_due(pos: Samples, last: Samples, step: Samples) ->
 }
 
 /// The status line in Record Ready.
-const RECORD_READY: &str = "Record Ready: press Play or Space to record. Record again or Stop cancels.";
+pub(super) const RECORD_READY: &str = "Record Ready: press Play or Space to record. Record again or Stop cancels.";
 
 impl SoundApp {
     pub fn is_playing(&self) -> bool {
@@ -37,7 +37,11 @@ impl SoundApp {
         self.leave_record_ready();
         if let Some(p) = &self.player {
             p.update_session(self.engine.session_arc());
-            p.play(from, end, looped);
+            // Wait for Note: the playhead goes by the MIDI event that started the pass.
+            match self.note_start {
+                Some(at) => p.play_from_event(from, end, looped, at),
+                None => p.play(from, end, looped),
+            }
         } else {
             self.sim = Some((from, end, looped));
         }
@@ -199,6 +203,10 @@ impl SoundApp {
             return;
         }
         let mut e = self.engine.session().edit.clone();
+        // Wait for Note starts recording at once, without the pre-roll (p. 812).
+        if self.note_start.is_some() {
+            e.pre_roll = 0;
+        }
         if let Some(at) = from {
             e.selection = Range::point(at);
             e.pre_post_roll = false;
@@ -462,7 +470,9 @@ impl SoundApp {
             } else {
                 self.stop_play();
             }
-        } else if !button || self.is_playing() {
+        } else if (!button && !self.pass_waits_for_note()) || self.is_playing() {
+            // With Wait for Note on, the keys wait for the note as the buttons do (p. 812: it
+            // "determines how Pro Tools begins recording").
             self.start_recording(None);
         } else if self.record_ready() {
             self.leave_record_ready();

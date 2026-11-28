@@ -67,8 +67,9 @@ fn records_midi_on(t: &soundcraft_model::Track) -> bool {
     t.mixer.record_arm && !t.inactive && matches!(t.kind, TrackKind::Instrument | TrackKind::Midi)
 }
 
-/// The MIDI kinds Setup › MIDI › Input Filter keeps out of recordings.
-fn midi_filtered(s: &Session, status: u8) -> bool {
+/// The MIDI kinds Setup › MIDI › Input Filter keeps out of recordings: whether a message with
+/// the `status` byte is one of them.
+pub fn midi_filtered(s: &Session, status: u8) -> bool {
     let kind = match status & 0xF0 {
         0x80 | 0x90 => "notes",
         0xA0 => "poly_aftertouch",

@@ -592,6 +592,17 @@ pub(crate) fn record_lit(app: &SoundApp, ctx: &egui::Context) -> bool {
     (phase as i64) % 2 == 0
 }
 
+/// Play and Wait for Note while the transport waits for a MIDI event: they flash with the Record
+/// button (Pro Tools Reference Guide p. 828 step 8). `None` while not waiting.
+pub(crate) fn note_wait_lit(app: &SoundApp, ctx: &egui::Context) -> Option<bool> {
+    app.waiting_for_note().then(|| record_lit(app, ctx))
+}
+
+/// The Wait for Note buttons' tooltip.
+pub(crate) fn wait_for_note_tip() -> &'static str {
+    crate::localization::text("Wait for Note: Record from stop waits, and the first MIDI event you play starts the pass at the start point")
+}
+
 /// The Record buttons' tooltip: they arm the transport; the keys that record at once.
 pub(crate) fn record_tip() -> &'static str {
     // macOS gives Cmd+Space to Spotlight unless the user frees it, so name F12 first.
@@ -608,6 +619,7 @@ fn transport(app: &mut SoundApp, ui: &mut Ui) {
     let recording = app.engine.transport.recording;
     let record_on = recording || app.record_ready();
     let record_lit = record_lit(app, ui.ctx());
+    let note_wait = note_wait_lit(app, ui.ctx());
     let looped = app.engine.session().edit.loop_playback;
     group(ui, 176.0, 64.0, |ui, g| {
         ui.vertical(|ui| {
@@ -624,8 +636,10 @@ fn transport(app: &mut SoundApp, ui: &mut Ui) {
                     let _ = app.run("transport.stop", json!({}));
                 }
                 let (r, resp) = ui.allocate_exact_size(vec2(38.0, 28.0), Sense::click());
-                key(ui.painter(), r, &resp, if playing { Color32::from_rgb(40, 90, 50) } else { key_fill(&resp) });
-                icons::draw(ui.painter(), r.shrink(5.0), "play", if playing { Color32::from_rgb(120, 255, 140) } else { t.counter_text });
+                // Waiting for a note, Play flashes with Record.
+                let play_lit = playing || note_wait == Some(true);
+                key(ui.painter(), r, &resp, if play_lit { Color32::from_rgb(40, 90, 50) } else { key_fill(&resp) });
+                icons::draw(ui.painter(), r.shrink(5.0), "play", if play_lit { Color32::from_rgb(120, 255, 140) } else { t.counter_text });
                 if resp.on_hover_text(crate::localization::text("Play (Space)")).clicked() {
                     let _ = app.run("transport.play", json!({}));
                 }
@@ -692,6 +706,7 @@ fn tempo_meter(app: &mut SoundApp, ui: &mut Ui) {
         mono(11.0),
         t.counter_text,
     );
+    wait_for_note_key(app, ui, Rect::from_min_size(pos2(r.min.x + 6.0, r.min.y + 25.0), vec2(26.0, 14.0)));
     ui.painter().text(pos2(r.min.x + 70.0, r.min.y + 32.0), Align2::RIGHT_CENTER, crate::localization::text("Meter"), regular(11.0), t.counter_label);
     ui.painter().text(pos2(r.max.x - 8.0, r.min.y + 32.0), Align2::RIGHT_CENTER, meter, mono(11.0), t.counter_text);
     ui.painter().text(pos2(r.min.x + 70.0, r.min.y + 48.0), Align2::RIGHT_CENTER, crate::localization::text("Tempo"), regular(11.0), t.counter_label);
@@ -701,6 +716,22 @@ fn tempo_meter(app: &mut SoundApp, ui: &mut Ui) {
     icons::draw(ui.painter(), clk, "click", if click { t.counter_text } else { t.text_dim });
     if ui.interact(clk, ui.scope_id().with("click"), Sense::click()).on_hover_text(crate::localization::text("Click")).clicked() {
         let _ = app.run("options.click", json!({}));
+    }
+}
+
+/// The Wait for Note key of the toolbar's MIDI controls, beside Count Off: lit while on,
+/// flashing while the transport waits for a MIDI event.
+fn wait_for_note_key(app: &mut SoundApp, ui: &mut Ui, rect: Rect) {
+    let t = Tokens::current();
+    let on = app.wait_for_note();
+    let lit = note_wait_lit(app, ui.ctx()).unwrap_or(on);
+    let resp = ui.interact(rect, ui.scope_id().with("wait_for_note"), Sense::click());
+    key(ui.painter(), rect, &resp, if lit { t.mode_on } else { t.counter_off });
+    icons::draw(ui.painter(), Rect::from_center_size(rect.center(), vec2(11.0, 11.0)), "note", if lit { t.mode_on_text } else { t.mode_off_text });
+    // Its state for assistive technology holds while it flashes.
+    resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, on, crate::localization::text("Wait for Note")));
+    if resp.on_hover_text(wait_for_note_tip()).clicked() {
+        let _ = app.run("options.wait_for_note", json!({}));
     }
 }
 

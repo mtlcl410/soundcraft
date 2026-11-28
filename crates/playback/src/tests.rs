@@ -1904,3 +1904,70 @@ fn a_pass_started_and_ended_by_the_commands_of_one_callback_keeps_what_was_playe
     feed.take_recorded(&mut rec);
     assert!(rec.is_empty(), "{rec:?}");
 }
+
+#[test]
+fn wait_for_note_puts_the_first_event_at_the_start_and_keeps_what_follows_in_its_place() {
+    let (mut st, tx, feed, ..) = keyboard_session();
+    let mut out = vec![0.0f32; 2048];
+    let mut ports = [0u64; 16];
+    ports[0] = u64::MAX;
+    feed.wait_for_event(ports, 1 << (0x9 & 7));
+    // Stopped and waiting: a key, and another 10 ms later, both before the UI starts the pass.
+    feed.set_clock(1_000);
+    feed.receive(0, &[0x90, 60, 100]);
+    st.fill(&mut out, 2);
+    feed.set_clock(11_000);
+    feed.receive(0, &[0x90, 64, 100]);
+    st.fill(&mut out, 2);
+    let at = feed.waited_event().unwrap();
+    assert_eq!(at, 1_000);
+    // The UI starts the pass 20 ms after the first key, and stops waiting before the audio
+    // thread reads the command; a key arrives meanwhile.
+    feed.set_clock(21_000);
+    feed.begin_pass_at(at);
+    tx.send(Cmd::Recording(true, 0)).unwrap();
+    tx.send(Cmd::PlayFromEvent { from: 48_000, end: None, looped: None, at }).unwrap();
+    feed.stop_waiting();
+    feed.receive(0, &[0x90, 67, 100]);
+    st.fill(&mut out, 2);
+    feed.set_clock(31_000);
+    feed.receive(0, &[0x80, 60, 0]);
+    st.fill(&mut out, 2);
+    let mut rec = Vec::new();
+    feed.take_recorded(&mut rec);
+    let got: Vec<(u8, u8, i64)> = rec.iter().map(|e| (e.status, e.data1, e.at)).collect();
+    assert_eq!(got.iter().map(|e| (e.0, e.1)).collect::<Vec<_>>(), [(0x90, 60), (0x90, 64), (0x90, 67), (0x80, 60)], "{got:?}");
+    assert_eq!(got[0].2, 48_000, "the key that started the pass is at its start");
+    assert_eq!(got[1].2, 48_000 + 480, "10 ms later");
+    // It arrived as the pass started: at the playhead, the last place before it.
+    assert!((48_000 + 959..=48_000 + 960).contains(&got[2].2), "20 ms later: {got:?}");
+    assert!(got[3].2 > got[2].2, "and on from there: {got:?}");
+}
+
+#[test]
+fn events_before_the_one_wait_for_note_waited_for_or_after_a_plain_play_are_not_held() {
+    let (mut st, tx, feed, ..) = keyboard_session();
+    let mut out = vec![0.0f32; 2048];
+    let mut ports = [0u64; 16];
+    ports[0] = u64::MAX;
+    feed.wait_for_event(ports, 1 << (0x9 & 7));
+    feed.set_clock(1_000);
+    // A release of a key pressed before does not start it, and is not in the take.
+    feed.receive(0, &[0x80, 59, 0]);
+    st.fill(&mut out, 2);
+    feed.set_clock(2_000);
+    feed.receive(0, &[0x90, 60, 100]);
+    st.fill(&mut out, 2);
+    // Stop while waiting: the held key goes, and a later plain pass does not get it.
+    feed.stop_waiting();
+    tx.send(Cmd::Stop).unwrap();
+    st.fill(&mut out, 2);
+    feed.set_clock(3_000);
+    feed.begin_pass();
+    tx.send(Cmd::Recording(true, 0)).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    st.fill(&mut out, 2);
+    let mut rec = Vec::new();
+    feed.take_recorded(&mut rec);
+    assert!(rec.is_empty(), "{rec:?}");
+}

@@ -140,6 +140,14 @@ enum Cmd {
         end: Option<Samples>,
         looped: Option<Range>,
     },
+    /// [`Cmd::Play`] for a record pass that began with the MIDI event that arrived at `at`
+    /// (Wait for Note, on the clock of the feed's stamps): that event is at `from`.
+    PlayFromEvent {
+        from: Samples,
+        end: Option<Samples>,
+        looped: Option<Range>,
+        at: i64,
+    },
     Stop,
     Locate(Samples),
     /// Tracks the latest session no longer has (worked out on the UI thread): their meters go.
@@ -497,6 +505,17 @@ impl Player {
         self.shared.position.store(from, Ordering::Relaxed);
         self.shared.playing.store(true, Ordering::Relaxed);
         let _ = self.tx.send(Cmd::Play { from, end, looped });
+    }
+
+    /// [`Self::play`] for a record pass that Wait for Note started: the MIDI event that arrived
+    /// at `at` ([`midi::MidiFeed::waited_event`]) is at `from`. The playhead starts as far past
+    /// `from` as the time since then, so what was played after that event keeps its place
+    /// relative to it, and the events that arrived before this command are written into the take
+    /// at their places from `from` on. Recording has to be on already.
+    pub fn play_from_event(&self, from: Samples, end: Option<Samples>, looped: Option<Range>, at: i64) {
+        self.shared.position.store(from, Ordering::Relaxed);
+        self.shared.playing.store(true, Ordering::Relaxed);
+        let _ = self.tx.send(Cmd::PlayFromEvent { from, end, looped, at });
     }
 
     /// Feed live input (from a `record::Recorder`) into the mix for input monitoring.

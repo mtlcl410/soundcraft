@@ -151,6 +151,9 @@ pub struct UiState {
     pub undo_levels: usize,
     /// The level a send made in the Mix window starts at (Preferences › Mixing).
     pub sends_default: preferences::SendsDefault,
+    /// F11 turns Wait for Note on and off (Preferences › MIDI). Off by default: on macOS F11 is
+    /// the system's Show Desktop key.
+    pub f11_wait_for_note: bool,
     /// The audio device choice (Setup › Playback Engine), kept with the preferences: per machine.
     pub audio: soundcraft_playback::AudioConfig,
     /// The Mix window lives in its own native window (Window › Mix in Separate Window); the main
@@ -230,6 +233,7 @@ impl Default for UiState {
             reduce_visual_effects: preferences::ReduceVisualEffects::default(),
             undo_levels: 64,
             sends_default: preferences::SendsDefault::default(),
+            f11_wait_for_note: false,
             audio: soundcraft_playback::AudioConfig::default(),
             mix_separate: false,
             show_io_setup: false,
@@ -467,6 +471,13 @@ pub struct SoundApp {
     /// When the lost output last cancelled Record Ready (uptime): the input, lost with it a moment
     /// later, says so too instead of replacing that message.
     record_ready_lost: Option<f64>,
+    /// Wait for Note: the transport was waiting for a MIDI event last frame (the inputs that
+    /// count are handed to the MIDI feed every frame while it waits).
+    note_wait: bool,
+    /// Wait for Note: while the pass that a MIDI event started is set up, when that event
+    /// arrived (the clock of the MIDI feed). The pass begins from it and the playhead is placed
+    /// by it.
+    note_start: Option<i64>,
     pub quit_requested: bool,
     /// Reset floating-window positions next frame (Window › Arrange).
     pub arrange_request: bool,

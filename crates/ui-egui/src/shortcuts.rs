@@ -218,6 +218,11 @@ fn fixed(app: &mut SoundApp, key: Key, m: Modifiers, mac: bool) -> bool {
             let _ = app.run(if m.alt { "view.nudge" } else { "view.grid" }, json!({"step": step}));
             true
         }
+        // Preferences › MIDI › Use F11 for Wait for Note (Pro Tools Reference Guide p. 175, p. 813).
+        Key::F11 if plain && app.ui.f11_wait_for_note => {
+            let _ = app.run("options.wait_for_note", json!({}));
+            true
+        }
         Key::F12 if plain => {
             let _ = app.run("transport.record", json!({}));
             true
