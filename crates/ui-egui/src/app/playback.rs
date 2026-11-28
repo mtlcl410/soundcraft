@@ -108,7 +108,7 @@ impl SoundApp {
     /// The Record button from stop: arm the transport. With nothing record-enabled it shows why
     /// (#329's hint) instead, so the button never flashes for a pass that cannot record.
     fn enter_record_ready(&mut self) {
-        if !self.record_enabled_or_hint() {
+        if !self.record_enabled_or_hint() || self.refuse_on_lost_device(self.records_audio()) {
             return;
         }
         self.engine.transport.record_ready = true;
@@ -121,6 +121,12 @@ impl SoundApp {
         if std::mem::take(&mut self.engine.transport.record_ready) && self.ui.status == crate::localization::text(RECORD_READY) {
             self.ui.status.clear();
         }
+    }
+
+    /// Whether the pass records audio. An inactive track keeps its record button but takes no part
+    /// (`plan_takes` leaves it out too), so it does not make the pass an audio one.
+    fn records_audio(&self) -> bool {
+        self.engine.session().tracks.iter().any(|t| t.mixer.record_arm && !t.inactive && !t.kind.is_midi())
     }
 
     /// Whether a track is record-enabled; if not, says what to do (status line and the hint at
@@ -151,9 +157,11 @@ impl SoundApp {
             return;
         }
         // A pass records audio, MIDI or both: it needs one of them ready. The audio input is
-        // only opened for audio tracks. An inactive track keeps its record button but takes no
-        // part (`plan_takes` leaves it out too), so it must not make the pass an audio one.
-        let audio_tracks = self.engine.session().tracks.iter().any(|t| t.mixer.record_arm && !t.inactive && !t.kind.is_midi());
+        // only opened for audio tracks.
+        let audio_tracks = self.records_audio();
+        if self.refuse_on_lost_device(audio_tracks) {
+            return;
+        }
         let midi_tracks = soundcraft_engine::io::records_midi(&self.engine);
         let midi_ready = midi_tracks && self.midi_connected();
         if midi_tracks && self.midi_pass_pending() {
@@ -699,5 +707,60 @@ mod tests {
         assert!(!app.engine.transport.recording);
         assert!(!app.is_playing());
         assert_eq!(app.engine.transport.position, 96_000, "the playhead stays where it stopped");
+    }
+
+    /// An app with one record-enabled `kind` track and no audio engine.
+    fn armed(kind: &str) -> SoundApp {
+        let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, crate::Services::default());
+        app.run("track.new", json!({"name": "Vox", "kind": kind, "format": "mono"})).unwrap();
+        app.run("mix.record_arm", json!({"value": true})).unwrap();
+        app
+    }
+
+    const THEN: &str = "Reconnect it.";
+
+    /// Unplugging a device takes its input and output down a moment apart, in either order: the
+    /// status line still says that Record Ready was cancelled, and names both.
+    #[test]
+    fn a_device_lost_while_armed_says_record_ready_was_cancelled_whichever_side_goes_first() {
+        for output_first in [true, false] {
+            let mut app = armed("audio");
+            app.run("transport.record_ready", json!({})).unwrap();
+            app.handle_transport(1.0 / 60.0);
+            assert!(app.record_ready());
+            for output in [output_first, !output_first] {
+                let cause = if output { "“Speakers” is unavailable" } else { "“Mic” is unavailable" };
+                app.device_gone(output, cause, THEN);
+            }
+            let status = app.ui.status.clone();
+            assert!(!app.record_ready());
+            assert!(status.starts_with("Record Ready cancelled: "), "output first {output_first}: {status}");
+            assert!(status.contains("Speakers") && status.contains("Mic"), "output first {output_first}: {status}");
+        }
+    }
+
+    /// While a device the pass needs is gone, neither the Record button nor the record-now keys
+    /// start anything; they say what is missing. An input that is gone does not stop a MIDI pass.
+    #[test]
+    fn record_ready_and_record_now_are_refused_while_a_needed_device_is_gone() {
+        for (kind, output, refused) in [("audio", true, true), ("audio", false, true), ("instrument", true, true), ("instrument", false, false)] {
+            let mut app = armed(kind);
+            app.device_gone(output, "“Model 12” is unavailable", THEN);
+            for cmd in ["transport.record_ready", "transport.record"] {
+                app.run(cmd, json!({})).unwrap();
+                app.handle_transport(1.0 / 60.0);
+                let status = app.ui.status.clone();
+                let case = format!("{kind}, output lost {output}, {cmd}: {status}");
+                if refused {
+                    assert!(!app.record_ready() && !app.engine.transport.recording && !app.is_playing(), "{case}");
+                    assert!(
+                        status.starts_with("Cannot record: ") && status.contains("Model 12") && status.contains("Reconnect audio device"),
+                        "{case}"
+                    );
+                } else if cmd == "transport.record_ready" {
+                    assert!(app.record_ready(), "{case}");
+                }
+            }
+        }
     }
 }

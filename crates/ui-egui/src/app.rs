@@ -118,6 +118,8 @@ impl SoundApp {
             sim: None,
             record_hint: None,
             record_ready_lost: None,
+            lost_output: None,
+            lost_input: None,
             quit_requested: false,
             arrange_request: false,
             touched: std::collections::HashSet::new(),

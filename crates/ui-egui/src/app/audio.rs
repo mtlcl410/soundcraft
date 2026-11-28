@@ -27,6 +27,8 @@ impl SoundApp {
         // The input reopens on the next record or monitor with the new choice.
         self.recorder = None;
         self.recorder_failed = false;
+        self.lost_output = None;
+        self.lost_input = None;
         let player = reopen(&mut self.player, &self.ui.audio, || soundcraft_playback::Player::with_config(self.engine.session_arc(), &self.ui.audio));
         self.attach_midi(&player);
         player.locate(at);
@@ -72,24 +74,56 @@ impl SoundApp {
                 crate::localization::text("Use Reconnect audio device in Setup › Playback Engine."),
             ),
         };
-        let (recording, playing, ready) = (self.engine.transport.recording, self.engine.transport.playing, self.record_ready());
+        let (recording, playing) = (self.engine.transport.recording, self.engine.transport.playing);
         if recording || playing {
             self.stop_play();
         }
-        // An armed transport would promise a pass that cannot start.
-        self.leave_record_ready();
-        if ready {
-            self.record_ready_lost = Some(self.uptime);
-        }
-        self.ui.status = if recording {
+        let status = if recording {
             crate::localized_format!("Recording stopped: {cause} The take is kept up to there. {then}", cause = cause, then = then)
         } else if playing {
             crate::localized_format!("Playback stopped: {cause} {then}", cause = cause, then = then)
-        } else if ready {
-            crate::localized_format!("Record Ready cancelled: {cause} {then}", cause = cause, then = then)
         } else {
             crate::localized_format!("Audio output: {cause} {then}", cause = cause, then = then)
         };
+        if !self.device_gone(true, &cause, then) {
+            self.ui.status = status;
+        }
+    }
+
+    /// The output (`output`) or the input is gone, as `cause` says: passes that need it are refused
+    /// until the devices are reopened. In Record Ready, or a moment after a loss cancelled it (the
+    /// input and output of one device go a few milliseconds apart, in either order), the status line
+    /// says Record Ready was cancelled and names everything lost, and this returns true.
+    pub(super) fn device_gone(&mut self, output: bool, cause: &str, then: &str) -> bool {
+        *(if output { &mut self.lost_output } else { &mut self.lost_input }) = Some(cause.to_owned());
+        let earlier = self.record_ready_lost.take().filter(|(at, _)| self.uptime - at < 2.0).map(|(_, lost)| lost);
+        if !self.record_ready() && earlier.is_none() {
+            return false;
+        }
+        // An armed transport would promise a pass that cannot start.
+        self.leave_record_ready();
+        let lost = match earlier {
+            Some(earlier) if earlier != cause => format!("{earlier}; {cause}"),
+            _ => cause.to_owned(),
+        };
+        self.ui.status = crate::localized_format!("Record Ready cancelled: {cause} {then}", cause = lost, then = then);
+        self.record_ready_lost = Some((self.uptime, lost));
+        true
+    }
+
+    /// When a device the pass needs is gone (the output; the input too for audio tracks), say so
+    /// and return true: Record Ready and the record-now keys are refused until Reconnect.
+    pub(super) fn refuse_on_lost_device(&mut self, audio_tracks: bool) -> bool {
+        let mut lost: Vec<&str> = [self.lost_output.as_deref(), self.lost_input.as_deref().filter(|_| audio_tracks)].into_iter().flatten().collect();
+        // One interface named the same on both sides is said once.
+        lost.dedup();
+        if lost.is_empty() {
+            return false;
+        }
+        let err =
+            format!("{} {}", lost.join("; "), crate::localization::text("Reconnect it, then use Reconnect audio device in Setup › Playback Engine."));
+        self.ui.status = crate::localized_format!("Cannot record: {err}", err = err);
+        true
     }
 
     /// Stop recording, keeping the take, when the input device or the disk fails, and say as soon
@@ -108,24 +142,22 @@ impl SoundApp {
         if recording {
             self.stop_play();
         }
-        // A device that went away usually takes the output down a moment before the input.
-        let ready = self.record_ready() || self.record_ready_lost.take().is_some_and(|at| self.uptime - at < 2.0);
-        self.leave_record_ready();
-        let (what, then) = match trouble {
+        let (what, then, device) = match trouble {
             Trouble::Device(what) => {
                 self.recorder = None;
                 self.recorder_failed = true;
-                (what, crate::localization::text("Reconnect it, then use Reconnect audio device in Setup › Playback Engine."))
+                (what, crate::localization::text("Reconnect it, then use Reconnect audio device in Setup › Playback Engine."), true)
             }
-            Trouble::Disk(what) => (what, crate::localization::text("Check the disk, then record again.")),
+            Trouble::Disk(what) => (what, crate::localization::text("Check the disk, then record again."), false),
         };
-        self.ui.status = if recording {
+        let status = if recording {
             crate::localized_format!("Recording stopped: {what} The take is kept up to there. {then}", what = what, then = then)
-        } else if ready {
-            crate::localized_format!("Record Ready cancelled: {what} {then}", what = what, then = then)
         } else {
             crate::localized_format!("Audio input: {what} {then}", what = what, then = then)
         };
+        if !(device && self.device_gone(false, &what, then)) {
+            self.ui.status = status;
+        }
     }
 
     /// Reopen the audio devices, keeping a take in progress.
@@ -139,6 +171,8 @@ impl SoundApp {
         }
         self.recorder = None;
         self.recorder_failed = false;
+        self.lost_output = None;
+        self.lost_input = None;
         let player = reopen(&mut self.player, &self.ui.audio, || Player::with_config(self.engine.session_arc(), &self.ui.audio));
         self.attach_midi(&player);
         self.player = Some(player);
