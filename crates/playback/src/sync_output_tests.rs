@@ -422,7 +422,10 @@ fn late_worker_catches_up_with_spaced_clocks_or_resumes_once_at_the_next_spp() {
     }
     assert!(emitted.contains(&(43, vec![CLOCK])) && emitted.contains(&(44, vec![CLOCK])));
     assert_eq!(emitted.iter().filter(|(_, m)| m == &[STOP]).count(), 1);
-    assert!(emitted.contains(&(500, vec![CONTINUE])));
+    // The relaunch locates before it resumes: Stop, SPP at the current sixteenth (sample
+    // 24 000 is pulse 24, sixteenth 4), Continue, then the Clock for that pulse.
+    let relaunch: Vec<_> = emitted.iter().filter(|(ms, _)| *ms == 500).map(|(_, m)| m.clone()).collect();
+    assert_eq!(relaunch, [vec![STOP], vec![0xf2, 4, 0], vec![CONTINUE], vec![CLOCK]]);
     assert_eq!(stats.catch_up_sends.load(Relaxed), 1);
 }
 
