@@ -528,16 +528,23 @@ fn send_route_menu(app: &mut SoundApp, ui: &Ui, field: &egui::Response, id: Trac
             app.ui.send_window = Some((id, slot));
         }
     };
+    // A new send starts at the Sends Default to preference; re-targeting keeps the send's level.
+    let send_params = |app: &SoundApp, key: &str, name: &str| {
+        let mut p = json!({"track": id.0, "slot": slot, key: name});
+        if !has_send {
+            p["level_db"] = json!(app.ui.sends_default.level_db());
+        }
+        p
+    };
     if let Some((key, name)) = picked
-        && app.run("mix.send", json!({"track": id.0, "slot": slot, key: name})).is_ok()
+        && app.run("mix.send", send_params(app, key, &name)).is_ok()
     {
         show_new_send(app);
     }
     match footer {
         Some(SendFooter::NewBus) => {
             let name = free_bus_name(app.engine.session());
-            if app.run("mix.new_bus", json!({"name": name})).is_ok() && app.run("mix.send", json!({"track": id.0, "slot": slot, "bus": name})).is_ok()
-            {
+            if app.run("mix.new_bus", json!({"name": name})).is_ok() && app.run("mix.send", send_params(app, "bus", &name)).is_ok() {
                 show_new_send(app);
             }
         }
@@ -552,6 +559,7 @@ fn send_route_menu(app: &mut SoundApp, ui: &Ui, field: &egui::Response, id: Trac
 mod tests {
     use super::*;
     use crate::Services;
+    use crate::preferences::SendsDefault;
     use egui_kittest::{Harness, kittest::Queryable};
 
     /// Filtering the destination list to nothing shrinks the menu; clearing the filter grows it
@@ -738,5 +746,39 @@ mod tests {
         h.state_mut().0.run("mix.send", json!({"track": vox.0, "slot": 0, "output": "Cue"})).unwrap();
         h.run();
         assert!(h.query_by_label("Send pan (drag; double-click centres)").is_none(), "a mono send has no panner");
+    }
+
+    /// Picks `item` from Kick's send A menu with the Sends Default to preference set to `default`,
+    /// and returns the send's level.
+    fn level_after_picking(existing_send: bool, default: SendsDefault, item: &str) -> Option<f32> {
+        let (mut h, kick) = kick_send_harness(existing_send);
+        h.state_mut().0.ui.sends_default = default;
+        if existing_send {
+            h.state_mut().0.run("mix.send_level", json!({"track": kick.0, "slot": 0, "db": -9.0})).unwrap();
+        }
+        h.run();
+        h.get_by_label("Send A for Kick").click();
+        h.run();
+        h.get_by_label(item).click();
+        h.run();
+        let (app, _) = h.state();
+        app.engine.session().track(kick).and_then(|t| t.mixer.sends.first().cloned().flatten()).map(|s| s.level_db)
+    }
+
+    /// A new send starts at the level set in Preferences › Mixing › Sends Default to (#1423).
+    #[test]
+    fn a_new_send_starts_at_the_sends_default_preference() {
+        let _palette = crate::theme::lock_test_palette();
+        assert_eq!(level_after_picking(false, SendsDefault::NegativeInfinity, "Aux"), Some(-144.0));
+        assert_eq!(level_after_picking(false, SendsDefault::Unity, "Aux"), Some(0.0));
+        assert_eq!(level_after_picking(false, SendsDefault::Unity, "new bus..."), Some(0.0));
+    }
+
+    /// Moving an existing send to another bus keeps its level, whatever the preference says.
+    #[test]
+    fn changing_a_sends_destination_keeps_its_level() {
+        let _palette = crate::theme::lock_test_palette();
+        assert_eq!(level_after_picking(true, SendsDefault::Unity, "Aux"), Some(-9.0));
+        assert_eq!(level_after_picking(true, SendsDefault::NegativeInfinity, "Aux"), Some(-9.0));
     }
 }

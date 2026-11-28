@@ -13,6 +13,12 @@ pub(crate) fn start_stream(stream: &impl cpal::traits::StreamTrait) -> bool {
     }
 }
 
+/// The buffer a started stream reports it runs at: Core Audio's device buffer, WASAPI's period.
+/// `None` when the backend cannot say (or says 0).
+pub(crate) fn running_buffer(stream: &impl cpal::traits::StreamTrait) -> Option<u32> {
+    stream.buffer_size().ok().filter(|n| *n > 0)
+}
+
 /// A built output stream and the channels and fault flag its callback shares with the player.
 pub(crate) struct Opened {
     pub(crate) stream: cpal::Stream,
@@ -107,7 +113,7 @@ pub(crate) fn open_device(
     want_rate: u32,
     want_ch: u16,
     cfg: &AudioConfig,
-) -> Result<(cpal::Device, cpal::StreamConfig, cpal::SampleFormat, String), String> {
+) -> Result<(cpal::Device, cpal::StreamConfig, cpal::SampleFormat, String, Option<(u32, u32)>), String> {
     use cpal::traits::DeviceTrait;
     let host = devices::host(cfg);
     let device = devices::device(&host, cfg.output.as_deref(), true).ok_or_else(|| "no output device".to_string())?;
@@ -119,10 +125,10 @@ pub(crate) fn open_device(
     let current = || device.default_output_config().ok().map(|c| c.sample_rate());
     let picked = pick_device_output_config(host.id().name(), &configs, &rates, want_ch.max(2), current);
     let want_ch = output_width(host.id().name(), want_ch.max(2));
-    let (config, format) = match picked {
+    let (config, format, range) = match picked {
         Some((mut c, buffers, format)) => {
             c.buffer_size = devices::buffer_size(cfg.buffer_size, &buffers);
-            (c, format)
+            (c, format, devices::buffer_range(&buffers))
         }
         None => {
             let d = device.default_output_config().map_err(|e| e.to_string())?;
@@ -142,10 +148,10 @@ pub(crate) fn open_device(
             };
             let mut stream_config = c.config();
             stream_config.buffer_size = devices::buffer_size(cfg.buffer_size, c.buffer_size());
-            (stream_config, c.sample_format())
+            (stream_config, c.sample_format(), devices::buffer_range(c.buffer_size()))
         }
     };
-    Ok((device, config, format, name))
+    Ok((device, config, format, name, range))
 }
 
 /// The output configuration to open on audio system `host` (a `cpal::HostId::name()`), or `None`
