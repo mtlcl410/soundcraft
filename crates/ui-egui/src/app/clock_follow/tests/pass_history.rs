@@ -138,12 +138,20 @@ fn completed_early_takes_do_not_increase_the_unreferenced_budget() {
     // Each old take needs three complete tempo intervals from its own recording.
     let take_ticks: Vec<_> = (1..=20).map(|i| (i * 30 * 960 + 100, (i * 30 + 2) * 960 + 200)).collect();
     let spans: Vec<_> = take_ticks.iter().map(|&(a, b)| Range::new(grid.tick_to_samples(a, sr), grid.tick_to_samples(b, sr))).collect();
+    let in_take = |tick: i64| take_ticks.iter().any(|&(a, b)| (a / 960 * 960..=b).contains(&tick));
+    // Every take event, with its sample position, as recorded before any compaction.
+    let take_events = |grid: &TempoMap| -> Vec<_> {
+        grid.tempos().iter().filter(|e| in_take(e.tick)).map(|e| (e.tick, e.bpm, grid.tick_to_samples(e.tick, sr))).collect()
+    };
+    let recorded = take_events(&grid);
     let mut history = History::default();
     history.compact(&mut grid, sr, 0, spans.clone());
+    assert_eq!(take_events(&grid), recorded);
     for i in 1250..2050 {
         grid.set_tempo(i * 960, 100. + (i % 13) as f64).unwrap();
         if history.should_compact(&grid) {
             history.compact(&mut grid, sr, 0, spans.clone());
+            assert_eq!(take_events(&grid), recorded, "a compaction at beat {i} changed a take's tempo events");
         }
         let protected = grid
             .tempos()
