@@ -460,7 +460,8 @@ impl MidiFeed {
         input.waiting_for_output = waiting_for_output;
     }
 
-    /// Includes a Start/Continue received between host frames and its as-yet unacknowledged first pulse.
+    /// Includes a Start/Continue received between host frames and its as-yet unacknowledged first
+    /// pulse. Once a host frame has seen it, a start still waiting for its first Clock is not pending.
     pub fn clock_start_pending(&self) -> bool {
         self.clock_follow.lock().unwrap_or_else(PoisonError::into_inner).start_pending()
     }
@@ -475,6 +476,7 @@ impl MidiFeed {
         while let Some(action) = input.take() {
             actions.push(action);
         }
+        input.mark_start_seen();
         input.snapshot(now)
     }
 

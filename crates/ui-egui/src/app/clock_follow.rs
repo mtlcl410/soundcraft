@@ -203,11 +203,12 @@ impl SoundApp {
         player.arm_clock_resume(feed, feed.ports().assign(name), location);
     }
 
-    /// A Start/Continue the host has yet to act on: output recovery waits for it. A start that
-    /// waits for output timing (`waiting_start`) is not one. It waits with no time limit, as Pro
-    /// Tools shows "Waiting for Sync" until it locks (Reference Guide p.1875), and reconnecting or
-    /// replacing the output is what lets it go on; the next service plays it from the arrival
-    /// time once the output reports timing.
+    /// A Start/Continue the host has yet to act on: output recovery waits for it. A start the host
+    /// has seen that waits for its first Clock, or one that waits for output timing
+    /// (`waiting_start`), is not one. Both wait with no time limit, as Pro Tools shows "Waiting for
+    /// Sync" until it locks (Reference Guide p.1875), and the output can be reconnected or replaced
+    /// meanwhile: the first Clock then starts the new output, and a start waiting for timing plays
+    /// from its arrival time once the output reports timing.
     pub(super) fn clock_start_pending(&self) -> bool {
         self.clock_follow.enabled && self.midi_inputs.as_ref().is_some_and(|m| m.feed().clock_start_pending())
     }
@@ -655,6 +656,50 @@ mod tests {
         feed.receive(port, &[0xfb]);
         app.run("setup.midi_clock_follow", json!({"enabled":false})).unwrap();
         assert!(!app.clock_start_pending());
+    }
+
+    #[test]
+    fn playback_engine_reconnects_the_output_while_a_start_waits_for_its_first_clock() {
+        use egui_kittest::{
+            Harness,
+            kittest::{NodeT, Queryable},
+        };
+        let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
+        app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
+        let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
+        let port = feed.ports().assign("DIN");
+        app.run("setup.midi_clock_follow", json!({"input":"DIN","enabled":true})).unwrap();
+        app.ui.show_playback_engine = true;
+        let mut h = Harness::builder().with_size(egui::vec2(1600., 1000.)).build_ui_state(
+            |ui, app: &mut SoundApp| {
+                app.logic(&ui.ctx().clone());
+                app.ui(ui);
+            },
+            app,
+        );
+        h.run_steps(2);
+        // Start with no Clock yet: the start waits for its first pulse with no time limit, as Pro
+        // Tools shows "Waiting for Sync" until it locks (Reference Guide p.1875). The output is
+        // lost meanwhile.
+        feed.receive(port, &[0xfa]);
+        h.state_mut().unavailable_output =
+            Some(crate::UnavailableOutput { name: "offline".into(), system: None, stalled_at_report: None, idle_status: None });
+        h.run_steps(2);
+        assert_eq!(h.state().clock_follow.snapshot.state, State::Waiting, "the Start still waits for its first Clock");
+        assert!(!feed.clock_start_pending(), "the host has seen the Start, so it no longer holds output recovery");
+        assert!(h.state().player.is_none());
+        let button = h.get_by_label("Reconnect audio device");
+        assert!(!button.accesskit_node().is_disabled(), "the host has acted on the Start, so the output can be reconnected");
+        button.click();
+        h.run_steps(2);
+        assert!(h.state().player.is_some(), "the output was reopened");
+        assert_eq!(h.state().clock_follow.snapshot.state, State::Waiting, "the reconnect keeps the Start waiting");
+        assert!(!h.state().is_playing());
+        feed.receive(port, &[0xf8]);
+        h.run_steps(2);
+        assert!(h.state().is_playing(), "the first Clock starts the reconnected output");
+        assert!(h.state().player.as_ref().unwrap().is_playing());
+        assert!(h.state().position() < 48_000, "it plays from the Start, not from somewhere else");
     }
 
     #[test]

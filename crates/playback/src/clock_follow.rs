@@ -146,6 +146,8 @@ pub(crate) struct Follower {
     pub(crate) waiting_for_output: bool,
     state: State,
     awaiting_clock: Option<i64>,
+    /// The Start/Continue in `awaiting_clock` that a host frame has already seen.
+    seen_awaiting_clock: Option<i64>,
     pub(crate) next_pulse: i64,
     fit_index: i64,
     // Three F8s within one millisecond cannot be individual beats in the
@@ -200,6 +202,7 @@ impl Default for Follower {
             waiting_for_output: false,
             state: State::Waiting,
             awaiting_clock: None,
+            seen_awaiting_clock: None,
             next_pulse: 0,
             fit_index: 0,
             packet_head: None,
@@ -298,8 +301,15 @@ impl Follower {
         self.count -= 1;
         a
     }
+    /// Called by each host frame after it drains the transport actions.
+    pub(crate) fn mark_start_seen(&mut self) {
+        self.seen_awaiting_clock = self.awaiting_clock;
+    }
+    /// A Start/Continue no host frame has seen yet, or a queued start the host has yet to act on.
+    /// A seen start that waits for its first Clock is not pending: it waits with no time limit.
     pub(crate) fn start_pending(&self) -> bool {
-        self.awaiting_clock.is_some() || self.events.iter().flatten().any(|action| matches!(action, Action::Play { .. } | Action::Started { .. }))
+        self.awaiting_clock.is_some_and(|at| self.seen_awaiting_clock != Some(at))
+            || self.events.iter().flatten().any(|action| matches!(action, Action::Play { .. } | Action::Started { .. }))
     }
 
     pub(crate) fn coalesced_render(&self) -> bool {
