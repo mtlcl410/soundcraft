@@ -1,6 +1,8 @@
 use super::sampler_song::sampler_song;
 use super::*;
 
+/// Attack and release of every sounding run; one still sounding at the end of the buffer
+/// is reported with the buffer end as its release.
 fn edges(pcm: &[f32]) -> Vec<(i64, i64)> {
     let mut attack = 0;
     let mut previous = false;
@@ -13,6 +15,9 @@ fn edges(pcm: &[f32]) -> Vec<(i64, i64)> {
             hits.push((attack, i as i64));
         }
         previous = sounding;
+    }
+    if previous {
+        hits.push((attack, pcm.len() as i64));
     }
     hits
 }
