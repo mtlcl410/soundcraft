@@ -49,6 +49,8 @@ pub(super) struct WireStep {
     seen: u8,
     next_check: i64,
     candidate: Option<Candidate>,
+    /// Prior period of a candidate the fit resolved as no step, until `next_check`.
+    rejected: Option<f64>,
 }
 
 impl WireStep {
@@ -57,8 +59,17 @@ impl WireStep {
         self.recent[slot(pulse)] = Point { stamp, prior_period: old, prior_noise: noise };
         self.seen = self.seen.saturating_add(1);
         if self.seen < 32 || pulse < self.next_check {
+            // The cooldown after a sub-8% decision keeps that decision: a short proposal
+            // in the near-8% band against the same reference is not a step either.
+            if let (Some(prior), Some(((_, start), intervals))) = (self.rejected.filter(|_| self.seen >= 32), proposed) {
+                let period = stamp.saturating_sub(start) as f64 / f64::from(intervals);
+                if (prior / period - 1.).abs() <= 0.14 {
+                    return None;
+                }
+            }
             return proposed;
         }
+        self.rejected = None;
         // Take the old estimate before the four-interval candidate and before its onset
         // could have contaminated the long fit. Recent observations still drive phase.
         let prior = self.recent[slot(pulse.saturating_sub(12))];
@@ -112,10 +123,40 @@ impl WireStep {
         };
         if let Some(step) = resolved {
             let start = c.start;
+            self.rejected = (!step).then_some(c.prior.prior_period);
             self.candidate = None;
             self.next_check = pulse.saturating_add(17);
             return step.then_some((start, n.min(159) as u8));
         }
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_cooldown_after_a_sub_8_percent_decision_does_not_pass_a_short_proposal_in_that_band() {
+        let mut edge = WireStep::default();
+        let mut stamps = vec![0_i64];
+        let mut decided = None;
+        for pulse in 1..=60_i64 {
+            // A 7.8% faster tempo from pulse 41: the candidate fit resolves it as no step.
+            let stamp = stamps[pulse as usize - 1] + if pulse <= 40 { 25_000 } else { 23_200 };
+            stamps.push(stamp);
+            let proposed = (pulse == 50).then(|| ((46, stamps[46]), 4));
+            let wide = (pulse == 51).then(|| ((47, stamp - 4 * 20_000), 4));
+            let result = edge.observe(pulse, stamp, 25_000., 0., proposed.or(wide));
+            if edge.candidate.is_some() {
+                decided = Some(pulse);
+            }
+            match pulse {
+                50 => assert_eq!(result, None, "the cooldown confirmed a sub-8% step"),
+                51 => assert_eq!(result, wide, "a clear jump beyond the near-8% band still passes"),
+                _ => assert_eq!(result, None, "pulse {pulse}"),
+            }
+        }
+        assert!(decided.is_some_and(|p| p < 50) && edge.next_check > 51, "the candidate resolved before the proposal");
     }
 }
