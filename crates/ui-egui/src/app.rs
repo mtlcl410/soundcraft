@@ -82,6 +82,7 @@ impl SoundApp {
             synthetic_batch: None,
             synthetic_pointer_active: false,
             cancel_synthetic_pointer: false,
+            injected_acks: VecDeque::new(),
             cancel_synthetic_keys: false,
             cancel_synthetic_scroll: false,
             input_before_scroll: None,
@@ -112,6 +113,9 @@ impl SoundApp {
             system_fonts: true,
             theme_applied: None,
             docking_context: None,
+            docks: crate::docking::LiveDocks::default(),
+            framework_dialogs: craft_ui::dialog::DialogHost::new(),
+            framework_host: crate::framework::host(),
             sim: None,
             record_hint: None,
             quit_requested: false,
@@ -126,6 +130,7 @@ impl SoundApp {
             frame_ms: 0.0,
             last_frame: None,
             last_meter_poll: f64::NEG_INFINITY,
+            last_meter_block: f64::NEG_INFINITY,
             video: video_track::VideoPool::default(),
             bounce: None,
             imports: import::Imports::default(),
@@ -155,6 +160,12 @@ impl SoundApp {
         // Saved preferences are read as they are: a record offset out of range would place every
         // take that far off, and a punch would wait that long for it.
         self.ui.record_offset = self.ui.record_offset.clamp(-crate::RECORD_OFFSET_LIMIT, crate::RECORD_OFFSET_LIMIT);
+        // A saved state (a hand-edited `ui.json`) can hold more than the menu keeps: keep the newest
+        // (the list is newest first) and have the host save the corrected list.
+        if self.ui.recent_sessions.len() > crate::dialogs::recent::MAX_RECENT {
+            self.ui.recent_sessions.truncate(crate::dialogs::recent::MAX_RECENT);
+            self.recent_changed = true;
+        }
         // Fonts set now take effect next frame, so draw only from the frame after.
         if !self.fonts_ready {
             if self.fonts_installed {
@@ -186,7 +197,7 @@ impl SoundApp {
         // Frame pacing and the transport simulation use a monotonic host clock instead.
         let dt = self.tick_dt();
         self.last_frame = Some(self.uptime);
-        crate::control::expire_gestures(self);
+        crate::control::expire_gestures(self, ctx);
         crate::control::drain(self, ctx);
         self.note_recent_session();
         self.apply_editor_edits();
@@ -323,7 +334,7 @@ impl SoundApp {
         // Input preparation: remember this pass's real pointer/keyboard state, which `logic` (run
         // before `ui` in each pass and alone on hidden ticks) uses for gestures and automation.
         self.pointer_down = ctx.input(|i| i.pointer.any_down());
-        self.wants_keyboard = ctx.egui_wants_keyboard_input();
+        self.wants_keyboard = crate::framework::widget_has_keyboard(&ctx);
         // The integration creates this Ui before logic resolves the current frame's palette.
         ui.set_style(ctx.global_style());
         if !self.fonts_ready {
@@ -364,8 +375,11 @@ impl SoundApp {
         dialogs::show(self, &ctx);
         aaf_import::show(self, &ctx);
         updates_ui::show(self, &ctx);
+        self.run_framework_dialogs(ui);
         // The sampler's drop rects are current now, so route any captured drop in this pass.
         self.route_dropped_files();
+        // A scripted key (`ui.key`) is acknowledged by the framework's idle signal, not by egui's event list.
+        crate::control::injected_settled(self, &ctx);
         // The pass that actually received the injected events has already dispatched their widget
         // side effects, even when it then asks for another layout pass. `received_synthetic` was
         // captured before menus and widgets, so a widget that consumed the event from InputState
