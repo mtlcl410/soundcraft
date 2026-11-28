@@ -7,6 +7,8 @@ pub(crate) struct DriverTime {
     bucket: i64,
     minimum: i64,
     previous_min: Option<i64>,
+    /// Bucket minimum before `previous_min`, so a projected drift is seen twice.
+    older_min: Option<i64>,
 }
 
 #[cfg(any(test, target_os = "windows", target_os = "macos", target_os = "linux"))]
@@ -18,16 +20,20 @@ impl DriverTime {
         // forever: the driver's oscillator may run slower than the host's.
         let bucket = arrival.div_euclid(2_000_000);
         if self.last.is_none_or(|(last, _)| stamp < last) || bucket != self.bucket {
+            let previous = self.previous_min;
             self.previous_min = self.last.filter(|(last, _)| *last <= stamp).map(|(last, _)| {
                 if bucket == self.bucket + 1 {
                     return self.minimum;
                 }
-                // Project only previously observed upward drift across a gap, capped at 200 ppm.
-                // With a stable epoch the first delayed batch retains its learned mapping.
-                let drift = self.previous_min.map_or(0, |previous| self.minimum.saturating_sub(previous).clamp(0, 400));
+                // Project only upward drift seen in two consecutive bucket steps, capped at
+                // 200 ppm. A single late bucket is delivery delay, and with a stable epoch
+                // the first delayed batch retains its learned mapping.
+                let rise = |from: Option<i64>, to: Option<i64>| from.zip(to).map_or(0, |(from, to)| to.saturating_sub(from).clamp(0, 400));
+                let drift = rise(previous, Some(self.minimum)).min(rise(self.older_min, previous));
                 let gap = stamp.saturating_sub(last);
                 self.minimum.saturating_add((u128::from(gap) * drift as u128 / 2_000_000).min(i64::MAX as u128) as i64)
             });
+            self.older_min = previous.filter(|_| self.previous_min.is_some());
             self.bucket = bucket;
             self.minimum = offset;
         } else {
@@ -275,6 +281,21 @@ mod tests {
             let mapped = clock.map(driver, driver as i64 + 3_000);
             assert!(mapped.abs_diff(driver as i64) < 500, "mapped pause error {} us", mapped - driver as i64);
         }
+        // One late bucket is delivery delay, not drift: a batch after a pause keeps its spacing.
+        let mut clock = DriverTime::default();
+        assert_eq!(clock.map(0, 0), 0);
+        assert_eq!(clock.map(2_000_000, 2_000_400), 2_000_000);
+        let first = clock.map(32_000_000, 32_005_000);
+        let second = clock.map(32_002_000, 32_005_000);
+        assert_eq!(second - first, 2_000, "the late batch kept its driver spacing");
+        // Drift seen in consecutive buckets is still projected across the pause.
+        let mut clock = DriverTime::default();
+        for n in 0..10_i64 {
+            clock.map((n * 1_000_000) as u64, n * 1_000_000 + n * 100);
+        }
+        let driver = 40_000_000_i64;
+        let mapped = clock.map(driver as u64, driver + 4_000 + 3_000);
+        assert!(mapped.abs_diff(driver + 4_000) < 500, "projected drift error {} us", mapped - driver - 4_000);
     }
 
     #[test]
