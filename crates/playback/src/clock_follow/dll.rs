@@ -36,8 +36,13 @@ pub(crate) struct PulseDll {
     outside: u8,
 }
 
+/// Largest loop bandwidth per pulse (radians). The critically damped loop is stable only
+/// for w below about 1.03; at slow tempos a fixed bandwidth in Hz would exceed that, so the
+/// bandwidth is limited relative to the pulse rate (both loop poles stay at or below 0.5).
+const MAX_W: f64 = 0.7;
+
 fn gains(hz: f64, period_us: f64) -> (f64, f64) {
-    let w = 2. * std::f64::consts::PI * hz * period_us / 1e6;
+    let w = (2. * std::f64::consts::PI * hz * period_us / 1e6).min(MAX_W);
     (std::f64::consts::SQRT_2 * w, w * w)
 }
 
@@ -111,5 +116,27 @@ impl PulseDll {
     pub(crate) fn prediction(&self) -> Option<(i64, f64)> {
         (self.last.is_some() && self.pulses >= READY_PULSES && self.wide == 0 && self.outside == 0)
             .then(|| (self.current.round() as i64, self.period))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_one_microsecond_error_at_5_bpm_neither_grows_nor_withholds_predictions() {
+        // 5 BPM: 2 pulses per second.
+        let period = 500_000.;
+        let mut dll = PulseDll::default();
+        dll.observe(0, 0, Some(period));
+        for n in 1..=200i64 {
+            let at = n * 500_000 + i64::from(n == 40);
+            dll.observe(n, at, Some(period));
+            if n >= 48 {
+                let (stamp, fitted) = dll.prediction().unwrap_or_else(|| panic!("no prediction at pulse {n}"));
+                assert!((stamp - n * 500_000).abs() <= 2, "pulse {n}: error {}", stamp - n * 500_000);
+                assert!((fitted - period).abs() < 1., "pulse {n}: period {fitted}");
+            }
+        }
     }
 }
