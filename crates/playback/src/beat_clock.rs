@@ -206,7 +206,10 @@ impl SyncEncoder for Cursor {
         self.replan(old, new);
     }
     fn update(&mut self, b: Presentation, now: Instant, s: &Session, send: &mut dyn FnMut(Instant, &[u8])) -> Option<Instant> {
-        let at = b.sample_index_at(now);
+        // The loop end is exclusive: until the wrapping block is published, a pulse on it
+        // belongs to the next pass, not to this one.
+        let loop_end = b.looped.filter(|_| b.playing).map(|range| range.end);
+        let at = b.sample_index_at(now).min(loop_end.map_or(i64::MAX, |end| end.saturating_sub(1)));
         let remap = std::mem::take(&mut self.remap);
         let interrupted = std::mem::take(&mut self.timing_interrupted);
         if self.pass == Some(b.pass) && b.playing && !remap {
@@ -264,7 +267,7 @@ impl SyncEncoder for Cursor {
             return Some(now + Duration::from_millis(10));
         }
         let due = s.tempo.tick_to_samples(self.next_pulse.saturating_mul(TICKS_PER_CLOCK), s.sample_rate);
-        if due as f64 > b.limit {
+        if due as f64 > b.limit || (due as f64 == b.limit && loop_end.is_some_and(|end| due >= end)) {
             return Some(now + Duration::from_millis(1));
         }
         Some(b.instant_for(due as f64).max(now + CATCH_UP_SPACING))
@@ -305,6 +308,38 @@ mod tests {
         cursor.update(early, origin_at, &song, &mut |at, m| sent.push((at, m.to_vec())));
         assert_eq!(sent.iter().map(|m| m.1.clone()).collect::<Vec<_>>(), [song_position(8).to_vec(), vec![CONTINUE], vec![CLOCK]]);
         assert!(sent.iter().all(|m| m.0 >= origin_at - Duration::from_micros(1)), "{sent:?}");
+    }
+
+    #[test]
+    fn an_unrendered_loop_end_on_a_pulse_sends_no_old_pass_clock() {
+        let mut song = Session { sample_rate: SampleRate::HZ_48000, ..Session::default() };
+        song.tempo.set_tempo(0, 120.).unwrap();
+        let first = Instant::now();
+        // The loop 24 000..25 000 ends on pulse 25. The current block ends there and the
+        // next one, which wraps, has not been published yet.
+        let block = Presentation {
+            generation: 0,
+            sample_rate: song.sample_rate,
+            system_delay_samples: 0,
+            pass: 1,
+            origin: 24_000,
+            playing: true,
+            sample: 24_000.,
+            heard_at: first,
+            samples_per_second: 48_000.,
+            limit: 25_000.,
+            looped: Some(super::super::Range::new(24_000, 25_000)),
+            end: None,
+            lead: Some(Duration::ZERO),
+        };
+        let mut cursor = Cursor::default();
+        let mut clocks = 0;
+        for us in (0..=30_000).step_by(100) {
+            cursor.update(block.current(first + Duration::from_micros(us)), first + Duration::from_micros(us), &song, &mut |_, m| {
+                clocks += usize::from(m == [CLOCK]);
+            });
+        }
+        assert_eq!(clocks, 1, "only pulse 24 belongs to the rendered pass");
     }
 
     #[test]
