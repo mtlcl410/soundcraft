@@ -70,9 +70,10 @@ impl SoundApp {
     /// (`Player::recover_idle_asio`), with the status line saying what happened.
     pub(super) fn watch_output(&mut self) {
         if let Some(cause) = self.reopen_pending.take() {
+            let before = self.player.as_ref().map(|p| p.device_name.clone()).unwrap_or_default();
             self.reconnect_audio();
-            let silent = self.player.as_ref().is_none_or(|p| p.silent);
-            self.ui.status = reset_reopen_status(&cause, silent);
+            let opened = self.player.as_ref().filter(|p| !p.silent).map(|p| p.device_name.as_str());
+            self.ui.status = reset_reopen_status(&cause, &before, opened);
             return;
         }
         if let Some(p) = &mut self.player {
@@ -262,16 +263,19 @@ fn output_status(recording: bool, playing: bool, cause: &str, then: &str) -> Str
     }
 }
 
-/// The status line after the automatic reopen that followed a device reset (`cause`). A reopen
-/// that could not start an output stream falls back to the silent clock, which has no recovery of
-/// its own: the user must reconnect.
-fn reset_reopen_status(cause: &str, silent: bool) -> String {
-    let then = if silent {
-        crate::localization::text("Use Reconnect audio device in Setup › Playback Engine.")
-    } else {
-        crate::localization::text("SoundCraft reopened it.")
+/// The status line after the automatic reopen that followed a device reset (`cause`), from the
+/// output device open before (`before`) and the one opened (`opened`, `None` for the silent
+/// clock). A reopen that could not start an output stream falls back to the silent clock, which
+/// has no recovery of its own: the user must reconnect. An output that follows the system default
+/// can reopen on another device (the default changed, which is what reset the stream): the status
+/// line names the device opened rather than saying the old one was reopened.
+fn reset_reopen_status(cause: &str, before: &str, opened: Option<&str>) -> String {
+    let then = match opened {
+        None => crate::localization::text("Use Reconnect audio device in Setup › Playback Engine.").to_string(),
+        Some(name) if name == before => crate::localization::text("SoundCraft reopened it.").to_string(),
+        Some(name) => crate::localized_format!("SoundCraft reopened the audio output on “{name}”.", name = name),
     };
-    output_status(false, false, cause, then)
+    output_status(false, false, cause, &then)
 }
 
 /// The status line for an idle ASIO recovery attempt on device `name`, if it did anything.
@@ -339,10 +343,23 @@ mod reset_tests {
         // The reopen falls back to the silent clock when no output stream starts; the status line
         // said "SoundCraft reopened it." while nothing played, and nothing later corrected it.
         let cause = "“Model Mixer ASIO” asked to be reopened";
-        assert_eq!(reset_reopen_status(cause, false), "Audio output: “Model Mixer ASIO” asked to be reopened. SoundCraft reopened it.");
+        let asio = "Model Mixer ASIO";
+        assert_eq!(reset_reopen_status(cause, asio, Some(asio)), "Audio output: “Model Mixer ASIO” asked to be reopened. SoundCraft reopened it.");
         assert_eq!(
-            reset_reopen_status(cause, true),
+            reset_reopen_status(cause, asio, None),
             "Audio output: “Model Mixer ASIO” asked to be reopened. Use Reconnect audio device in Setup › Playback Engine."
+        );
+    }
+
+    #[test]
+    fn a_reset_reopen_on_another_device_names_the_device_opened() {
+        // WASAPI, output on the system default: switching the Windows default from the Model 12 to
+        // a monitor reopened the output on the monitor, but the status line said the Model 12 was
+        // reopened.
+        let cause = "“喇叭 (Model 12)” asked to be reopened";
+        assert_eq!(
+            reset_reopen_status(cause, "喇叭 (Model 12)", Some("ET322QK")),
+            "Audio output: “喇叭 (Model 12)” asked to be reopened. SoundCraft reopened the audio output on “ET322QK”."
         );
     }
 

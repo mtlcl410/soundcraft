@@ -1329,6 +1329,7 @@ fn menu_translate(source: &str) -> Option<&'static str> {
         "stopped providing audio at its configured rate" => "parou de fornecer áudio na taxa configurada",
         "asked to be reopened" => "pediu para ser reaberto",
         "SoundCraft reopened it." => "O SoundCraft o reabriu.",
+        "SoundCraft reopened the audio output on “{name}”." => "O SoundCraft reabriu a saída de áudio em “{name}”.",
         "SoundCraft reopens it in a moment." => "O SoundCraft o reabrirá em instantes.",
         "is available again" => "está disponível novamente",
         "SoundCraft reopens it when it is back." => "O SoundCraft o reabrirá quando ele voltar.",
