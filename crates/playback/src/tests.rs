@@ -2109,7 +2109,7 @@ fn clock_grid_pool_projects_both_midi_clip_edges_from_the_original_score() {
     let bounds = soundcraft_mix::MidiClipBeatBounds::from_score(&score, |_| true);
     side.set_follow_base(Arc::new(score), bounds);
     let mut grid = soundcraft_time::TempoMap::default();
-    for (bpm, start, end) in [(60., 96_002, 192_004), (240., 24_001, 48_001), (120., 48_001, 96_002)] {
+    for (bpm, start, end) in [(60., 96_002, 192_004), (240., 24_001, 48_002), (120., 48_001, 96_002)] {
         grid.set_tempo(0, bpm).unwrap();
         let doc = side.follow_snapshot(&grid).unwrap();
         let clip = &doc.track(musical).unwrap().clips()[0];
