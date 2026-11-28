@@ -440,9 +440,11 @@ impl MixEngine {
         let limit = through_tick.map_or(physical_end, |t| s.tempo.tick_to_samples(t, s.sample_rate).saturating_add(1));
         // At a compensated Continue the first callback may already be ahead of
         // the wire. Preserve the requested boundary attack and its note-off.
-        let start = self.held_score_from.take().unwrap_or_else(|| if self.midi_origin.is_some() { pos.min(limit.saturating_sub(1)) } else { pos });
+        // An empty block dispatches no score, so it keeps the held boundary for the next block.
+        let held = if frames == 0 { self.held_score_from } else { self.held_score_from.take() };
+        let start = held.unwrap_or_else(|| if self.midi_origin.is_some() { pos.min(limit.saturating_sub(1)) } else { pos });
         let score = Range { start, end: physical_end.min(limit).max(start) };
-        if !self.monitor_only && score.end < physical_end {
+        if frames > 0 && !self.monitor_only && score.end < physical_end {
             self.held_score_from = Some(score.end);
         }
         let note_start = self.midi_origin.unwrap_or(start);

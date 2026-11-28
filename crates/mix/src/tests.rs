@@ -2429,3 +2429,49 @@ fn a_seek_discards_the_score_range_the_wire_held_back() {
     let events = events.lock().unwrap().clone();
     assert!(events.iter().all(|e| e.1 != 60), "a note from the skipped range played: {events:?}");
 }
+
+#[test]
+fn a_zero_frame_clock_render_keeps_the_score_range_the_wire_held_back() {
+    use soundcraft_midi::{Note, Sequence};
+    use soundcraft_model::{ChannelFormat, Clip, TrackKind};
+    // One tick is 25 samples: the note at tick 970 (24 250) lies between the held wire (24 001)
+    // and the device cursor (24 576).
+    let run = |zero_frame: bool| {
+        let mut s = Session { sample_rate: soundcraft_time::SampleRate::HZ_48000, ..Session::default() };
+        let t = s.add_track(TrackKind::Instrument, ChannelFormat::Stereo, None);
+        let clip = s.new_clip_id();
+        let tr = s.track_mut(t).unwrap();
+        tr.instrument = Some(Insert::new("clap:test.notes"));
+        let mut seq = Sequence::default();
+        seq.notes.push(Note { start: 970, length: 240, pitch: 60, channel: 0, velocity: 100, release_velocity: 64 });
+        tr.playlist_mut().unwrap().clips.push(Clip::midi(clip, "note", 0, 96_000, seq));
+        let block = Arc::new(std::sync::atomic::AtomicI64::new(0));
+        let events = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let mut eng = MixEngine::new(48_000.0, 512);
+        eng.set_external_instances(true);
+        eng.adopt(vec![PreparedInstance {
+            track: t,
+            slot: INSTRUMENT_SLOT,
+            id: "clap:test.notes".into(),
+            ch: 2,
+            plugin: Box::new(NoteLog { inner: soundcraft_dsp::create("gain").unwrap(), block: Arc::clone(&block), events: Arc::clone(&events) }),
+        }]);
+        let mut out = vec![vec![0.0; 512]; 2];
+        let mut pos = 0;
+        while pos < 24_576 {
+            block.store(pos, std::sync::atomic::Ordering::Relaxed);
+            eng.render_with_clock_limit(&s, pos, 512, &mut out, Some(960));
+            pos += 512;
+        }
+        if zero_frame {
+            // The wire has moved past the cursor by the time of the empty call.
+            eng.render_with_clock_limit(&s, pos, 0, &mut out, Some(4_000));
+        }
+        block.store(pos, std::sync::atomic::Ordering::Relaxed);
+        eng.render_with_clock_prediction(&s, pos, 512, &mut out, 4_000);
+        let played = events.lock().unwrap().iter().any(|e| e.0 && e.1 == 60);
+        played
+    };
+    assert!(run(false), "the held note plays once the wire releases it");
+    assert!(run(true), "a zero-frame render dropped the held note");
+}
