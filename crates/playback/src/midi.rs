@@ -150,6 +150,27 @@ fn lost_entry(port: u8) -> u32 {
 
 pub(crate) type TransportWaker = Arc<dyn Fn(crate::mtc_input::ChaseEvent) + Send + Sync>;
 
+/// Pulse value meaning "no render limit" (coasting) inside a packed horizon.
+const NO_HORIZON: i64 = i64::MAX >> 1;
+
+/// Pack a render pulse (`i64::MAX` for none) and the coalesced flag into one word.
+const fn pack_horizon(pulse: i64, coalesced: bool) -> i64 {
+    let pulse = if pulse == i64::MAX { NO_HORIZON } else if pulse >= NO_HORIZON { NO_HORIZON - 1 } else { pulse };
+    pulse.wrapping_shl(1) | coalesced as i64
+}
+
+const fn unpack_horizon(word: i64) -> (i64, bool) {
+    (word >> 1, word & 1 != 0)
+}
+
+fn render_tick(pulse: i64) -> Option<i64> {
+    (pulse != NO_HORIZON).then(|| pulse.saturating_mul(soundcraft_time::TICKS_PER_QUARTER / 24))
+}
+
+fn delivery(coalesced: bool) -> soundcraft_mix::ClockDelivery {
+    if coalesced { soundcraft_mix::ClockDelivery::Coalesced } else { soundcraft_mix::ClockDelivery::Wire }
+}
+
 /// The path of MIDI events from the device threads to the audio thread, and of recorded events
 /// from the audio thread to the UI.
 pub struct MidiFeed {
@@ -159,8 +180,9 @@ pub struct MidiFeed {
     // A single writer (under clock_follow) publishes an optional period and its matching pulse.
     // The callback never waits for a writer; a concurrent change disables prediction for that read.
     clock_render_generation: AtomicU64,
-    clock_render_coalesced: AtomicBool,
-    clock_render_pulse: AtomicI64,
+    /// Render pulse and coalesced delivery in one word ([`pack_horizon`]), so a reader
+    /// outside the generation check still gets both from one publication.
+    clock_render_horizon: AtomicI64,
     clock_render_stamp: AtomicI64,
     clock_render_period: AtomicU64,
     mtc: Mutex<crate::mtc_input::Reader>,
@@ -231,8 +253,7 @@ impl Default for MidiFeed {
             clock_audio_pass: AtomicU64::new(0),
             clock_source: AtomicUsize::new(usize::MAX),
             clock_render_generation: AtomicU64::new(0),
-            clock_render_coalesced: AtomicBool::new(false),
-            clock_render_pulse: AtomicI64::new(i64::MAX),
+            clock_render_horizon: AtomicI64::new(pack_horizon(i64::MAX, false)),
             clock_render_stamp: AtomicI64::new(0),
             clock_render_period: AtomicU64::new(0),
             mtc: Mutex::default(),
@@ -453,10 +474,12 @@ impl MidiFeed {
 
     fn publish_clock_render(&self, input: &crate::clock_follow::Follower) {
         let pulse = input.render_through_pulse().unwrap_or(i64::MAX);
-        let (stamp, period) = input.render_prediction().unwrap_or((0, 0.));
+        self.publish_clock_horizon(pulse, input.coalesced_render(), input.render_prediction().unwrap_or((0, 0.)));
+    }
+
+    fn publish_clock_horizon(&self, pulse: i64, coalesced: bool, (stamp, period): (i64, f64)) {
         self.clock_render_generation.fetch_add(1, Ordering::SeqCst);
-        self.clock_render_pulse.store(pulse, Ordering::SeqCst);
-        self.clock_render_coalesced.store(input.coalesced_render(), Ordering::SeqCst);
+        self.clock_render_horizon.store(pack_horizon(pulse, coalesced), Ordering::SeqCst);
         self.clock_render_stamp.store(stamp, Ordering::SeqCst);
         self.clock_render_period.store(period.to_bits(), Ordering::SeqCst);
         self.clock_render_generation.fetch_add(1, Ordering::SeqCst);
@@ -472,14 +495,13 @@ impl MidiFeed {
     pub(crate) fn clock_output_window(&self, callback_us: i64, presentation_end_us: i64) -> (Option<i64>, soundcraft_mix::ClockDelivery) {
         use soundcraft_mix::ClockDelivery;
         let generation = self.clock_render_generation.load(Ordering::SeqCst);
-        let Some(hard) = self.clock_render_tick() else {
+        let (Some(hard), wire) = self.clock_wire_window() else {
             return (None, ClockDelivery::Wire);
         };
-        let wire = self.clock_delivery();
         let stamp = self.clock_render_stamp.load(Ordering::SeqCst);
         let period = f64::from_bits(self.clock_render_period.load(Ordering::SeqCst));
         if !generation.is_multiple_of(2) || self.clock_render_generation.load(Ordering::SeqCst) != generation {
-            return (self.clock_render_tick(), self.clock_delivery());
+            return self.clock_wire_window();
         }
         let age = callback_us.saturating_sub(stamp);
         // A buffer shorter than one pulse still projects: with the output lead, the one-pulse
@@ -494,19 +516,20 @@ impl MidiFeed {
         (Some(projected), if projected > hard { ClockDelivery::Predicted } else { wire })
     }
 
+    /// The wire-limited horizon and its event placement, from one publication.
+    pub fn clock_wire_window(&self) -> (Option<i64>, soundcraft_mix::ClockDelivery) {
+        let (pulse, coalesced) = unpack_horizon(self.clock_render_horizon.load(Ordering::Acquire));
+        (render_tick(pulse), delivery(coalesced))
+    }
+
     /// Event placement for a wire-limited device block, including when latency timing is unavailable.
     pub fn clock_delivery(&self) -> soundcraft_mix::ClockDelivery {
-        if self.clock_render_coalesced.load(Ordering::Acquire) {
-            soundcraft_mix::ClockDelivery::Coalesced
-        } else {
-            soundcraft_mix::ClockDelivery::Wire
-        }
+        self.clock_wire_window().1
     }
 
     /// Inclusive clip/click event horizon. Coasting has no external render limit.
     pub fn clock_render_tick(&self) -> Option<i64> {
-        let pulse = self.clock_render_pulse.load(Ordering::Acquire);
-        (pulse != i64::MAX).then(|| pulse.saturating_mul(soundcraft_time::TICKS_PER_QUARTER / 24))
+        self.clock_wire_window().0
     }
 
     pub(crate) fn arm_clock_resume(&self, port: u8, cue: crate::clock_follow::PreparedResume) -> bool {
@@ -1258,6 +1281,31 @@ mod backend {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_wire_window_reads_its_horizon_and_delivery_from_one_publication() {
+        use soundcraft_mix::ClockDelivery;
+        let feed = MidiFeed::default();
+        let stop = AtomicBool::new(false);
+        std::thread::scope(|scope| {
+            scope.spawn(|| {
+                for n in 0..400_000 {
+                    // Even pulses are coalesced, odd ones are wire-timed.
+                    let pulse = 1_000 + (n % 2);
+                    feed.publish_clock_horizon(pulse, pulse % 2 == 0, (0, 0.));
+                }
+                stop.store(true, Ordering::Release);
+            });
+            const TICKS: i64 = soundcraft_time::TICKS_PER_QUARTER / 24;
+            while !stop.load(Ordering::Acquire) {
+                for (tick, delivery) in [feed.clock_wire_window(), feed.clock_output_window(0, 1)] {
+                    let Some(tick) = tick else { continue };
+                    let coalesced = tick / TICKS % 2 == 0;
+                    assert_eq!(delivery == ClockDelivery::Coalesced, coalesced, "pulse {} with {delivery:?}", tick / TICKS);
+                }
+            }
+        });
+    }
 
     #[test]
     fn clock_status_polls_publish_only_when_the_render_horizon_expires() {

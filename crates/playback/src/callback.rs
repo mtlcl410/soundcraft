@@ -1035,7 +1035,7 @@ impl AudioState {
                         let end = timing.heard_instant(self.device_rate, frame_index + device_frames.min(remaining));
                         return feed.clock_output_window(feed.clock(), feed.timestamp_at(end));
                     }
-                    (feed.clock_render_tick(), feed.clock_delivery())
+                    feed.clock_wire_window()
                 });
                 self.render_next(if delivery == soundcraft_mix::ClockDelivery::Predicted { render_frames } else { quantum }, through, delivery);
                 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
