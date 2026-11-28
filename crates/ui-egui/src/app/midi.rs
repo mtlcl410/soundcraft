@@ -125,6 +125,18 @@ impl SoundApp {
         (take.clips.len(), midi_take_problem(take.gaps, uncollected, confirmed))
     }
 
+    /// A cancelled record pass: what was played during it goes nowhere, and the next pass starts
+    /// from nothing.
+    pub(crate) fn discard_midi_take(&mut self) {
+        if let Some(m) = &self.midi_inputs {
+            m.feed().take_recorded(&mut self.midi_take);
+            m.feed().take_recorded_lost();
+        }
+        self.midi_take.clear();
+        self.midi_take_lost = 0;
+        self.midi_take_inputs.clear();
+    }
+
     /// Open the MIDI inputs once, hand them to the audio engine, and keep following devices that
     /// are plugged in or removed. Collects what is played while recording.
     pub(crate) fn service_midi(&mut self, now: f64) {

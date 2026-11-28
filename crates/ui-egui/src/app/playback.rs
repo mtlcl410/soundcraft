@@ -305,6 +305,68 @@ impl SoundApp {
         }
     }
 
+    /// Cmd+. (Ctrl+. off macOS). While recording it stops and discards the take: its files leave
+    /// the disk, no clip or playlist is added and nothing reaches the undo history (Pro Tools
+    /// p.789 and p.820); in Loop Record every pass of it goes (p.800). Destructive Record does not
+    /// allow it (p.789). Otherwise it is Stop (p.1895, All Transport Buttons Off).
+    fn cancel_take(&mut self) {
+        if !self.engine.transport.recording {
+            self.stop_play();
+            return;
+        }
+        if self.engine.session().edit.record_mode == "destructive" {
+            self.ui.status = crate::localization::text("Cannot cancel the take while Destructive Record is on").into();
+            return;
+        }
+        let looped = self.take_plan.as_ref().is_some_and(|p| p.pass.is_some());
+        let kept = self.discard_recording();
+        self.stop_play();
+        self.ui.status = if looped {
+            crate::localization::text("Loop record cancelled: every take of the pass was discarded")
+        } else {
+            crate::localization::text("Record take cancelled: nothing was kept")
+        }
+        .to_string();
+        if let Some(p) = kept {
+            log::warn!("cancelled take: {p}");
+            self.ui.status = format!("{} ({p})", self.ui.status);
+        }
+    }
+
+    /// Ends recording without placing anything: the audio input and the MIDI pass stop as for
+    /// [`Self::finish_recording`], then the take's files are deleted and its MIDI dropped. Returns
+    /// the files that could not be deleted, if any.
+    fn discard_recording(&mut self) -> Option<String> {
+        self.engine.transport.recording = false;
+        let midi_pass = self.end_midi_pass();
+        if let Some(p) = &self.player {
+            match midi_pass {
+                Some(pass) => p.end_recording(pass),
+                None => p.set_recording(false),
+            }
+        }
+        // The autosave goes on without the plan, so crash recovery has no take to bring back.
+        let plan = self.take_plan.take();
+        self.punch = None;
+        self.autosaved_rev = 0;
+        let files: Vec<std::path::PathBuf> = match (&mut self.recorder, &plan) {
+            (Some(r), _) => r.finish().0.into_iter().map(|(_, path)| path).collect(),
+            (None, Some(plan)) => plan.takes.iter().map(|t| t.path.clone()).collect(),
+            (None, None) => Vec::new(),
+        };
+        // The audio engine still answers for the pass, so the next one does not wait on it.
+        let _ = self.await_midi_capture(midi_pass);
+        self.discard_midi_take();
+        let left: Vec<String> = files
+            .iter()
+            .filter_map(|f| match std::fs::remove_file(f) {
+                Err(e) if e.kind() != std::io::ErrorKind::NotFound => Some(format!("{}: {e}", f.display())),
+                _ => None,
+            })
+            .collect();
+        (!left.is_empty()).then(|| crate::localized_format!("could not delete {files}", files = left.join("; ")))
+    }
+
     /// While playing, record volume automation from fader positions for tracks in Write mode, and
     /// for Touch/Latch tracks whose fader is (or, for Latch, was) being moved. Send levels follow the
     /// same rules, per send, from its slot or its floating send window. Each point replaces the
@@ -483,6 +545,7 @@ impl SoundApp {
                         self.start_recording();
                     }
                 }
+                TransportRequest::CancelTake => self.cancel_take(),
                 TransportRequest::Locate(at) => {
                     if self.is_playing() {
                         if let Some(p) = &self.player {
@@ -618,6 +681,137 @@ mod tests {
         assert_eq!(clips[0].start, 48_000, "the take is trimmed to the punch");
         assert_eq!(clips[0].end(), 96_000, "the take covers the punch");
         let _ = std::fs::remove_file(&take);
+    }
+
+    /// A take file of `frames` samples of silence, mono at 48 kHz, in a folder of its own.
+    fn take_file(name: &str, frames: usize) -> std::path::PathBuf {
+        let dir = std::env::temp_dir().join(format!("soundcraft-{name}-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let take = dir.join("take.wav");
+        let opts = craft_audio::EncodeOptions::new(craft_audio::EncodeFormat::Wav);
+        let audio = craft_audio::AudioBuffer { sample_rate: 48_000, channels: vec![vec![0.0; frames]] };
+        std::fs::write(&take, craft_audio::encode(&audio, &opts).unwrap()).unwrap();
+        take
+    }
+
+    /// An app recording onto one mono track into `take`, from 0 (in passes of `pass` when loop
+    /// recording), with the transport playing.
+    fn recording_into(take: &std::path::Path, pass: Option<Samples>) -> (SoundApp, TrackId) {
+        let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, crate::Services::default());
+        app.run("track.new", json!({"count": 1, "format": "mono"})).unwrap();
+        let track = app.engine.session().tracks[0].id;
+        app.run("mix.record_arm", json!({"value": true})).unwrap();
+        app.record_start = 0;
+        app.take_plan = Some(soundcraft_engine::io::Recording {
+            start: 0,
+            pass,
+            punch: None,
+            rate: 48_000,
+            takes: vec![soundcraft_engine::io::Take { track, path: take.to_path_buf(), channels: 1 }],
+        });
+        app.start_play(0, None, pass.map(|len| Range::new(0, len)));
+        app.engine.transport.recording = true;
+        app.engine.transport.position = 120_000;
+        (app, track)
+    }
+
+    /// Cmd+. on macOS, Ctrl+. elsewhere, pressed on the keyboard; then the frame's transport pass.
+    fn press_cmd_period(app: &mut SoundApp, os: egui::os::OperatingSystem) {
+        let ctx = egui::Context::default();
+        ctx.set_os(os);
+        let held = if os == egui::os::OperatingSystem::Mac {
+            egui::Modifiers { mac_cmd: true, command: true, ..egui::Modifiers::NONE }
+        } else {
+            egui::Modifiers { ctrl: true, command: true, ..egui::Modifiers::NONE }
+        };
+        let key =
+            |pressed| egui::Event::Key { key: egui::Key::Period, physical_key: Some(egui::Key::Period), pressed, repeat: false, modifiers: held };
+        let events = vec![egui::Event::ModifiersChanged(held), key(true), key(false)];
+        ctx.run_ui(egui::RawInput { events, ..Default::default() }, |ui| crate::shortcuts::handle(app, ui.ctx())).textures_delta.clear();
+        app.handle_transport(1.0 / 60.0);
+    }
+
+    const OSES: [egui::os::OperatingSystem; 2] = [egui::os::OperatingSystem::Mac, egui::os::OperatingSystem::Windows];
+
+    /// Pro Tools p.789: Cmd+. (Ctrl+. on Windows) while recording discards the take: its audio
+    /// leaves the disk, no clip reaches the playlist, and there is nothing to undo.
+    #[test]
+    fn cmd_period_while_recording_stops_and_discards_the_take() {
+        for os in OSES {
+            let take = take_file(&format!("cancel-take-{os:?}"), 96_000);
+            let (mut app, track) = recording_into(&take, None);
+            let history = app.engine.undo_history();
+            press_cmd_period(&mut app, os);
+            assert!(!app.engine.transport.recording && !app.is_playing(), "{os:?}: the transport stops");
+            assert!(app.engine.session().track(track).unwrap().clips().is_empty(), "{os:?}: no clip is placed");
+            assert!(!take.exists(), "{os:?}: the take's audio is removed from the disk");
+            assert_eq!(app.engine.undo_history(), history, "{os:?}: the cancelled take leaves no undo step");
+            assert!(app.take_plan.is_none(), "{os:?}: crash recovery has no take to bring back");
+            let _ = std::fs::remove_dir_all(take.parent().unwrap());
+        }
+    }
+
+    /// Pro Tools p.800 step 8: in Loop Record, Cmd+. cancels every take of the pass, so no
+    /// playlist is added for them either.
+    #[test]
+    fn cmd_period_in_loop_record_discards_every_pass() {
+        for os in OSES {
+            // Two and a half passes of 48 000 recorded: stopped, two takes would be kept.
+            let take = take_file(&format!("cancel-loop-{os:?}"), 120_000);
+            let (mut app, track) = recording_into(&take, Some(48_000));
+            let (playlists, history) = (app.engine.session().track(track).unwrap().playlists.len(), app.engine.undo_history());
+            press_cmd_period(&mut app, os);
+            let t = app.engine.session().track(track).unwrap();
+            assert!(!app.engine.transport.recording && !app.is_playing(), "{os:?}");
+            assert_eq!(t.playlists.len(), playlists, "{os:?}: no playlist for the cancelled takes");
+            assert!(t.playlists.iter().all(|p| p.clips.is_empty()), "{os:?}: no take is kept");
+            assert!(!take.exists(), "{os:?}");
+            assert_eq!(app.engine.undo_history(), history, "{os:?}");
+            let _ = std::fs::remove_dir_all(take.parent().unwrap());
+        }
+    }
+
+    /// Without a take under way Cmd+. is Stop (Pro Tools p.1895, All Transport Buttons Off).
+    #[test]
+    fn cmd_period_while_only_playing_stops() {
+        for os in OSES {
+            let mut app = SoundApp::new(soundcraft_engine::Engine::default(), None, crate::Services::default());
+            app.start_play(48_000, None, None);
+            press_cmd_period(&mut app, os);
+            assert!(!app.is_playing(), "{os:?}");
+        }
+    }
+
+    /// Pro Tools p.789: canceling is prohibited in Destructive Record mode. The take goes on, and
+    /// the status line says why.
+    #[test]
+    fn cmd_period_in_destructive_record_keeps_recording_and_says_why() {
+        let take = take_file("cancel-destructive", 48_000);
+        let (mut app, _) = recording_into(&take, None);
+        app.run("options.destructive_record", json!({"value": true})).unwrap();
+        press_cmd_period(&mut app, egui::os::OperatingSystem::Mac);
+        assert!(app.engine.transport.recording && app.is_playing(), "the take goes on");
+        assert!(take.exists());
+        assert!(app.ui.status.contains("Destructive Record"), "{}", app.ui.status);
+        let _ = std::fs::remove_dir_all(take.parent().unwrap());
+    }
+
+    /// A take file that cannot be removed is reported, not passed over: the take is still not
+    /// placed, and the status line names the file.
+    #[cfg(unix)]
+    #[test]
+    fn a_cancelled_take_that_cannot_be_removed_is_reported() {
+        use std::os::unix::fs::PermissionsExt;
+        let take = take_file("cancel-locked", 48_000);
+        let dir = take.parent().unwrap().to_path_buf();
+        let (mut app, track) = recording_into(&take, None);
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o500)).unwrap();
+        press_cmd_period(&mut app, egui::os::OperatingSystem::Mac);
+        std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700)).unwrap();
+        assert!(app.engine.session().track(track).unwrap().clips().is_empty());
+        assert!(take.exists(), "the folder was read-only");
+        assert!(app.ui.status.contains("take.wav"), "{}", app.ui.status);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     /// A Record press while recording but not playing (a player that died mid-take, say)

@@ -355,6 +355,21 @@ fn a_host_cmd_shift_period_turns_all_notes_off_and_does_not_nudge() {
     }
 }
 
+/// Cmd+. (Ctrl+. off macOS) cancels the record take (Pro Tools p.789), also under Commands Keyboard
+/// Focus, where a bare `.` nudges.
+#[test]
+fn cmd_period_cancels_the_take_and_does_not_nudge() {
+    for (os, cmd) in OSES {
+        let (ctx, mut app) = rig(os);
+        app.run("options.keyboard_focus", json!({"focus": "commands"})).unwrap();
+        app.run("edit.select", json!({"tracks": ["Kick"], "start": 48_000, "end": 96_000})).unwrap();
+        app.engine.transport_requests.clear();
+        press(&ctx, &mut app, Key::Period, cmd);
+        assert_eq!(app.engine.transport_requests, [TransportRequest::CancelTake], "{os:?}");
+        assert_eq!(start(&app), 48_000, "{os:?}: the chord nudged the selection");
+    }
+}
+
 /// Shift+/ is Link Timeline and Edit Selection. Every platform reports that press as `?`.
 #[test]
 fn a_host_shift_slash_toggles_link_timeline_and_edit_selection() {

@@ -92,6 +92,9 @@ pub enum TransportRequest {
     Stop,
     TogglePlay,
     Record,
+    /// Cmd+. (Ctrl+. off macOS): while recording, stop and discard the take (in Loop Record every
+    /// pass of it), leaving no clip, file or undo step; otherwise Stop.
+    CancelTake,
     Locate(Samples),
     PlaySelection,
     Pause,

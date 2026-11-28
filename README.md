@@ -133,7 +133,8 @@ where things are.
   and Audio-to-MIDI from a sung or played melody. MIDI keyboards play the instruments live and
   are recorded into MIDI clips ([how](docs/midi-input.md)).
 - **Recording:** punch in on a selection or on the fly, pre/post-roll, loop recording with a
-  playlist per take, input monitoring through the full channel strip, and autosave with recovery.
+  playlist per take, Cmd+. (Ctrl+.) to cancel a take while it records, input monitoring through
+  the full channel strip, and autosave with recovery.
 - **Time and tempo:** Bars|Beats, Min:Secs, Timecode (every rate, drop-frame included),
   Feet+Frames and Samples; tempo and meter maps with a tempo editor; linear, parabolic and
   S-curve tempo ramps; key signatures and detected chords; Beat Analysis and Identify Beat;

@@ -78,7 +78,8 @@ runs is recorded from the next pass, and one taken out of record keeps what it r
 that received nothing gets no clip. The clip covers the pass, the punch range, or the loop. A key
 pressed before a punch range (during the pre-roll) and still held when it starts is recorded
 from the start of the range.
-One **Undo** removes the take.
+One **Undo** removes the take. To throw a take away while it records, press **Cmd+.** (**Ctrl+.**
+on Windows and Linux): the transport stops and nothing is kept, in loop record every pass of it.
 
 **Setup › MIDI › MIDI Input Filter…** keeps kinds of messages (for example aftertouch) out of
 recordings.
