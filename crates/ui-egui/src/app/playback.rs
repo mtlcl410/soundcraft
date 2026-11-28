@@ -12,6 +12,9 @@ pub(crate) fn automation_step_due(pos: Samples, last: Samples, step: Samples) ->
     last == i64::MIN || pos.saturating_sub(last) >= step || last.saturating_sub(pos) >= step
 }
 
+/// The status line in Record Ready.
+const RECORD_READY: &str = "Record Ready: press Play or Space to record. Record again or Stop cancels.";
+
 impl SoundApp {
     pub fn is_playing(&self) -> bool {
         self.engine.transport.playing
@@ -30,6 +33,8 @@ impl SoundApp {
     }
 
     fn start_play(&mut self, from: Samples, end: Option<Samples>, looped: Option<Range>) {
+        // Record Ready holds only while stopped: any start ends it (a record pass has left it already).
+        self.leave_record_ready();
         if let Some(p) = &self.player {
             p.update_session(self.engine.session_arc());
             p.play(from, end, looped);
@@ -50,6 +55,8 @@ impl SoundApp {
     }
 
     pub(crate) fn stop_play(&mut self) {
+        // Stop in Record Ready disarms it, recording nothing.
+        self.leave_record_ready();
         if let Some(p) = &self.player {
             // Half-speed is a separate command. Stop must not leave that rate for the next Play.
             p.set_speed(1.0);
@@ -91,16 +98,56 @@ impl SoundApp {
         self.edit_layout.follow_hold = false;
     }
 
-    fn start_recording(&mut self) {
-        let armed = self.engine.session().tracks.iter().any(|t| t.mixer.record_arm);
-        if !armed {
-            let why = if self.engine.session().tracks.is_empty() {
-                crate::localization::text("Nothing to record on yet: add a track with Track › New…, then click its R button.")
-            } else {
-                crate::localization::text("No track is record-enabled: click the R button on the track to record.")
-            };
-            self.ui.status = why.into();
-            self.record_hint = Some((self.last_frame.unwrap_or_default(), why));
+    /// Record Ready: the Record button was pressed with the transport stopped. The Record buttons
+    /// flash and nothing moves; Play, Space or `transport.play` start the pass, Record again or
+    /// Stop leave it (Pro Tools Reference Guide p. 788 steps 7 and 9).
+    pub fn record_ready(&self) -> bool {
+        self.engine.transport.record_ready
+    }
+
+    /// The Record button from stop: arm the transport. With nothing record-enabled it shows why
+    /// (#329's hint) instead, so the button never flashes for a pass that cannot record.
+    fn enter_record_ready(&mut self) {
+        if !self.record_enabled_or_hint() {
+            return;
+        }
+        self.engine.transport.record_ready = true;
+        self.ui.status = crate::localization::text(RECORD_READY).into();
+    }
+
+    /// Leave Record Ready without recording: nothing is recorded and no undo step is made. Its
+    /// status line message goes with it; a later message stays.
+    pub(crate) fn leave_record_ready(&mut self) {
+        if std::mem::take(&mut self.engine.transport.record_ready) && self.ui.status == crate::localization::text(RECORD_READY) {
+            self.ui.status.clear();
+        }
+    }
+
+    /// Whether a track is record-enabled; if not, says what to do (status line and the hint at
+    /// the Record buttons).
+    fn record_enabled_or_hint(&mut self) -> bool {
+        if self.engine.session().tracks.iter().any(|t| t.mixer.record_arm) {
+            return true;
+        }
+        let why = if self.engine.session().tracks.is_empty() {
+            crate::localization::text("Nothing to record on yet: add a track with Track › New…, then click its R button.")
+        } else {
+            crate::localization::text("No track is record-enabled: click the R button on the track to record.")
+        };
+        self.ui.status = why.into();
+        self.record_hint = Some((self.last_frame.unwrap_or_default(), why));
+        false
+    }
+
+    /// The one place a record pass starts: Play or Space in Record Ready, the record-now keys and
+    /// `transport.record` from stop, and Record while playing (punch in on the fly). The pass is
+    /// set up from the tracks and options as they are now. It leaves Record Ready whether or not
+    /// the pass can start; when it cannot, the transport stays stopped and the status line says
+    /// why. From stop the pass starts at `from` when given (`transport.play {from}`, no punch or
+    /// pre-roll), otherwise at the selection (punch, pre-roll, Loop Record).
+    pub(crate) fn start_recording(&mut self, from: Option<Samples>) {
+        self.leave_record_ready();
+        if !self.record_enabled_or_hint() {
             return;
         }
         // A pass records audio, MIDI or both: it needs one of them ready. The audio input is
@@ -151,7 +198,11 @@ impl SoundApp {
             self.plan_recording(takes, None);
             return;
         }
-        let e = self.engine.session().edit.clone();
+        let mut e = self.engine.session().edit.clone();
+        if let Some(at) = from {
+            e.selection = Range::point(at);
+            e.pre_post_roll = false;
+        }
         let sel = e.selection;
         // Loop recording needs a selection the transport will loop: one too short for that is
         // recorded as a punch, like any other selection.
@@ -399,6 +450,27 @@ impl SoundApp {
         }
     }
 
+    /// Record (`button`: the Record buttons, `transport.record_ready`; otherwise F12, Cmd+Space,
+    /// `transport.record`). From stop the buttons arm or disarm Record Ready and the keys record at
+    /// once; while playing both punch in, and while recording both punch out.
+    fn record(&mut self, button: bool) {
+        if self.engine.transport.recording {
+            // Punching out ends the take; while playing, the transport keeps running, like
+            // QuickPunch. `finish_recording` places the take without touching playback.
+            if self.is_playing() {
+                self.finish_recording();
+            } else {
+                self.stop_play();
+            }
+        } else if !button || self.is_playing() {
+            self.start_recording(None);
+        } else if self.record_ready() {
+            self.leave_record_ready();
+        } else {
+            self.enter_record_ready();
+        }
+    }
+
     /// Play from the selection, honouring loop playback and selection end.
     pub fn play_from_selection(&mut self) {
         let s = self.engine.session();
@@ -441,12 +513,16 @@ impl SoundApp {
                     self.main_meter = MeterDisplay::default();
                 }
                 TransportRequest::Play => {
-                    if !self.is_playing() {
+                    if self.record_ready() {
+                        self.start_recording(None);
+                    } else if !self.is_playing() {
                         self.play_from_selection();
                     }
                 }
                 TransportRequest::PlayFrom(at) => {
-                    if self.is_playing() {
+                    if self.record_ready() {
+                        self.start_recording(Some(at));
+                    } else if self.is_playing() {
                         // Playing on from `at` drops the end and loop of the earlier selection.
                         if let Some(p) = &self.player {
                             p.play(at, None, None);
@@ -465,24 +541,14 @@ impl SoundApp {
                 TransportRequest::TogglePlay => {
                     if self.is_playing() {
                         self.stop_play();
+                    } else if self.record_ready() {
+                        self.start_recording(None);
                     } else {
                         self.play_from_selection();
                     }
                 }
-                TransportRequest::Record => {
-                    if self.engine.transport.recording {
-                        // Punching out ends the take; while playing, the transport keeps
-                        // running, like QuickPunch. `finish_recording` places the take
-                        // without touching playback.
-                        if self.is_playing() {
-                            self.finish_recording();
-                        } else {
-                            self.stop_play();
-                        }
-                    } else {
-                        self.start_recording();
-                    }
-                }
+                TransportRequest::Record => self.record(false),
+                TransportRequest::RecordReady => self.record(true),
                 TransportRequest::Locate(at) => {
                     if self.is_playing() {
                         if let Some(p) = &self.player {

@@ -22,18 +22,17 @@ pub(super) fn transport_window(app: &mut SoundApp, ctx: &egui::Context) {
                     ("play", "transport.play"),
                     ("ffwd", "transport.fast_forward"),
                     ("end", "transport.go_to_end"),
-                    ("record", "transport.record"),
+                    ("record", "transport.record_ready"),
                 ] {
-                    let resp = crate::widgets::icon_button(
-                        ui,
-                        vec2(34.0, 26.0),
-                        icon,
-                        (cmd == "transport.play" && app.is_playing()) || (cmd == "transport.record" && app.engine.transport.recording),
-                        cmd,
-                    );
-                    if cmd == "transport.record"
-                        && let Some(why) = app.record_hint()
-                    {
+                    let record = cmd == "transport.record_ready";
+                    let lit = record && crate::toolbar::record_lit(app, ui.ctx());
+                    let resp = crate::widgets::icon_button(ui, vec2(34.0, 26.0), icon, (cmd == "transport.play" && app.is_playing()) || lit, cmd);
+                    if record {
+                        // Its state for assistive technology holds while the button flashes.
+                        let on = app.engine.transport.recording || app.record_ready();
+                        resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, on, cmd));
+                    }
+                    if record && let Some(why) = app.record_hint() {
                         egui::Tooltip::for_widget(&resp).show(|ui| ui.label(why));
                     }
                     if resp.clicked() {

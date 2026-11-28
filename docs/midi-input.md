@@ -68,8 +68,10 @@ the track's instrument, with the transport stopped or running.
 
 ## 4. Record
 
-Record-enable one or more MIDI or instrument tracks and record as usual (**Record**, then
-**Play**). No audio input is needed for a pass that records MIDI only.
+Record-enable one or more MIDI or instrument tracks and record as usual: **Record** arms the
+transport (Record Ready: the button flashes and nothing moves), then **Play** or Space starts the
+pass; Record again or Stop disarms. F12 or Cmd+Space (Ctrl+Space on Windows and Linux) record at
+once. No audio input is needed for a pass that records MIDI only.
 
 When the pass stops, each track that was record-enabled and active when it started gets a MIDI
 clip with what its input received: notes with their velocities, controllers, pitch bend, aftertouch and

@@ -72,14 +72,21 @@ impl SoundApp {
                 crate::localization::text("Use Reconnect audio device in Setup › Playback Engine."),
             ),
         };
-        let (recording, playing) = (self.engine.transport.recording, self.engine.transport.playing);
+        let (recording, playing, ready) = (self.engine.transport.recording, self.engine.transport.playing, self.record_ready());
         if recording || playing {
             self.stop_play();
+        }
+        // An armed transport would promise a pass that cannot start.
+        self.leave_record_ready();
+        if ready {
+            self.record_ready_lost = Some(self.uptime);
         }
         self.ui.status = if recording {
             crate::localized_format!("Recording stopped: {cause} The take is kept up to there. {then}", cause = cause, then = then)
         } else if playing {
             crate::localized_format!("Playback stopped: {cause} {then}", cause = cause, then = then)
+        } else if ready {
+            crate::localized_format!("Record Ready cancelled: {cause} {then}", cause = cause, then = then)
         } else {
             crate::localized_format!("Audio output: {cause} {then}", cause = cause, then = then)
         };
@@ -101,6 +108,9 @@ impl SoundApp {
         if recording {
             self.stop_play();
         }
+        // A device that went away usually takes the output down a moment before the input.
+        let ready = self.record_ready() || self.record_ready_lost.take().is_some_and(|at| self.uptime - at < 2.0);
+        self.leave_record_ready();
         let (what, then) = match trouble {
             Trouble::Device(what) => {
                 self.recorder = None;
@@ -111,6 +121,8 @@ impl SoundApp {
         };
         self.ui.status = if recording {
             crate::localized_format!("Recording stopped: {what} The take is kept up to there. {then}", what = what, then = then)
+        } else if ready {
+            crate::localized_format!("Record Ready cancelled: {what} {then}", what = what, then = then)
         } else {
             crate::localized_format!("Audio input: {what} {then}", what = what, then = then)
         };

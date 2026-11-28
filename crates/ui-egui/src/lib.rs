@@ -464,6 +464,9 @@ pub struct SoundApp {
     sim: Option<(Samples, Option<Samples>, Option<Range>)>,
     /// When Record last found nothing to record on, and why: the Record buttons show it for a moment.
     record_hint: Option<(f64, &'static str)>,
+    /// When the lost output last cancelled Record Ready (uptime): the input, lost with it a moment
+    /// later, says so too instead of replacing that message.
+    record_ready_lost: Option<f64>,
     pub quit_requested: bool,
     /// Reset floating-window positions next frame (Window › Arrange).
     pub arrange_request: bool,

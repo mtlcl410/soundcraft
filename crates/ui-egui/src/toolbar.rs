@@ -578,10 +578,36 @@ fn menu_modifier(ui: &mut Ui, app: &mut SoundApp, cmd: &str, selected: bool, lab
     });
 }
 
+/// Whether a Record button is lit this frame: steadily while recording, and in Record Ready on
+/// and off twice a second, the flashing Record button of Pro Tools (Reference Guide p. 788 step 7).
+pub(crate) fn record_lit(app: &SoundApp, ctx: &egui::Context) -> bool {
+    if app.engine.transport.recording {
+        return true;
+    }
+    if !app.record_ready() {
+        return false;
+    }
+    let phase = ctx.input(|i| i.time) * 2.0;
+    ctx.request_repaint_after_secs(((1.0 - phase.fract()) / 2.0) as f32);
+    (phase as i64) % 2 == 0
+}
+
+/// The Record buttons' tooltip: they arm the transport; the keys that record at once.
+pub(crate) fn record_tip() -> &'static str {
+    // macOS gives Cmd+Space to Spotlight unless the user frees it, so name F12 first.
+    if cfg!(target_os = "macos") {
+        crate::localization::text("Record Ready (record at once: F12 or Cmd+Space)")
+    } else {
+        crate::localization::text("Record Ready (record at once: F12 or Ctrl+Space)")
+    }
+}
+
 fn transport(app: &mut SoundApp, ui: &mut Ui) {
     let t = Tokens::current();
     let playing = app.is_playing();
     let recording = app.engine.transport.recording;
+    let record_on = recording || app.record_ready();
+    let record_lit = record_lit(app, ui.ctx());
     let looped = app.engine.session().edit.loop_playback;
     group(ui, 176.0, 64.0, |ui, g| {
         ui.vertical(|ui| {
@@ -604,17 +630,18 @@ fn transport(app: &mut SoundApp, ui: &mut Ui) {
                     let _ = app.run("transport.play", json!({}));
                 }
                 let (r, resp) = ui.allocate_exact_size(vec2(38.0, 28.0), Sense::click());
-                key(ui.painter(), r, &resp, if recording { Color32::from_rgb(110, 30, 30) } else { key_fill(&resp) });
+                key(ui.painter(), r, &resp, if record_lit { Color32::from_rgb(110, 30, 30) } else { key_fill(&resp) });
                 icons::draw(ui.painter(), r.shrink(5.0), "record", t.rec);
-                // macOS gives Cmd+Space to Spotlight unless the user frees it, so name F12 first.
-                let resp = resp.on_hover_text(crate::localization::text("Record (F12 or Cmd+Space)"));
+                // Its state for assistive technology holds while the button flashes.
+                resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::Button, true, record_on, record_tip()));
+                let resp = resp.on_hover_text(record_tip());
                 if let Some(why) = app.record_hint() {
                     // Below the whole group, so the hint covers none of its buttons.
                     let below = Rect::from_min_max(r.min, pos2(r.max.x, g.max.y));
                     egui::Tooltip::always_open(ui.ctx().clone(), resp.layer_id, resp.id, below).show(|ui| ui.label(why));
                 }
                 if resp.clicked() {
-                    let _ = app.run("transport.record", json!({}));
+                    let _ = app.run("transport.record_ready", json!({}));
                 }
             });
             ui.horizontal(|ui| {

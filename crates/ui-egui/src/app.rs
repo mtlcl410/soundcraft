@@ -117,6 +117,7 @@ impl SoundApp {
             framework_host: crate::framework::host(),
             sim: None,
             record_hint: None,
+            record_ready_lost: None,
             quit_requested: false,
             arrange_request: false,
             touched: std::collections::HashSet::new(),

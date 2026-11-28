@@ -96,6 +96,10 @@ pub enum TransportRequest {
     PlaySelection,
     Pause,
     HalfSpeed,
+    /// The Record button: from stop, arm the transport (Record Ready) or disarm it again; while
+    /// the transport runs, the same as [`TransportRequest::Record`]. `Record` itself records now:
+    /// from stop it starts the pass at once (F12, Cmd+Space), while playing it punches in.
+    RecordReady,
     Scrub(Samples),
     AllNotesOff,
 }
@@ -105,6 +109,9 @@ pub enum TransportRequest {
 pub struct TransportStatus {
     pub playing: bool,
     pub recording: bool,
+    /// Record Ready: Record was pressed with the transport stopped, and Play starts the pass. Only
+    /// while stopped; the host clears it when a pass or playback starts.
+    pub record_ready: bool,
     pub position: Samples,
 }
 

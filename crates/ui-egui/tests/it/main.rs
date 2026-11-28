@@ -43,6 +43,7 @@ mod plugin_fine_sliders;
 mod plugin_window;
 mod pro_tools_keys;
 mod record_hint;
+mod record_ready;
 mod rename_dialog;
 mod rtp_window;
 mod sampler_window;

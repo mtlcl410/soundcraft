@@ -133,6 +133,14 @@ fn recording_harness() -> (Harness<'static, SoundApp>, u64, u64) {
     (h, synth, vox)
 }
 
+/// Record as in Pro Tools: the Record button arms the transport, Play starts the pass.
+fn record(h: &mut Harness<'_, SoundApp>) {
+    h.get_by_label("transport.record_ready").click();
+    h.run_steps(3);
+    h.get_by_label("transport.play").click();
+    h.run_steps(3);
+}
+
 fn arm(h: &mut Harness<'_, SoundApp>, track: u64, on: bool) {
     h.state_mut().run("mix.record_arm", serde_json::json!({"tracks": [track], "value": on})).unwrap();
     h.run_steps(2);
@@ -143,8 +151,7 @@ fn a_pass_with_only_midi_tracks_starts_without_an_audio_input() {
     let (mut h, synth, _) = recording_harness();
     arm(&mut h, synth, true);
     assert!(h.state().recorder.is_none(), "arming an instrument track does not open the audio input");
-    h.get_by_label("transport.record").click();
-    h.run_steps(3);
+    record(&mut h);
     assert!(h.state().engine.transport.recording, "{}", h.state().ui.status);
     assert!(h.state().recorder.is_none());
 }
@@ -156,15 +163,13 @@ fn a_mixed_pass_whose_audio_cannot_be_recorded_is_refused_with_the_reason() {
     arm(&mut h, vox, true);
     // This app has no audio engine, so the audio track's take cannot be made. MIDI is ready,
     // but recording only the instrument track would lose the audio without a word.
-    h.get_by_label("transport.record").click();
-    h.run_steps(3);
+    record(&mut h);
     assert!(!h.state().engine.transport.recording);
     let status = h.state().ui.status.clone();
     assert!(status.starts_with("Cannot record: ") && status.contains("no audio input device"), "{status}");
     // Without the audio track in record, the same pass starts.
     arm(&mut h, vox, false);
-    h.get_by_label("transport.record").click();
-    h.run_steps(3);
+    record(&mut h);
     assert!(h.state().engine.transport.recording, "{}", h.state().ui.status);
 }
 
@@ -179,8 +184,7 @@ fn an_inactive_record_enabled_audio_track_does_not_stop_a_midi_pass() {
     h.run_steps(2);
     let s = h.state().engine.session();
     assert!(s.tracks.iter().any(|t| t.id.0 == vox && t.inactive && t.mixer.record_arm), "inactive and still record-enabled");
-    h.get_by_label("transport.record").click();
-    h.run_steps(3);
+    record(&mut h);
     assert!(h.state().engine.transport.recording, "{}", h.state().ui.status);
     assert!(h.state().recorder.is_none());
 }
@@ -193,16 +197,14 @@ fn a_midi_pass_does_not_start_while_the_previous_one_is_unconfirmed() {
     // would write the notes of a new pass down with the old pass's state.
     let feed = std::sync::Arc::clone(h.state().midi_inputs.as_ref().unwrap().feed());
     let pass = feed.end_pass();
-    h.get_by_label("transport.record").click();
-    h.run_steps(3);
+    record(&mut h);
     assert!(!h.state().engine.transport.recording);
     assert!(h.state().ui.status.contains("has not finished the previous record pass"), "{}", h.state().ui.status);
     assert!(feed.pass_owed() && !feed.captured(pass), "still waiting");
     // A pass without MIDI tracks does not wait for it (here it is refused for its own reason).
     arm(&mut h, synth, false);
     arm(&mut h, vox, true);
-    h.get_by_label("transport.record").click();
-    h.run_steps(3);
+    record(&mut h);
     // It got past the MIDI guard to the audio setup, which refused it (this app has no audio
     // engine), and the earlier pass is still owed.
     let status = h.state().ui.status.clone();
@@ -213,8 +215,7 @@ fn a_midi_pass_does_not_start_while_the_previous_one_is_unconfirmed() {
     arm(&mut h, vox, false);
     arm(&mut h, synth, true);
     feed.forgive_passes();
-    h.get_by_label("transport.record").click();
-    h.run_steps(3);
+    record(&mut h);
     assert!(h.state().engine.transport.recording, "{}", h.state().ui.status);
 }
 
@@ -224,8 +225,7 @@ fn a_midi_pass_without_a_connected_device_says_so() {
     arm(&mut h, synth, true);
     h.state_mut().midi_inputs.as_mut().unwrap().set_port_names(Vec::new());
     h.state_mut().midi_inputs.as_mut().unwrap().rescan();
-    h.get_by_label("transport.record").click();
-    h.run_steps(3);
+    record(&mut h);
     assert!(!h.state().engine.transport.recording);
     assert!(h.state().ui.status.contains("no MIDI input device is connected"), "{}", h.state().ui.status);
 }

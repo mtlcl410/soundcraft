@@ -134,6 +134,10 @@ impl SoundApp {
             "ui": self.ui,
             "window_size": [size.x, size.y],
             "playing": self.is_playing(),
+            "recording": self.engine.transport.recording,
+            "record_ready": self.record_ready(),
+            // The Record buttons: lit while recording, flashing in Record Ready.
+            "record_button": if self.engine.transport.recording { "lit" } else if self.record_ready() { "flashing" } else { "off" },
             "position": self.position(),
             "dialog": self.dialogs.open_name(),
             "frame_ms": self.frame_ms,

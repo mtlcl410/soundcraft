@@ -201,7 +201,8 @@ pub(super) fn translate(source: &str) -> Option<&'static str> {
         "Quit" => "Sair",
         "Recall" => "Recuperar",
         "Reconnect audio device" => "Reconectar dispositivo de áudio",
-        "Record (F12 or Cmd+Space)" => "Gravar (F12 ou Cmd+Espaço)",
+        "Record Ready (record at once: F12 or Cmd+Space)" => "Pronto para gravar (gravar já: F12 ou Cmd+Espaço)",
+        "Record Ready (record at once: F12 or Ctrl+Space)" => "Pronto para gravar (gravar já: F12 ou Ctrl+Espaço)",
         "Recover" => "Recuperar",
         "Recover Unsaved Work" => "Recuperar trabalho não salvo",
         "Reduce motion" => "Reduzir animações",
@@ -1140,6 +1141,10 @@ fn menu_translate(source: &str) -> Option<&'static str> {
         "Promote to Main Playlist" => "Promover à playlist principal",
         "Recall Memory Location" => "Reativar localização de memória",
         "Record" => "Gravar",
+        "Record Ready" => "Pronto para gravar",
+        "Record Ready: press Play or Space to record. Record again or Stop cancels." => {
+            "Pronto para gravar: pressione Reproduzir ou Espaço para gravar. Gravar de novo ou Parar cancela."
+        }
         "Record Enable" => "Ativar gravação",
         "Redo" => "Refazer",
         "Remove Insert" => "Remover insert",
@@ -1315,6 +1320,8 @@ fn menu_translate(source: &str) -> Option<&'static str> {
         }
         "Recording stopped: {cause} The take is kept up to there. {then}" => "Gravação interrompida: {cause} A gravação foi mantida até aqui. {then}",
         "Recording stopped: {what} The take is kept up to there. {then}" => "Gravação interrompida: {what} A gravação foi mantida até aqui. {then}",
+        "Record Ready cancelled: {cause} {then}" => "Pronto para gravar cancelado: {cause} {then}",
+        "Record Ready cancelled: {what} {then}" => "Pronto para gravar cancelado: {what} {then}",
         "Remove configuration" => "Remover configuração",
         "Render Clip Gain" => "Renderizar ganho do clipe",
         "SENDS A-E" => "ENVIOS A-E",
