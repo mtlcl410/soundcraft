@@ -82,6 +82,9 @@ impl crate::ClockTake {
         let played_base = grid.samples_to_ticks(range.start, sr);
         let played_sample = |tick: i64| grid.tick_to_samples(played_origin.saturating_add(tick), sr);
         let relative = |tick: i64, origin: i64, base: i64| origin.saturating_add(tick).saturating_sub(base).max(0);
+        // A played tick is not clamped: an attack that was silent before the source start
+        // stays before the fragment start, and silent, after the split.
+        let played_relative = |tick: i64| played_origin.saturating_add(tick).saturating_sub(played_base);
         let score_tick = |at: Samples| time.tempo.samples_to_ticks(at, sr).saturating_sub(score_base).max(0);
         let select = |score: i64, played: Option<i64>| {
             let at = time.tempo.tick_to_samples(score_origin.saturating_add(score), sr);
@@ -108,7 +111,7 @@ impl crate::ClockTake {
                     if from_played {
                         n.length = score_tick(played_sample(p.end())).saturating_sub(start).max(1);
                     }
-                    p.start = relative(p.start, played_origin, played_base);
+                    p.start = played_relative(p.start);
                     p
                 });
                 Some((n, played))
@@ -122,7 +125,7 @@ impl crate::ClockTake {
             .filter_map(|(mut c, played)| {
                 c.tick = select(c.tick, played.map(|p| p.tick))?.0;
                 let played = played.map(|mut p| {
-                    p.tick = relative(p.tick, played_origin, played_base);
+                    p.tick = played_relative(p.tick);
                     p
                 });
                 Some((c, played))
@@ -1117,6 +1120,20 @@ mod tests {
         // The split converted its point to ticks once, at 45 BPM. Both events keep their
         // captured beat, as in the unsplit take, when the clock returns to 60 BPM.
         assert_eq!(attack_and_cc_samples(&e.playback_session(), t), [(65, 84_000), (88, 84_000)], "both events sound again on their captured beat");
+    }
+
+    #[test]
+    fn clock_split_keeps_an_attack_that_is_silent_in_the_source_silent() {
+        // 25 samples per score tick (120 BPM) and 50 per played tick (60 BPM). The attack
+        // captured on the clip's first sample plays at sample 0, before the clip: silent.
+        // Its score position (25) is in the right piece of a cut at 25.
+        let mut e = Engine::default();
+        let t = armed(&mut e, "Follow", "MIDI:*:keys");
+        e.playback_tempo = Some(TempoMap::new(60., 4, 4).unwrap());
+        add_midi_recording(&mut e, Range::new(24, 96_000), &[ev(24, 0, 0x90, 65, 127), ev(4_000, 0, 0x80, 65, 0)], &["keys".into()], false);
+        assert!(attack_and_cc_samples(&e.playback_session(), t).is_empty(), "the attack is silent before the split");
+        e.execute("edit.separate", &json!({"tracks":[t.0],"at":25})).unwrap();
+        assert!(attack_and_cc_samples(&e.playback_session(), t).is_empty(), "the split made a silent attack audible");
     }
 
     /// Count only attacks and CCs that fall inside their own clip, like the audio scheduler.
