@@ -258,7 +258,7 @@ fn an_auditioned_note_plays_on_its_track_output_without_record_enable_or_thru() 
     s.track_mut(synth).unwrap().mixer.record_arm = false;
     s.edit.set_flag(soundcraft_mix::NO_MIDI_THRU, true);
     let mut thru = Thru::default();
-    // Only the auditioned track's output and channel, whatever channel the editor used.
+    // Only the auditioned track's output and channel, whatever channel the audition used.
     assert_eq!(audition(&mut thru, &s, synth, 0x90, 60, 90), [w("PC1X", &[0x92, 60, 90])]);
     assert!(thru.holds());
     // Following the session keeps it: the track is not record-enabled, and need not be.

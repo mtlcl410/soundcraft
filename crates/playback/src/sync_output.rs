@@ -734,7 +734,7 @@ impl LiveThru {
             let at = *at.get_or_insert_with(|| play_position(view, now));
             thru.route(session, f.ports(), at, &e, &mut |name, msg| send_thru(ports, name, msg, f, stats, Some(arrived)));
         }
-        // Notes auditioned from an editor, on their track's own output.
+        // Notes auditioned from a mini-keyboard, on their track's own output.
         while let Some((track, e)) = f.next_thru_audition() {
             let at = *at.get_or_insert_with(|| play_position(view, now));
             thru.audition(session, at, track, &e, &mut |name, msg| send_thru(ports, name, msg, f, stats, None));

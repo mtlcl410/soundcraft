@@ -1,7 +1,6 @@
-//! Auditioning notes from the editors: a key of a track's mini-keyboard or of the MIDI Editor's
-//! keyboard, or a note inserted, clicked or dragged while Play MIDI Notes When Editing is on,
-//! sounds on that one track's instrument (Pro Tools Reference Guide p.861: "You can click the
-//! mini-keyboard to play pitches using the track's selected MIDI output"; p.1022).
+//! Auditioning notes from the Edit window: a key of a track's mini-keyboard sounds on that one
+//! track's instrument (Pro Tools Reference Guide p.861: "You can click the mini-keyboard to play
+//! pitches using the track's selected MIDI output").
 //!
 //! An audition note is not live input: it goes to the track it was played on whatever its
 //! record-enable, input monitor, MIDI input and Options › MIDI Thru say, and it is never

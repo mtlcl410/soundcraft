@@ -372,7 +372,7 @@ impl SoundApp {
         self.run_framework_dialogs(ui);
         // The sampler's drop rects are current now, so route any captured drop in this pass.
         self.route_dropped_files();
-        // A note auditioned from an editor that no widget held this frame ends.
+        // A note auditioned from a mini-keyboard that no widget held this frame ends.
         self.end_audition_frame(&ctx);
         // A scripted key (`ui.key`) is acknowledged by the framework's idle signal, not by egui's event list.
         crate::control::injected_settled(self, &ctx);

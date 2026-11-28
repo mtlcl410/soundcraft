@@ -21,8 +21,8 @@
 //! closed as no longer listed or bound to another port now ([`Thru::release_dest`]), and on Stop and All MIDI Notes Off ([`Thru::release_all`]); a key
 //! released after that sends nothing more.
 //!
-//! Notes auditioned from an editor ([`Thru::audition`]: a mini-keyboard key, a note inserted or
-//! dragged with Play MIDI Notes When Editing on) are owned by their track instead of an input:
+//! Notes auditioned from the Edit window ([`Thru::audition`]: a key of a track's mini-keyboard)
+//! are owned by their track instead of an input:
 //! they go out on that track's MIDI output and channel when it is not muted there, whatever its
 //! record-enable, MIDI input and Options › MIDI Thru say (Pro Tools Reference Guide p.861: "You
 //! can click the mini-keyboard to play pitches using the track's selected MIDI output"). They are

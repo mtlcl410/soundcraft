@@ -4,15 +4,12 @@ use crate::SoundApp;
 use crate::theme::{Tokens, bold, regular};
 use egui::{Align2, Color32, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 use serde_json::json;
-use soundcraft_model::TrackId;
 use soundcraft_model::{ClipContent, ClipId, Tool};
 use soundcraft_time::TICKS_PER_QUARTER;
 
 const KEY_W: f32 = 48.0;
 const ROW_H: f32 = 9.0;
 const VEL_H: f32 = 64.0;
-/// The velocity of a key of the keyboard strip (and of the Edit window's mini-keyboards).
-pub(crate) const KEY_VELOCITY: u8 = 100;
 
 #[derive(Debug, Clone, Default)]
 pub struct MidiEditorState {
@@ -22,11 +19,6 @@ pub struct MidiEditorState {
     pub clip: Option<ClipId>,
     /// Rubber-band selection start (screen position).
     pub band: Option<egui::Pos2>,
-    /// The key of the keyboard strip a selection by pitch started from (Shift-click extends it).
-    pub key_anchor: Option<i32>,
-    /// The note whose velocity is being dragged in the velocity lane, and its new velocity: it
-    /// is played at that velocity when the drag ends.
-    pub vel_edit: Option<(usize, u8)>,
 }
 
 impl MidiEditorState {
@@ -37,8 +29,6 @@ impl MidiEditorState {
             self.selected.clear();
             self.drag = None;
             self.band = None;
-            self.key_anchor = None;
-            self.vel_edit = None;
         }
         self.clip = Some(id);
     }
@@ -160,8 +150,6 @@ pub fn show(app: &mut SoundApp, ui: &mut Ui) {
     );
     let grid_ticks = grid_ticks_of(app);
     midi_toolbar(app, ui, header, cid, grid_ticks);
-    // Play MIDI Notes When Editing: the notes edited sound on the clip's track.
-    let audition = soundcraft_engine::cmd::play_midi_notes_when_editing(app.engine.session()).then_some(track);
     let s = app.engine.session_arc();
     let sr = s.sample_rate;
     let base_tick = s.tempo.samples_to_ticks(clip.start, sr);
@@ -186,17 +174,12 @@ pub fn show(app: &mut SoundApp, ui: &mut Ui) {
     let g = Roll { sequence, roll, keys, vel, px_per_tick, len_ticks, scroll, grid_ticks, rows };
     let painter = ui.painter().with_clip_rect(roll.union(keys));
     draw_roll_background(&painter, &g);
-    if let Some((_, pitch)) = app.auditioning().filter(|(t, _)| *t == track) {
-        let y = g.y_of(i32::from(pitch));
-        painter.rect_filled(Rect::from_min_size(pos2(keys.min.x, y), vec2(KEY_W - 2.0, ROW_H - 1.0)), 1.0, Tokens::current().accent);
-    }
     // Notes.
     let base = egui::Color32::from_rgb(track_color[0], track_color[1], track_color[2]);
     draw_notes(app, &painter, &g, base);
-    note_pointer(app, ui, &g, cid, s.edit.tool == Tool::Pencil, audition);
-    key_strip(app, ui, &g, cid, track);
+    note_pointer(app, ui, &g, cid, s.edit.tool == Tool::Pencil);
     note_keys(app, ui, &g, cid);
-    velocity_lane(app, ui, &g, cid, base, full.min.x + 6.0, audition);
+    velocity_lane(app, ui, &g, cid, base, full.min.x + 6.0);
 }
 
 /// The empty state: a prompt that adds a clip on the selected MIDI track when clicked.
@@ -242,14 +225,10 @@ fn grid_ticks_of(app: &SoundApp) -> i64 {
 /// The header toolbar: whole-clip MIDI operations.
 fn midi_toolbar(app: &mut SoundApp, ui: &mut Ui, header: Rect, cid: ClipId, grid_ticks: i64) {
     // Header toolbar: whole-clip MIDI operations.
-    let bar = Rect::from_min_max(pos2(header.max.x - 360.0, header.min.y + 1.0), pos2(header.max.x - 6.0, header.max.y - 1.0));
+    let bar = Rect::from_min_max(pos2(header.max.x - 330.0, header.min.y + 1.0), pos2(header.max.x - 6.0, header.max.y - 1.0));
     let mut tb = ui.new_child(egui::UiBuilder::new().max_rect(bar).layout(egui::Layout::right_to_left(egui::Align::Center)));
     tb.spacing_mut().item_spacing.x = 4.0;
     let mut op: Option<(&str, serde_json::Value)> = None;
-    let play = soundcraft_engine::cmd::play_midi_notes_when_editing(app.engine.session());
-    if crate::widgets::icon_button(&mut tb, vec2(26.0, 18.0), "speaker", play, "Play MIDI Notes When Editing").clicked() {
-        let _ = app.run("options.play_midi_notes", json!({}));
-    }
     if tb.small_button(crate::localization::text("Legato")).clicked() {
         op = Some(("event.change_duration", json!({"legato": 0})));
     }
@@ -360,15 +339,10 @@ fn draw_notes(app: &SoundApp, painter: &egui::Painter, g: &Roll<'_>, base: Color
 }
 
 /// Pointer interaction on the roll: note and band selection, drags and clicks.
-/// `audition`: the clip's track while Play MIDI Notes When Editing is on. A note clicked, dragged
-/// (at the pitch it is dragged to) or inserted with the Pencil then sounds on it (Pro Tools
-/// Reference Guide p.1074).
-fn note_pointer(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, pencil: bool, audition: Option<TrackId>) {
+fn note_pointer(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, pencil: bool) {
     let Roll { sequence, roll, px_per_tick, grid_ticks, .. } = *g;
     // Interaction.
     let resp = ui.interact(roll, ui.scope_id().with(("roll", cid.0)), Sense::click_and_drag());
-    let label = crate::localization::text("Piano roll");
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Canvas, true, label));
     if resp.drag_started()
         && let Some(p) = resp.interact_pointer_pos()
     {
@@ -414,14 +388,6 @@ fn note_pointer(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, penc
         d.dx_ticks = g.snap((p.x - d.start.x) / px_per_tick);
         d.dy_semi = -((p.y - d.start.y) / ROW_H).round() as i64;
     }
-    // The dragged note sounds at the pitch it is dragged to, while it is held.
-    if let (Some(track), Some(d)) = (audition, &app.midi.drag)
-        && resp.is_pointer_button_down_on()
-        && let Some(n) = sequence.notes.get(d.index)
-    {
-        let pitch = (i64::from(n.pitch) + if d.resize { 0 } else { d.dy_semi }).clamp(0, 127) as u8;
-        app.audition_hold(track, pitch, n.velocity);
-    }
     if resp.drag_stopped()
         && let Some(d) = app.midi.drag.take()
     {
@@ -446,9 +412,7 @@ fn note_pointer(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, penc
                 } else {
                     app.midi.selected = vec![i];
                 }
-                if let (Some(track), Some(n)) = (audition, sequence.notes.get(i)) {
-                    app.audition_hold(track, n.pitch, n.velocity);
-                }
+                // Audition on the instrument would go here (needs a live MIDI input path).
             }
             None if pencil => {
                 let pitch = g.pitch_at(p.y).clamp(0, 127);
@@ -458,11 +422,6 @@ fn note_pointer(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, penc
                     json!({"clip": cid.0, "pitch": pitch, "start_ticks": start.max(0), "length_ticks": grid_ticks, "velocity": 100}),
                 );
                 app.midi.selected.clear();
-                // "If the Play MIDI Notes When Editing option is enabled, each note sounds as it
-                // is inserted" (p.1028).
-                if let Some(track) = audition {
-                    app.audition_hold(track, pitch as u8, 100);
-                }
             }
             None => app.midi.selected.clear(),
         }
@@ -519,9 +478,7 @@ fn note_keys(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId) {
 }
 
 /// The velocity lane under the roll.
-/// With `audition` (Play MIDI Notes When Editing on) the note is played at its new velocity when
-/// the click or drag ends (Pro Tools Reference Guide p.1040, "Auditioning Velocity Changes").
-fn velocity_lane(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, base: Color32, label_x: f32, audition: Option<TrackId>) {
+fn velocity_lane(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, base: Color32, label_x: f32) {
     let Roll { sequence, vel, .. } = *g;
     let t = Tokens::current();
     // Velocity lane.
@@ -542,41 +499,7 @@ fn velocity_lane(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, bas
     {
         let v = (((vel.max.y - 2.0 - p.y) / (vel.height() - 4.0)) * 127.0).round().clamp(1.0, 127.0) as i64;
         let _ = app.engine.execute_merged("midi.note_edit", &json!({"clip": cid.0, "index": i, "velocity": v}), &format!("vel:{}", cid.0));
-        app.midi.vel_edit = Some((i, v as u8));
     }
-    if (vresp.clicked() || vresp.drag_stopped())
-        && let Some((i, v)) = app.midi.vel_edit.take()
-        && let (Some(track), Some(n)) = (audition, sequence.notes.get(i))
-    {
-        app.audition_hold(track, n.pitch, v);
-    }
-}
-
-/// The keyboard strip left of the roll: a key sounds on the clip's track while it is held, with
-/// any tool and whatever Play MIDI Notes When Editing says, and selects the notes of its pitch;
-/// a drag over the keys plays each key it passes and selects the notes of that range, Shift
-/// extends the range from the last key, and Alt plays without selecting (Pro Tools Reference
-/// Guide p.1030–1031, "Selecting and Auditioning MIDI Notes with the Mini-Keyboard").
-fn key_strip(app: &mut SoundApp, ui: &mut Ui, g: &Roll<'_>, cid: ClipId, track: TrackId) {
-    let resp = ui.interact(g.keys, ui.scope_id().with(("keys", cid.0)), Sense::click_and_drag());
-    let label = crate::localization::text("MIDI Editor keyboard");
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, label));
-    let held = resp.is_pointer_button_down_on() || resp.clicked();
-    let Some(p) = resp.interact_pointer_pos().filter(|_| held) else { return };
-    let pitch = g.pitch_at(p.y).clamp(0, 127);
-    app.audition_hold(track, pitch as u8, KEY_VELOCITY);
-    let mods = ui.input(|i| i.modifiers);
-    if mods.alt {
-        return;
-    }
-    // A new press starts the range at its key, unless Shift extends the last one.
-    let pressed = ui.input(|i| i.pointer.primary_pressed());
-    if (pressed && !mods.shift) || app.midi.key_anchor.is_none() {
-        app.midi.key_anchor = Some(pitch);
-    }
-    let anchor = *app.midi.key_anchor.get_or_insert(pitch);
-    let (lo, hi) = (anchor.min(pitch), anchor.max(pitch));
-    app.midi.selected = g.sequence.notes.iter().enumerate().filter(|(_, n)| (lo..=hi).contains(&i32::from(n.pitch))).map(|(i, _)| i).collect();
 }
 
 #[cfg(test)]

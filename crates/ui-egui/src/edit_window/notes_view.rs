@@ -14,6 +14,8 @@ use super::layout::lane_rect;
 use super::{Align2, Color32, Rect, Sense, SoundApp, Stroke, Tokens, Track, TrackId, Ui, json, pos2, regular, vec2};
 use soundcraft_model::ClipContent;
 
+/// The velocity a mini-keyboard key plays at.
+const KEY_VELOCITY: u8 = 100;
 /// Width of the mini-keyboard.
 pub(super) const MINI_KEYS_W: f32 = 24.0;
 /// Height of each scroll arrow.
@@ -182,7 +184,7 @@ pub(super) fn mini_keyboard(app: &mut SoundApp, ui: &mut Ui, track: &Track, row:
         && let Some(p) = resp.interact_pointer_pos()
     {
         let pitch = rows.pitch_at(p.y);
-        app.audition_hold(track.id, pitch as u8, crate::midi_editor::KEY_VELOCITY);
+        app.audition_hold(track.id, pitch as u8, KEY_VELOCITY);
         // "Clicking the mini-keyboard clears the current Edit selection" (p.861).
         if ui.input(|i| i.pointer.primary_pressed()) {
             let start = app.engine.session().edit.selection.start;

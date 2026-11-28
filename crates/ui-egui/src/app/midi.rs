@@ -41,10 +41,9 @@ impl SoundApp {
         }
     }
 
-    /// Audition `pitch` on `track` (a mini-keyboard key, or a note inserted, clicked or dragged
-    /// with Play MIDI Notes When Editing on): it sounds on that track only, on its instrument and
-    /// its MIDI output, like a live note that is never recorded (Pro Tools Reference Guide p.861,
-    /// p.1022). Call it on every frame the pointer holds the note: a frame without a call ends it
+    /// Audition `pitch` on `track` (a key of its mini-keyboard): it sounds on that track only, on
+    /// its instrument and its MIDI output, like a live note that is never recorded (Pro Tools
+    /// Reference Guide p.861). Call it on every frame the pointer holds the note: a frame without a call ends it
     /// ([`Self::end_audition_frame`]), after at least [`AUDITION_MIN_SECONDS`] so a click is
     /// heard. Another key or track ends the one before first.
     pub(crate) fn audition_hold(&mut self, track: TrackId, pitch: u8, velocity: u8) {
@@ -70,8 +69,9 @@ impl SoundApp {
         self.audition
     }
 
-    /// End of a frame: a note no widget held in it ends (the pointer was let go, the editor
-    /// closed), once it has sounded for [`AUDITION_MIN_SECONDS`].
+    /// End of a frame: a note no widget held in it ends (the pointer was let go, or the track
+    /// left Notes view or scrolled out of sight), once it has sounded for
+    /// [`AUDITION_MIN_SECONDS`].
     pub(crate) fn end_audition_frame(&mut self, ctx: &egui::Context) {
         if self.audition.is_some() && !std::mem::take(&mut self.audition_seen) {
             let left = self.audition_until - self.uptime;

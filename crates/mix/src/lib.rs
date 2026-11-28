@@ -150,7 +150,7 @@ pub struct MixEngine {
     /// Ports ([`midi_port_bit`]) whose events were dropped before this block, set by the audio
     /// host for one block: what they hold is released at its start, before `midi` is played.
     pub midi_lost: u64,
-    /// Notes auditioned from the editors for the next block, each with the track it plays on
+    /// Notes auditioned from the Edit window's mini-keyboards for the next block, each with the track it plays on
     /// (see `audition.rs`): not live input, never recorded. Set by the audio host like `midi`.
     pub audition: Vec<(TrackId, LiveMidi)>,
     /// Transport stopped: only monitored inputs sound (no clips).
@@ -429,7 +429,7 @@ impl MixEngine {
         self.write_output(s, blk, out);
     }
 
-    /// Whether a track still plays or rings out a note auditioned from an editor: the host
+    /// Whether a track still plays or rings out a note auditioned from a mini-keyboard: the host
     /// keeps rendering while stopped until it is done.
     pub fn auditioning(&self) -> bool {
         self.strips.iter().any(|(id, st)| st.audition.active(*id, &[]))

@@ -16,17 +16,6 @@ macro_rules! toggle {
     };
 }
 
-/// The session flag that switches Play MIDI Notes When Editing off. The option is on unless the
-/// flag is there. It is one setting for the Edit window and the MIDI Editor (Pro Tools Reference
-/// Guide p.1073: "Play MIDI Notes When Editing [...] are all global settings").
-pub const NO_PLAY_MIDI_NOTES: &str = "midi.no_play_notes_when_editing";
-
-/// Whether Play MIDI Notes When Editing is on: notes sound as they are inserted with the Pencil,
-/// clicked or dragged in the MIDI Editor (Pro Tools Reference Guide p.1022, p.1074).
-pub fn play_midi_notes_when_editing(s: &soundcraft_model::Session) -> bool {
-    !s.edit.flag(NO_PLAY_MIDI_NOTES)
-}
-
 pub fn specs() -> Vec<CommandSpec> {
     vec![
         toggle!("options.loop_record", "Loop Record", ["Options"], Some("Alt+L"), loop_record),
@@ -38,20 +27,6 @@ pub fn specs() -> Vec<CommandSpec> {
         toggle!("options.insertion_follows_playback", "Insertion Follows Playback", ["Options"], None, insertion_follows_playback),
         toggle!("options.tab_to_transient", "Tab to Transient", ["Options"], Some("Cmd+Alt+Tab"), tab_to_transient),
         toggle!("options.mirrored_midi", "Mirrored MIDI Editing", ["Options"], None, mirrored_midi),
-        cmd!(
-            noundo "options.play_midi_notes",
-            "Play MIDI Notes When Editing",
-            [],
-            None,
-            "{value?: bool} (toggles when omitted; on by default) — notes sound on their track as they are inserted, clicked or dragged in the MIDI Editor",
-            always,
-            |e, p| {
-                let s = e.session_mut();
-                let on = p.get("value").and_then(Value::as_bool).unwrap_or(!play_midi_notes_when_editing(s));
-                s.edit.set_flag(NO_PLAY_MIDI_NOTES, !on);
-                Ok(json!({"value": on}))
-            }
-        ),
         toggle!("options.automation_follows_edit", "Automation Follows Edit", ["Options"], None, automation_follows_edit),
         toggle!("options.markers_follow_edit", "Markers Follow Edit", ["Options"], None, markers_follow_edit),
         toggle!("options.layered_editing", "Layered Editing", ["Options"], None, layered_editing),
@@ -151,20 +126,4 @@ fn session_setup(e: &mut Engine, p: &Value) -> Result<Value> {
         s.name = n.to_string();
     }
     Ok(json!({"frame_rate": s.frame_rate.label(), "bit_depth": s.bit_depth, "sample_rate": s.sample_rate.hz()}))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::Engine;
-
-    #[test]
-    fn play_midi_notes_when_editing_is_on_by_default_and_toggles() {
-        let mut e = Engine::default();
-        assert!(play_midi_notes_when_editing(e.session()), "on in a new session");
-        assert_eq!(e.execute("options.play_midi_notes", &json!({})).unwrap()["value"], false);
-        assert!(!play_midi_notes_when_editing(e.session()));
-        assert_eq!(e.execute("options.play_midi_notes", &json!({"value": true})).unwrap()["value"], true);
-        assert!(play_midi_notes_when_editing(e.session()));
-    }
 }

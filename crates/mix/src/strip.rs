@@ -49,7 +49,7 @@ pub(crate) struct Strip {
     pub(crate) held: Vec<u8>,
     /// Notes held by live MIDI input.
     pub(crate) live: LiveNotes,
-    /// Notes auditioned from the editors.
+    /// Notes auditioned from the Edit window's mini-keyboard.
     pub(crate) audition: Audition,
     /// The instrument's next block starts somewhere new: send it the controllers in effect there.
     pub(crate) chase: bool,
@@ -224,7 +224,7 @@ pub(crate) struct LiveInput<'a> {
     pub(crate) ports: Option<&'a MidiPorts>,
     /// Ports whose events were dropped before this block.
     pub(crate) midi_lost: u64,
-    /// Notes auditioned from the editors, with their track; [`super::AUDITION_TAIL_SECONDS`]
+    /// Notes auditioned from the mini-keyboards, with their track; [`super::AUDITION_TAIL_SECONDS`]
     /// in frames.
     pub(crate) audition: &'a [(TrackId, LiveMidi)],
     pub(crate) audition_tail: usize,

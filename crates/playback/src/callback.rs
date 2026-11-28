@@ -95,7 +95,7 @@ pub(crate) struct AudioState {
     midi: Option<Arc<midi::MidiFeed>>,
     /// Live MIDI events of this callback not played yet: frames (session rate) until each is due.
     midi_pending: Vec<(i64, LiveMidi)>,
-    /// Notes auditioned from the editors that came in this callback, for its first block.
+    /// Notes auditioned from the mini-keyboards that came in this callback, for its first block.
     audition_pending: Vec<(TrackId, LiveMidi)>,
     /// The delay every live event gets so that all keep their spacing: one callback (frames).
     midi_delay: i64,
@@ -754,7 +754,7 @@ impl AudioState {
         // input-monitored MIDI and instrument tracks.
         let midi_live = self.midi.as_ref().is_some_and(|f| f.live())
             && self.session.tracks.iter().any(|t| matches!(t.kind, TrackKind::Instrument | TrackKind::Midi) && midi_thru(&self.session, t));
-        // A note auditioned from an editor plays on its track while it is held and while the
+        // A note auditioned from a mini-keyboard plays on its track while it is held and while the
         // instrument rings out after it (`soundcraft_mix::AUDITION_TAIL_SECONDS`).
         if let Some(feed) = &self.midi {
             while self.audition_pending.len() < self.audition_pending.capacity()

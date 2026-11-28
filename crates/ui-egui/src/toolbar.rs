@@ -239,14 +239,13 @@ fn tools(app: &mut SoundApp, ui: &mut Ui) {
 }
 
 /// The Edit-window toolbar's option toggles: (command id, icon, on, tooltip).
-fn option_toggles(e: &EditState) -> [(&'static str, &'static str, bool, &'static str); 7] {
+fn option_toggles(e: &EditState) -> [(&'static str, &'static str, bool, &'static str); 6] {
     [
         ("options.tab_to_transient", "tab_transient", e.tab_to_transient, "Tab to Transient"),
         ("options.link_timeline_edit", "link", e.link_timeline_edit, "Link Timeline and Edit Selection"),
         ("options.link_track_edit", "link_track", e.link_track_edit, "Link Track and Edit Selection"),
         ("options.insertion_follows_playback", "insertion_follows", e.insertion_follows_playback, "Insertion Follows Playback"),
         ("options.mirrored_midi", "note", e.mirrored_midi, "Mirrored MIDI Editing"),
-        ("options.play_midi_notes", "speaker", !e.flag(soundcraft_engine::cmd::NO_PLAY_MIDI_NOTES), "Play MIDI Notes When Editing"),
         ("options.automation_follows_edit", "wave", e.automation_follows_edit, "Automation Follows Edit"),
     ]
 }

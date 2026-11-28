@@ -425,8 +425,8 @@ impl MidiFeed {
         }
     }
 
-    /// A note auditioned from an editor (a mini-keyboard key, or a note inserted, clicked or
-    /// dragged with Play MIDI Notes When Editing on), on `track` only: its instrument (the audio
+    /// A note auditioned from the Edit window (a key of a track's mini-keyboard), on `track`
+    /// only: its instrument (the audio
     /// thread, [`Self::next_audition`]) and its MIDI output (the output worker,
     /// [`Self::next_thru_audition`]). It is not live input: it is never recorded, and it plays
     /// whatever the track's record-enable, input and Options › MIDI Thru say. Only Note-On and

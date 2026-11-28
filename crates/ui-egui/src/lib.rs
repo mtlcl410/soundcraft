@@ -324,7 +324,7 @@ pub struct SoundApp {
     midi_scan_at: f64,
     /// The key held down in the MIDI Keyboard window, whose Note-Off is still to be sent.
     midi_keyboard_held: Option<u8>,
-    /// The note auditioned from an editor ([`SoundApp::audition_hold`]): its track and key,
+    /// The note auditioned from a mini-keyboard ([`SoundApp::audition_hold`]): its track and key,
     /// whether a widget held it this frame, and until when it sounds at least (app uptime).
     audition: Option<(TrackId, u8)>,
     audition_seen: bool,
