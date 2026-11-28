@@ -449,6 +449,7 @@ pub fn recall_configuration(app: &mut SoundApp, saved: &Value) -> Result<(), Str
     st.undo_levels = app.ui.undo_levels.clamp(1, 64);
     // The record offset calibrates this machine's interface, not a window layout.
     st.record_offset = app.ui.record_offset;
+    st.sends_default = app.ui.sends_default;
     st.show_configurations = true;
     crate::docking::cancel_replaced_state(app, &st);
     app.engine.set_history_limit(st.undo_levels);
@@ -486,7 +487,7 @@ fn chosen_device<'a>(devices: &'a [DeviceInfo], name: Option<&str>) -> Option<&'
 fn device_combo(ui: &mut egui::Ui, id: &str, name: &str, value: &mut Option<String>, devices: &[DeviceInfo]) {
     let default = devices.iter().find(|d| d.is_default).map_or_else(|| crate::localization::text("none").to_string(), |d| d.name.clone());
     let shown = value.clone().unwrap_or_else(|| crate::localized_format!("Default ({default})", default = default));
-    let combo = craft_ui::ComboBox::from_id_salt(id).width(300.0).selected_text(shown).show_ui(ui, |ui| {
+    let combo = egui::ComboBox::from_id_salt(id).width(300.0).selected_text(shown).show_ui(ui, |ui| {
         ui.selectable_value(value, None, crate::localized_format!("Default ({default})", default = default));
         for d in devices {
             ui.selectable_value(value, Some(d.name.clone()), format!("{} ({} ch)", d.name, d.max_channels));
@@ -501,7 +502,7 @@ fn number_combo(ui: &mut egui::Ui, id: &str, name: &str, value: &mut Option<u32>
         || crate::localization::text("Device default").to_string(),
         |v| crate::localized_format!("{v} {unit}", v = v, unit = crate::localization::text(unit)),
     );
-    let combo = craft_ui::ComboBox::from_id_salt(id).width(300.0).selected_text(shown).show_ui(ui, |ui| {
+    let combo = egui::ComboBox::from_id_salt(id).width(300.0).selected_text(shown).show_ui(ui, |ui| {
         ui.selectable_value(value, None, crate::localization::text("Device default"));
         for v in options {
             ui.selectable_value(value, Some(*v), crate::localized_format!("{v} {unit}", v = v, unit = crate::localization::text(unit)));
@@ -594,14 +595,50 @@ fn midi_inputs(app: &mut SoundApp, ui: &mut egui::Ui) {
     ui.data_mut(|d| d.insert_temp(debug_id, debug));
 }
 
+/// What the Playback Engine says when a change made elsewhere replaced its unapplied edits.
+const REPLACED_EDITS: &str = "The audio settings were changed outside this window; your unapplied changes were replaced.";
+
+/// Drop the replacement notice from the status line when it is still this notice, so a later edit
+/// or closing the window does not leave it there. Leave any other status message alone.
+fn clear_replaced_edits_status(app: &mut SoundApp) {
+    if app.ui.status == crate::localization::text(REPLACED_EDITS) {
+        app.ui.status.clear();
+    }
+}
+
 /// Setup › Playback Engine / Hardware: choose the audio system, devices, rate and buffer size.
 pub fn playback_engine(app: &mut SoundApp, ctx: &egui::Context) {
     let mut open = app.ui.show_playback_engine;
+    // The window's unapplied edits, with the choice they started from. A choice changed elsewhere
+    // (`ui.audio_device`, `setup.playback_engine`) replaces them, so the window never shows, or
+    // applies, an earlier choice. A reconnect reopens the same choice and leaves them alone.
+    let draft_id = egui::Id::unique("audio_draft");
+    // Set while the window shows a choice made elsewhere that replaced its unapplied edits.
+    let replaced_id = egui::Id::unique("audio_draft_replaced");
     if !open {
+        // Closed from the menu or by command: unapplied edits go, as with the close button.
+        clear_replaced_edits_status(app);
+        ctx.data_mut(|d| {
+            d.remove_temp::<(AudioConfig, AudioConfig)>(draft_id);
+            d.remove_temp::<bool>(replaced_id);
+        });
         return;
     }
-    let draft_id = egui::Id::unique("audio_draft");
-    let mut draft = ctx.data(|d| d.get_temp::<AudioConfig>(draft_id)).unwrap_or_else(|| app.ui.audio.clone());
+    // Pro Tools' Playback Engine is modal, so nothing else changes the device under its edits
+    // (Reference Guide p. 109). This window is not: a change made elsewhere wins, and when it
+    // replaces unapplied edits the window and the status line say so.
+    let mut draft = match ctx.data(|d| d.get_temp::<(AudioConfig, AudioConfig)>(draft_id)) {
+        Some((from, draft)) if from == app.ui.audio => draft,
+        Some((from, draft)) => {
+            if draft != from && draft != app.ui.audio {
+                let note = crate::localization::text(REPLACED_EDITS);
+                app.ui.status = note.to_string();
+                ctx.data_mut(|d| d.insert_temp(replaced_id, true));
+            }
+            app.ui.audio.clone()
+        }
+        None => app.ui.audio.clone(),
+    };
     let mut refresh = false;
     let mut apply = false;
     let systems = audio_systems(ctx, false);
@@ -611,7 +648,7 @@ pub fn playback_engine(app: &mut SoundApp, ctx: &egui::Context) {
             let system_label = ui.label(crate::localization::text("Audio system"));
             let def = systems.iter().find(|s| s.is_default).map_or("none".to_string(), |s| s.name.clone());
             let shown = draft.system.clone().unwrap_or_else(|| crate::localized_format!("Default ({default})", default = def));
-            let system = craft_ui::ComboBox::from_id_salt("pe-system").width(300.0).selected_text(shown).show_ui(ui, |ui| {
+            let system = egui::ComboBox::from_id_salt("pe-system").width(300.0).selected_text(shown).show_ui(ui, |ui| {
                 let before = draft.system.clone();
                 ui.selectable_value(&mut draft.system, None, crate::localized_format!("Default ({default})", default = def));
                 for s in systems.iter() {
@@ -660,6 +697,13 @@ pub fn playback_engine(app: &mut SoundApp, ctx: &egui::Context) {
                 draft = app.ui.audio.clone();
             }
         });
+        if draft != app.ui.audio {
+            // A new edit: the replaced ones are no longer the news.
+            ui.ctx().data_mut(|d| d.remove_temp::<bool>(replaced_id));
+            clear_replaced_edits_status(app);
+        } else if ui.ctx().data(|d| d.get_temp::<bool>(replaced_id)).unwrap_or(false) {
+            ui.label(egui::RichText::new(crate::localization::text(REPLACED_EDITS)).color(ui.visuals().warn_fg_color));
+        }
         ui.separator();
         egui::Grid::new("pe-state").num_columns(2).show(ui, |ui| {
             ui.label(crate::localization::text("Output"));
@@ -674,6 +718,11 @@ pub fn playback_engine(app: &mut SoundApp, ctx: &egui::Context) {
                 }
             }));
             ui.end_row();
+            if let Some(note) = buffer_note(app) {
+                ui.label("");
+                ui.label(egui::RichText::new(buffer_note_text(note)).color(ui.visuals().warn_fg_color));
+                ui.end_row();
+            }
             ui.label(crate::localization::text("Input"));
             ui.label(app.recorder.as_ref().map_or(crate::localization::text("opened on first record or monitor").to_string(), |r| {
                 crate::localized_format!("{} · {} Hz · {} ch", r.device_name, r.sample_rate, r.channels)
@@ -742,11 +791,13 @@ pub fn playback_engine(app: &mut SoundApp, ctx: &egui::Context) {
         app.ui.status = e;
     }
     if open {
-        ctx.data_mut(|d| d.insert_temp(draft_id, draft));
+        ctx.data_mut(|d| d.insert_temp(draft_id, (app.ui.audio.clone(), draft)));
     } else {
         // Closing discards unapplied edits and the device list (re-read on the next open).
+        clear_replaced_edits_status(app);
         ctx.data_mut(|d| {
-            d.remove_temp::<AudioConfig>(draft_id);
+            d.remove_temp::<(AudioConfig, AudioConfig)>(draft_id);
+            d.remove_temp::<bool>(replaced_id);
             d.remove_temp::<Arc<Vec<AudioSystem>>>(egui::Id::unique("audio_systems"));
             d.remove::<ClockLookup>(clock_lookup_id());
         });
@@ -757,11 +808,14 @@ pub fn playback_engine(app: &mut SoundApp, ctx: &egui::Context) {
 /// `ui.audio_device`: `{list?: bool}` returns the audio systems and their devices;
 /// `{system?, output?, input?, sample_rate?, buffer_size?}` (a `null` value means "default") sets
 /// the choice and reopens the devices; `record_offset?` (whole samples within ±96000) sets the
-/// record offset without reopening them. Always returns the choice, the open device, the `latency`
-/// the backend reports for the output and input (`{samples, ms}` each; null when nothing was
-/// reported, the report was zero, or the stream was lost), the `record_offset`, and `same_clock`
-/// (whether input and output share a clock; null until an output is open and an input is known,
-/// and null where the audio system does not tell: every system other than Core Audio and ASIO).
+/// record offset without reopening them. Always returns the choice, the open device (with the
+/// driver's `buffer_range`, null when it reports none, and `buffer_running`, the size the stream
+/// reports it runs at), a `buffer_note` when the device does not run at the chosen buffer size,
+/// the `latency` the backend reports for the output and input (`{samples, ms}` each; null when
+/// nothing was reported, the report was zero, or the stream was lost), the `record_offset`, and
+/// `same_clock` (whether input and output share a clock; null until an output is open and an input
+/// is known, and null where the audio system does not tell: every system other than Core Audio and
+/// ASIO).
 pub fn audio_device_command(app: &mut SoundApp, p: &serde_json::Value) -> Result<serde_json::Value, String> {
     use serde_json::Value;
     let record_offset = match p.get("record_offset") {
@@ -793,7 +847,8 @@ pub fn audio_device_command(app: &mut SoundApp, p: &serde_json::Value) -> Result
         app.apply_audio_config(cfg)?;
     }
     let device = app.player.as_ref().map(|pl| {
-        json!({"name": pl.device_name, "sample_rate": pl.device_rate, "channels": pl.device_channels, "buffer_size": pl.device_buffer, "silent": pl.silent})
+        let range = pl.device_buffer_range.map(|(min, max)| json!({"min": min, "max": max}));
+        json!({"name": pl.device_name, "sample_rate": pl.device_rate, "channels": pl.device_channels, "buffer_size": pl.device_buffer, "buffer_range": range, "buffer_running": pl.device_buffer_running, "silent": pl.silent})
     });
     if let Some(offset) = record_offset {
         app.ui.record_offset = offset;
@@ -801,6 +856,7 @@ pub fn audio_device_command(app: &mut SoundApp, p: &serde_json::Value) -> Result
     let mut out = json!({
         "config": app.ui.audio,
         "device": device,
+        "buffer_note": buffer_note(app).map(|n| n.english()),
         "latency": latency_json(app),
         "record_offset": app.ui.record_offset,
         "same_clock": same_clock(app),
@@ -1001,14 +1057,46 @@ fn latency_json(app: &SoundApp) -> serde_json::Value {
     json!({"output": part(output), "input": part(input)})
 }
 
+/// Why the open output does not run at the chosen buffer, when it does not (#1757).
+fn buffer_note(app: &SoundApp) -> Option<soundcraft_playback::devices::BufferNote> {
+    let player = app.player.as_ref().filter(|p| !p.silent)?;
+    soundcraft_playback::devices::buffer_note(
+        app.ui.audio.buffer_size,
+        player.device_buffer,
+        player.device_buffer_range,
+        player.device_buffer_running,
+    )
+}
+
+/// The window's wording of a [`soundcraft_playback::devices::BufferNote`].
+fn buffer_note_text(note: soundcraft_playback::devices::BufferNote) -> String {
+    use soundcraft_playback::devices::BufferNote;
+    match note {
+        BufferNote::OutsideRange { min, max, .. } if min == max => crate::localized_format!("The device runs only at {} samples.", min),
+        BufferNote::OutsideRange { min, max, running: Some(n) } => {
+            crate::localized_format!("The device allows {}–{} samples; it runs at its default buffer, {} samples.", min, max, n)
+        }
+        BufferNote::OutsideRange { min, max, running: None } => {
+            crate::localized_format!("The device allows {}–{} samples; it runs at its default buffer.", min, max)
+        }
+        BufferNote::Refused { want, running: Some(n) } => {
+            crate::localized_format!("The device did not take {} samples; it runs at its default buffer, {} samples.", want, n)
+        }
+        BufferNote::Refused { want, running: None } => {
+            crate::localized_format!("The device did not take {} samples; it runs at its default buffer.", want)
+        }
+        BufferNote::Rounded { want, running } => crate::localized_format!("The device runs at {} samples, not {}.", running, want),
+    }
+}
+
 /// Programmatic `setup.playback_engine` / `setup.hardware`. `device` is the output name,
 /// `buffer_size` is any integer 16..=8192 or null (not rounded to the window's power-of-two list)
 /// and `record_offset` is whole samples within ±96000 (no reopen); all go through
 /// [`audio_device_command`]. Delay compensation still goes through the engine command, and only
 /// after the device change has been accepted. The result is the open device: its name, the buffer
-/// actually in use (`device_buffer`, null for the device default), its sample rate, the reported
-/// output and input `latency`, the `record_offset`, `same_clock`, and delay compensation.
-/// `applied` is true only when an audio device is open.
+/// actually in use (`buffer_size`, null for the device default), a `buffer_note` when that is not
+/// the chosen size, its sample rate, the reported output and input `latency`, the `record_offset`,
+/// `same_clock`, and delay compensation. `applied` is true only when an audio device is open.
 pub fn setup_audio_command(app: &mut SoundApp, id: &str, p: &serde_json::Value) -> Result<serde_json::Value, String> {
     use serde_json::Value;
     let mut audio = serde_json::Map::new();
@@ -1047,6 +1135,7 @@ pub fn setup_audio_command(app: &mut SoundApp, id: &str, p: &serde_json::Value) 
         "applied": applied,
         "device": device,
         "buffer_size": buffer_size,
+        "buffer_note": buffer_note(app).map(|n| n.english()),
         "sample_rate": sample_rate,
         "bit_depth": app.engine.session().bit_depth,
         "latency": latency_json(app),
@@ -1090,7 +1179,7 @@ pub fn io_setup(app: &mut SoundApp, ctx: &egui::Context) {
         ui.horizontal(|ui| {
             let main_label = ui.label(crate::localization::text("Main output"));
             let format =
-                craft_ui::ComboBox::from_id_salt("main_output_format").selected_text(crate::localization::text(main.label())).show_ui(ui, |ui| {
+                egui::ComboBox::from_id_salt("main_output_format").selected_text(crate::localization::text(main.label())).show_ui(ui, |ui| {
                     for f in soundcraft_model::ChannelFormat::ALL.into_iter().filter(|f| (2..=16).contains(&f.channels())) {
                         if ui.selectable_label(f == main, crate::localization::text(f.label())).clicked() && f != main {
                             let _ = app.run("setup.main_format", json!({"format": f.label()}));
