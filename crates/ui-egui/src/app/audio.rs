@@ -256,6 +256,7 @@ impl SoundApp {
         self.service_mtc_output();
         self.applied_midi_sync = None;
         self.service_midi_sync();
+        self.prepare_clock_start_again();
     }
 }
 

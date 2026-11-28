@@ -21,6 +21,9 @@ pub(crate) struct Host {
     /// While stopped, new tempo estimates begin here so earlier score time stays fixed.
     waiting_tick: i64,
     pending_cue: Option<i64>,
+    /// The stopped pulse whose start was last prepared on the player, until the next transport
+    /// action. A reconnected output prepares it again.
+    armed_cue: Option<i64>,
     /// External start waiting for the first real output timestamp, superseded by a new transport
     /// command. It survives an output reconnect, which does not wait for it.
     waiting_start: Option<(i64, i64)>,
@@ -201,6 +204,16 @@ impl SoundApp {
         let feed = inputs.feed();
         let location = soundcraft_playback::clock_follow::LocatedCue { pulse, origin, offset, rate: sr, revision: self.engine.prepared_revision() };
         player.arm_clock_resume(feed, feed.ports().assign(name), location);
+        self.clock_follow.armed_cue = Some(pulse);
+    }
+
+    /// A reconnect replaces the player that held the prepared start. Prepare the same stopped
+    /// position on the new one, so the first Clock starts it as it would have started the old one.
+    pub(super) fn prepare_clock_start_again(&mut self) {
+        if self.clock_follow.enabled && self.clock_follow.pending_cue.is_none() {
+            self.clock_follow.pending_cue = self.clock_follow.armed_cue;
+            self.prepare_located_clock_resume();
+        }
     }
 
     /// A Start/Continue the host has yet to act on: output recovery waits for it. A start the host
@@ -268,6 +281,7 @@ impl SoundApp {
         }
         for event in events.drain(..) {
             self.clock_follow.pending_cue = None;
+            self.clock_follow.armed_cue = None;
             self.clock_follow.waiting_start = None;
             match event {
                 Action::Locate(pulse) => {
@@ -664,10 +678,15 @@ mod tests {
             Harness,
             kittest::{NodeT, Queryable},
         };
-        let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
+        // Eighth notes at 120 BPM, so the reconnected output has something to sound.
+        let song = sampler_song::sampler_song(TempoMap::new(120., 4, 4).unwrap(), SampleRate::HZ_48000, 64, 48_000 * 8);
+        let engine = soundcraft_engine::Engine::new(song);
+        let player = simulated_player(&engine);
+        let mut app = SoundApp::new(engine, Some(player), crate::Services::default());
         app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
         let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
         let port = feed.ports().assign("DIN");
+        app.player.as_ref().unwrap().set_midi(feed.clone());
         app.run("setup.midi_clock_follow", json!({"input":"DIN","enabled":true})).unwrap();
         app.ui.show_playback_engine = true;
         let mut h = Harness::builder().with_size(egui::vec2(1600., 1000.)).build_ui_state(
@@ -687,19 +706,28 @@ mod tests {
         h.run_steps(2);
         assert_eq!(h.state().clock_follow.snapshot.state, State::Waiting, "the Start still waits for its first Clock");
         assert!(!feed.clock_start_pending(), "the host has seen the Start, so it no longer holds output recovery");
-        assert!(h.state().player.is_none());
         let button = h.get_by_label("Reconnect audio device");
         assert!(!button.accesskit_node().is_disabled(), "the host has acted on the Start, so the output can be reconnected");
         button.click();
         h.run_steps(2);
-        assert!(h.state().player.is_some(), "the output was reopened");
         assert_eq!(h.state().clock_follow.snapshot.state, State::Waiting, "the reconnect keeps the Start waiting");
         assert!(!h.state().is_playing());
+        // The new output gets the prepared start, as the lost one had it: the first Clock starts
+        // it from the MIDI input thread, without waiting for the host.
         feed.receive(port, &[0xf8]);
-        h.run_steps(2);
-        assert!(h.state().is_playing(), "the first Clock starts the reconnected output");
-        assert!(h.state().player.as_ref().unwrap().is_playing());
-        assert!(h.state().position() < 48_000, "it plays from the Start, not from somewhere else");
+        assert!(h.state().player.as_ref().unwrap().is_playing(), "the first Clock starts the reconnected output's prepared start");
+        h.run_steps(1);
+        assert!(h.state().is_playing());
+        // And it sounds: the reconnected output renders the song, not silence.
+        let mut peak = 0f32;
+        for _ in 0..48 {
+            std::thread::sleep(std::time::Duration::from_micros(20_833));
+            feed.receive(port, &[0xf8]);
+            h.run_steps(1);
+            peak = peak.max(h.state().player.as_ref().unwrap().meters().main.peak[0]);
+        }
+        assert!(peak > 0.1, "the reconnected output rendered no sound (peak {peak})");
+        assert!(h.state().position() < 96_000, "it plays from the Start, not from somewhere else");
     }
 
     #[test]
