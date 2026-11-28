@@ -468,9 +468,13 @@ pub struct SoundApp {
     sim: Option<(Samples, Option<Samples>, Option<Range>)>,
     /// When Record last found nothing to record on, and why: the Record buttons show it for a moment.
     record_hint: Option<(f64, &'static str)>,
-    /// When the lost output last cancelled Record Ready (uptime): the input, lost with it a moment
-    /// later, says so too instead of replacing that message.
-    record_ready_lost: Option<f64>,
+    /// When a lost device last cancelled Record Ready (uptime), and what was lost: the other side of
+    /// the same device, lost a moment later, adds itself to that message instead of replacing it.
+    record_ready_lost: Option<(f64, String)>,
+    /// The output and input lost since the devices were last opened (what the status line said of
+    /// each): a pass that needs one is refused until Reconnect or a device change.
+    lost_output: Option<String>,
+    lost_input: Option<String>,
     /// Wait for Note: the transport was waiting for a MIDI event last frame (the inputs that
     /// count are handed to the MIDI feed every frame while it waits).
     note_wait: bool,

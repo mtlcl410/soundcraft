@@ -119,6 +119,8 @@ impl SoundApp {
             sim: None,
             record_hint: None,
             record_ready_lost: None,
+            lost_output: None,
+            lost_input: None,
             note_wait: false,
             note_start: None,
             quit_requested: false,
