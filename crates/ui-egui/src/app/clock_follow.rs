@@ -281,14 +281,18 @@ impl SoundApp {
                 Action::Play { pulse, at } | Action::Started { pulse, at, .. } => {
                     self.clock_follow.anchor = Some((pulse, at));
                     let tick = pulse.saturating_mul(TICKS_PER_PULSE);
+                    // A start the player already dispatched rendered from the prepared grid:
+                    // keep its origin tempo and leave later corrections to `update_grid`.
+                    let dispatched = matches!(event, Action::Started { .. }) && self.player.as_ref().is_some_and(|p| p.is_playing());
                     if !self.is_playing()
+                        && !dispatched
                         && let (Some(bpm), Some(grid)) = (s.bpm, &mut self.engine.playback_tempo)
                         && grid.tempo_at_tick(tick) != bpm
                     {
                         self.clock_follow.grid_dirty |= grid.set_tempo(tick, bpm).is_ok();
                     }
                     if let Action::Started { render_from, .. } = event
-                        && self.player.as_ref().is_some_and(|p| p.is_playing())
+                        && dispatched
                     {
                         self.engine.transport_requests.push(TransportRequest::ClockPlaybackStarted(render_from));
                         continue;
@@ -656,6 +660,34 @@ mod tests {
             assert!(app.engine.transport_requests.iter().all(|r| !matches!(r, TransportRequest::PlayFromClock { .. })));
             assert!(app.clock_follow.waiting_start.is_none());
         }
+    }
+
+    #[test]
+    fn a_device_dispatched_start_keeps_the_origin_tempo_it_rendered_from() {
+        let engine = soundcraft_engine::Engine::default();
+        let player = simulated_player(&engine);
+        let mut app = SoundApp::new(engine, Some(player), crate::Services::default());
+        app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
+        let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
+        let port = feed.ports().assign("DIN");
+        app.run("setup.midi_clock_follow", json!({"input":"DIN","enabled":true})).unwrap();
+        feed.set_clock(0);
+        feed.receive(port, &[0xf2, 64, 0]);
+        let ctx = egui::Context::default();
+        ctx.run_ui(Default::default(), |_| app.logic(&ctx)).textures_delta.clear();
+        let tick = 384 * TICKS_PER_PULSE;
+        let prepared = app.engine.playback_tempo.as_ref().unwrap().tempo_at_tick(tick);
+        // Idle Clock at another tempo before Continue: the reader now estimates 100 BPM.
+        for n in 1..=48 {
+            feed.set_clock(n * 25_000);
+            feed.receive(port, &[0xf8]);
+        }
+        feed.set_clock(49 * 25_000);
+        feed.receive(port, &[0xfb, 0xf8]);
+        assert!(app.player.as_ref().unwrap().is_playing());
+        app.service_clock_follow();
+        assert!(app.clock_follow.snapshot.bpm.is_some_and(|bpm| (bpm - prepared).abs() > 1.));
+        assert_eq!(app.engine.playback_tempo.as_ref().unwrap().tempo_at_tick(tick), prepared, "the origin tempo changed under rendered audio");
     }
 
     #[test]
