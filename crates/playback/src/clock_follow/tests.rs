@@ -448,3 +448,28 @@ fn a_single_twenty_percent_interval_step_does_not_become_a_continuous_brake() {
         ideal += 2_500_000. / if pulse < 396 { 120. } else { 100. };
     }
 }
+
+#[test]
+fn an_active_sensing_timeout_before_the_first_clock_cancels_the_armed_start() {
+    let mut r = Follower::default();
+    feed(&mut r, 0xfe, 0);
+    feed(&mut r, 0xfa, 1_000);
+    assert_eq!(r.take(), Some(Action::Locate(0)));
+    assert!(r.start_pending());
+    // The source goes silent for more than 300 ms before sending any Clock.
+    r.expire(301_001);
+    assert!(!r.start_pending(), "the cable loss cancels the Start that never got a Clock");
+    // An idle Clock after reconnection does not start playback without a new Start or Continue.
+    feed(&mut r, 0xf8, 2_000_000);
+    assert!(r.take().is_none());
+
+    // A fresh Start keeps its request when only an older Clock estimate expires.
+    let mut r = Follower::default();
+    feed(&mut r, 0xf8, 0);
+    feed(&mut r, 0xfa, 1_400_000);
+    assert_eq!(r.take(), Some(Action::Locate(0)));
+    r.expire(1_500_001);
+    assert!(r.start_pending());
+    feed(&mut r, 0xf8, 1_510_000);
+    assert_eq!(r.take(), Some(Action::Play { pulse: 0, at: 1_510_000 }));
+}

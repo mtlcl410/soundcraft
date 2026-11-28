@@ -467,13 +467,20 @@ impl Follower {
         }
         if self.latest.is_some_and(|last| cable_lost || now.saturating_sub(last) > timeout) {
             // Idle pulses can predate a fresh transport request by an entire timeout.
-            let request = self.awaiting_clock.filter(|at| now.saturating_sub(*at) <= timeout);
+            // A sensing loss means the request itself is older than 300 ms of silence.
+            let request = self.awaiting_clock.filter(|at| !cable_lost && now.saturating_sub(*at) <= timeout);
             let cue = self.cue.take();
             self.lost();
             if request.is_some() {
                 self.awaiting_clock = request;
                 self.cue = cue;
             }
+            return true;
+        }
+        if cable_lost && self.awaiting_clock.take().is_some() {
+            // A Start or Continue whose source went silent before its first Clock
+            // must not be completed by an idle Clock after reconnection.
+            self.cue = None;
             return true;
         }
         false
