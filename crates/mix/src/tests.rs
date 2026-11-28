@@ -2469,8 +2469,7 @@ fn a_zero_frame_clock_render_keeps_the_score_range_the_wire_held_back() {
         }
         block.store(pos, std::sync::atomic::Ordering::Relaxed);
         eng.render_with_clock_prediction(&s, pos, 512, &mut out, 4_000);
-        let played = events.lock().unwrap().iter().any(|e| e.0 && e.1 == 60);
-        played
+        events.lock().unwrap().iter().any(|e| e.0 && e.1 == 60)
     };
     assert!(run(false), "the held note plays once the wire releases it");
     assert!(run(true), "a zero-frame render dropped the held note");
