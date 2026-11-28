@@ -312,14 +312,15 @@ fn edit_during_prepared_clock_dispatch_leaves_the_original_start_for_the_host() 
     let (edited, resume) = sync_channel(0);
     std::thread::scope(|scope| {
         scope.spawn(move || {
-            suspend.recv().unwrap();
+            // `checking` moves into the timing closure, so an early return disconnects it.
+            suspend.recv().expect("dispatch returned without calculating the timing offset");
             *revision.lock().unwrap() = false;
             drop(revision);
             edited.send(()).unwrap();
         });
         // On the input thread the destination is available and the cue was observed
         // before the edit. Resume after invalidation, while calculating the last timing offset.
-        follow.dispatch_prepared(|| {
+        follow.dispatch_prepared(move || {
             checking.send(()).unwrap();
             resume.recv().unwrap();
             21
