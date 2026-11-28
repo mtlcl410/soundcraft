@@ -112,6 +112,11 @@ pub struct TransportStatus {
     /// Record Ready: Record was pressed with the transport stopped, and Play starts the pass. Only
     /// while stopped; the host clears it when a pass or playback starts.
     pub record_ready: bool,
+    /// Count Off: the transport has been started and clicks the count-off bars before it rolls
+    /// from `position`. `playing` is already true meanwhile.
+    pub counting_off: bool,
+    /// Session frames of the count-off still to go (0 when none runs).
+    pub countoff_left: Samples,
     pub position: Samples,
 }
 

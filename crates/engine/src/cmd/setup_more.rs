@@ -83,7 +83,7 @@ pub fn specs() -> Vec<CommandSpec> {
         cmd!(noundo "setup.current_feet_frames", "Current Feet+Frames Position...", ["Setup"], None, "{feet_frames: 'F+FF'} — the feet+frames reading at the insertion point", always, current_feet_frames),
         cmd!(noundo "setup.external_timecode_offset", "External Timecode Offset...", ["Setup"], None, "{frames?: ±, samples?: ±} — offset applied to incoming timecode", always, |e, p| offset_setting(e, p, "sync.external_offset")),
         cmd!(noundo "setup.video_sync_offset", "Video Sync Offset...", ["Setup"], None, "{frames?: ±, samples?: ±} — offset between audio and video playback", always, |e, p| offset_setting(e, p, "video.sync_offset")),
-        cmd!(noundo "setup.click_countoff", "Click/Countoff...", ["Setup"], None, "{volume_db?: -60..12, accent_note?: 0..127, normal_note?: 0..127, accent_velocity?, normal_velocity?, countoff?: bool, countoff_bars?: 1..16, only_during_record?: bool}", always, click_countoff),
+        cmd!(noundo "setup.click_countoff", "Click/Countoff...", ["Setup"], None, "{volume_db?: -60..12, accent_note?: 0..127, normal_note?: 0..127, accent_velocity?, normal_velocity?, countoff?: bool, countoff_bars?: 1..16, countoff_only_record?: bool, only_during_record?: bool, only_during_countoff?: bool} — the click is heard during play and record, only during record, or only during the count-off; countoff_only_record: Play starts without counting off", always, click_countoff),
         cmd!(query "setup.keyboard_shortcuts", "Keyboard Shortcuts...", ["Setup"], None, "{filter?} — every command shortcut", always, |_, p| {
             let f = str_param(p, "filter").map(str::to_ascii_lowercase);
             let rows: Vec<Value> = command_specs()
@@ -420,8 +420,22 @@ fn click_countoff(e: &mut Engine, p: &Value) -> Result<Value> {
     if let Some(b) = p.get("countoff_bars").and_then(Value::as_u64) {
         s.edit.countoff_bars = b.clamp(1, 16) as u32;
     }
+    if let Some(v) = p.get("countoff_only_record").and_then(Value::as_bool) {
+        s.edit.set_flag("click.countoff_only_record", v);
+    }
+    // One of three (Pro Tools Reference Guide p. 768 step 4): during play and record, only
+    // during record, or only during the count-off. Choosing one clears the other.
     if let Some(v) = p.get("only_during_record").and_then(Value::as_bool) {
         s.edit.set_flag("click.only_during_record", v);
+        if v {
+            s.edit.set_flag("click.only_during_countoff", false);
+        }
+    }
+    if let Some(v) = p.get("only_during_countoff").and_then(Value::as_bool) {
+        s.edit.set_flag("click.only_during_countoff", v);
+        if v {
+            s.edit.set_flag("click.only_during_record", false);
+        }
     }
     Ok(json!({
         "volume_db": s.edit.value("click.volume_db", -6.0),
@@ -431,7 +445,9 @@ fn click_countoff(e: &mut Engine, p: &Value) -> Result<Value> {
         "normal_velocity": s.edit.value("click.normal_velocity", 100.0),
         "countoff": s.edit.countoff,
         "countoff_bars": s.edit.countoff_bars,
+        "countoff_only_record": s.edit.flag("click.countoff_only_record"),
         "only_during_record": s.edit.flag("click.only_during_record"),
+        "only_during_countoff": s.edit.flag("click.only_during_countoff"),
     }))
 }
 
@@ -654,6 +670,21 @@ mod tests {
         assert_eq!(r["volume_db"], -12.0);
         assert_eq!(e.session().edit.countoff_bars, 4);
         assert!(e.session().edit.countoff);
+    }
+
+    /// The click is heard during play and record, only during record or only during the count-off
+    /// (Pro Tools Reference Guide p. 768 step 4): one of the three. The count-off can be kept for
+    /// record passes only (step 5).
+    #[test]
+    fn click_countoff_modes_exclude_each_other() {
+        let mut e = Engine::default();
+        let r = e.execute("setup.click_countoff", &json!({"only_during_countoff": true, "countoff_only_record": true})).unwrap();
+        assert_eq!((r["only_during_countoff"].as_bool(), r["only_during_record"].as_bool()), (Some(true), Some(false)));
+        assert_eq!(r["countoff_only_record"].as_bool(), Some(true));
+        let r = e.execute("setup.click_countoff", &json!({"only_during_record": true})).unwrap();
+        assert_eq!((r["only_during_countoff"].as_bool(), r["only_during_record"].as_bool()), (Some(false), Some(true)));
+        let saved = Session::from_json(&e.session().to_json().unwrap()).unwrap();
+        assert!(saved.edit.flag("click.only_during_record") && saved.edit.flag("click.countoff_only_record"), "saved with the session");
     }
 
     #[test]

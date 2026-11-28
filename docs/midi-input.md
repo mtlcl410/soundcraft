@@ -73,6 +73,13 @@ transport (Record Ready: the button flashes and nothing moves), then **Play** or
 pass; Record again or Stop disarms. F12 or Cmd+Space (Ctrl+Space on Windows and Linux) record at
 once. No audio input is needed for a pass that records MIDI only.
 
+With **Count Off** on (Transport window MIDI controls, or Options › Count Off), the pass counts off
+first: the click plays the bars Setup › Click/Countoff sets (`countoff_bars`, 2 by default) in the
+meter and at the tempo where the pass starts, with the counter standing at the start point, and
+recording starts on the sample the count-off ends. What you play during the count-off is heard but
+not recorded, except a key still held when recording starts: it is recorded from the start point,
+as after a pre-roll. Stop during the count-off records nothing.
+
 When the pass stops, each track that was record-enabled and active when it started gets a MIDI
 clip with what its input received: notes with their velocities, controllers, pitch bend, aftertouch and
 program changes. What a pass records is settled when it starts: a track put in record while it

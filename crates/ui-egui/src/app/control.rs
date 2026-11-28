@@ -139,6 +139,8 @@ impl SoundApp {
             // The Record buttons: lit while recording, flashing in Record Ready.
             "record_button": if self.engine.transport.recording { "lit" } else if self.record_ready() { "flashing" } else { "off" },
             "position": self.position(),
+            // Count Off: the bar being counted and how many, while the transport waits for them.
+            "countoff": self.countoff_progress().map(|(bar, bars)| json!({"bar": bar, "bars": bars, "left": self.countoff_left()})),
             "dialog": self.dialogs.open_name(),
             "frame_ms": self.frame_ms,
             "audio_device": self.player.as_ref().map(|p| p.device_name.clone()),

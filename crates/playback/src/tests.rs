@@ -144,12 +144,13 @@ fn spike_session(spike_at: usize) -> (Arc<Shared>, AudioState, std::sync::mpsc::
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     });
     let (tx, rx) = channel();
     let st = AudioState::new(rx, Arc::clone(&shared), Arc::new(s), 48_000.0, channel().0);
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     (shared, st, tx, t)
 }
 
@@ -213,7 +214,7 @@ fn stopping_zeroes_meters_in_place_and_removed_tracks_are_pruned() {
     assert_eq!(gone, vec![t]);
     tx.send(Cmd::Session(Arc::new(empty), Vec::new())).unwrap();
     tx.send(Cmd::Forget(gone)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     st.fill(&mut out, 2);
     assert!(!shared.meters.lock().unwrap().tracks.contains_key(&t));
     assert!(!st.unsent.tracks.contains_key(&t) && !st.mix.meters.contains_key(&t));
@@ -254,6 +255,7 @@ fn a_block_that_panics_goes_silent_and_is_reported_once() {
     let shared = Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(true),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     };
@@ -295,12 +297,13 @@ fn audio_state_plays_and_stops_at_end() {
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     });
     let (tx, rx) = channel();
     let mut st = AudioState::new(rx, Arc::clone(&shared), s, 48_000.0, channel().0);
-    tx.send(Cmd::Play { from: 0, end: Some(1000), looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: Some(1000), looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 4096];
     st.fill(&mut out, 2);
     assert!(shared.position.load(Ordering::Relaxed) >= 1000);
@@ -313,12 +316,13 @@ fn short_device_callbacks_render_short_mix_blocks() {
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     });
     let (tx, rx) = channel();
     let mut st = AudioState::new(rx, Arc::clone(&shared), s, 48_000.0, channel().0);
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2 * 64];
     st.fill(&mut out, 2);
     assert_eq!(shared.position.load(Ordering::Relaxed), 64);
@@ -337,12 +341,13 @@ fn audio_output_state(format: soundcraft_model::ChannelFormat, channels: Vec<Vec
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     });
     let (tx, rx) = channel();
     let st = AudioState::new(rx, shared, Arc::new(s), 48_000.0, channel().0);
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     st
 }
 
@@ -444,12 +449,13 @@ fn surround_main_maps_to_device_channels_or_folds_down() {
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     });
     let (tx, rx) = channel();
     let mut st = AudioState::new(rx, Arc::clone(&shared), Arc::clone(&s), 48_000.0, channel().0);
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     // An 8-channel device: channels in order, the rest silent.
     let mut out = vec![0.0f32; 8 * 256];
     st.fill(&mut out, 8);
@@ -477,6 +483,7 @@ fn instances_arrive_with_the_session_and_leave_through_the_return_channel() {
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     });
@@ -618,6 +625,7 @@ fn replaced_sessions_are_freed_on_the_ui_thread() {
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     });
@@ -647,12 +655,13 @@ fn looping_wraps() {
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     });
     let (tx, rx) = channel();
     let mut st = AudioState::new(rx, Arc::clone(&shared), s, 48_000.0, channel().0);
-    tx.send(Cmd::Play { from: 0, end: None, looped: Some(Range::new(0, 1000)) }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: Some(Range::new(0, 1000)), countoff: None }).unwrap();
     let mut out = vec![0.0f32; 20_000];
     st.fill(&mut out, 2);
     let p = shared.position.load(Ordering::Relaxed);
@@ -679,12 +688,13 @@ fn locate_while_playing_drops_the_old_position_audio() {
         let shared = Arc::new(Shared {
             position: AtomicI64::new(0),
             playing: AtomicBool::new(false),
+            countoff_left: AtomicI64::new(0),
             speed: AtomicU32::new(1000),
             meters: Mutex::new(MeterSnapshot::default()),
         });
         let (tx, rx) = channel();
         let mut st = AudioState::new(rx, Arc::clone(&shared), Arc::new(s), 48_000.0, channel().0);
-        tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+        tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
         let mut out = vec![0.0f32; 2 * 512];
         let mut before = 0.0f32;
         for _ in 0..9 {
@@ -710,6 +720,7 @@ fn armed_tracks_are_heard_and_metered_after_playback_stops() {
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     });
@@ -717,7 +728,7 @@ fn armed_tracks_are_heard_and_metered_after_playback_stops() {
     let mut st = AudioState::new(rx, Arc::clone(&shared), Arc::new(s), 48_000.0, channel().0);
     let ring = record::InputRing::new(1, 48_000);
     tx.send(Cmd::Input(Arc::clone(&ring))).unwrap();
-    tx.send(Cmd::Play { from: 0, end: Some(1000), looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: Some(1000), looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 4096];
     st.fill(&mut out, 2);
     assert!(!shared.playing.load(Ordering::Relaxed));
@@ -738,6 +749,7 @@ fn keyboard_session() -> (AudioState, std::sync::mpsc::Sender<Cmd>, Arc<midi::Mi
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     });
@@ -776,7 +788,7 @@ fn a_midi_keyboard_plays_and_records_through_a_record_enabled_instrument() {
     assert!(rec.is_empty(), "nothing is recorded while stopped");
     // Recording: the events come back with the position they were played at.
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 48_000, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 48_000, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     feed.receive(0, &[0x90, 64, 90]);
@@ -856,7 +868,7 @@ fn keys_held_while_nothing_listens_or_the_port_closes_do_not_stay_on() {
 fn lost_midi_input_is_written_into_the_take() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     feed.receive(0, &[0x90, 60, 100]);
     heard(&mut st, 2);
     for _ in 0..midi::INCOMING {
@@ -883,6 +895,7 @@ fn live_midi_keeps_its_order_and_its_time_at_another_device_rate() {
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(1000),
         meters: Mutex::new(MeterSnapshot::default()),
     });
@@ -891,7 +904,7 @@ fn live_midi_keeps_its_order_and_its_time_at_another_device_rate() {
     let mut st = AudioState::new(rx, shared, Arc::new(s), 96_000.0, channel().0);
     tx2.send(Cmd::Midi(Arc::clone(&feed))).unwrap();
     tx2.send(Cmd::Recording(true, 0)).unwrap();
-    tx2.send(Cmd::Play { from: 10_000, end: None, looped: None }).unwrap();
+    tx2.send(Cmd::Play { from: 10_000, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     for note in [60, 62, 64, 65] {
@@ -912,7 +925,7 @@ fn live_midi_keeps_its_order_and_its_time_at_another_device_rate() {
 fn the_last_device_going_away_during_a_record_pass_is_written_into_the_take() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     feed.receive(0, &[0xB0, 64, 127]);
     feed.receive(0, &[0x90, 60, 100]);
     assert!(heard(&mut st, 4));
@@ -937,7 +950,7 @@ fn a_note_played_just_before_stop_is_in_the_take_and_the_end_of_the_pass_is_ackn
     let (mut st, tx, feed, ..) = keyboard_session();
     feed.set_clock(1);
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // The key goes down, and Stop arrives before the audio thread runs again: the note has not
@@ -968,7 +981,7 @@ fn the_recorded_position_does_not_move_with_the_size_of_later_callbacks() {
     let (mut st, tx, feed, ..) = keyboard_session();
     feed.set_clock(1);
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let (mut long, mut short) = (vec![0.0f32; 2048], vec![0.0f32; 256]);
     st.fill(&mut long, 2);
     // Arrives before a callback of 1024 frames, so it is due 1024 frames later; the callbacks
@@ -993,7 +1006,7 @@ fn the_recorded_position_does_not_move_with_the_size_of_later_callbacks() {
 fn more_events_than_a_callback_can_play_are_still_all_recorded() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     feed.receive(0, &[0x90, 60, 100]);
@@ -1014,7 +1027,7 @@ fn more_events_than_a_callback_can_play_are_still_all_recorded() {
 fn what_a_port_sends_after_it_lost_input_is_kept_and_follows_the_loss_in_the_take() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     heard(&mut st, 1);
     // A key goes down, the port loses its input (the device is replugged: the key's release
     // will not come), and the device then plays another key. All before the next callback.
@@ -1045,6 +1058,7 @@ fn the_age_of_a_midi_event_is_counted_at_the_transport_speed() {
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
         speed: AtomicU32::new(500),
         meters: Mutex::new(MeterSnapshot::default()),
     });
@@ -1052,7 +1066,7 @@ fn the_age_of_a_midi_event_is_counted_at_the_transport_speed() {
     let mut st = AudioState::new(rx, shared, Arc::new(s), 48_000.0, channel().0);
     tx.send(Cmd::Midi(Arc::clone(&feed))).unwrap();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 48_000, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 48_000, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // The event waits 20 ms for its callback: 480 session frames at half speed, not 960.
@@ -1077,7 +1091,7 @@ fn loop_recording_says_in_the_take_where_the_loop_went_round() {
     feed.set_clock(1);
     // The loop is four callbacks long.
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: Some(Range::new(0, 4096)) }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: Some(Range::new(0, 4096)), countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // A key goes down at about 1024 in the first round and up at about 2048 in the second: later
@@ -1132,7 +1146,7 @@ fn the_late_answer_to_an_earlier_pass_does_not_end_the_wait_for_a_later_one() {
 fn one_ports_loss_does_not_take_along_what_another_port_sent_before_it() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     heard(&mut st, 1);
     let pause = || std::thread::sleep(std::time::Duration::from_millis(2));
     // Port 0 loses its input and then plays a new key. After that port 1 loses its input, with
@@ -1167,7 +1181,7 @@ fn a_loss_met_in_the_queue_is_not_taken_for_a_second_loss_by_the_next_callback()
     for late in [false, true] {
         let (mut st, tx, feed, ..) = keyboard_session();
         tx.send(Cmd::Recording(true, 0)).unwrap();
-        tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+        tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
         heard(&mut st, 1);
         // Port 1 fills the queue, and a release of port 0 does not fit.
         for _ in 0..midi::INCOMING {
@@ -1195,7 +1209,7 @@ fn a_loss_met_in_the_queue_is_not_taken_for_a_second_loss_by_the_next_callback()
 fn a_loop_pass_stopped_at_the_end_of_the_loop_does_not_start_another_round() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: Some(Range::new(0, 4096)) }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: Some(Range::new(0, 4096)), countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     feed.receive(0, &[0x90, 60, 100]);
@@ -1228,7 +1242,7 @@ fn a_pass_stays_owed_through_a_stalled_callback_whatever_the_devices_do() {
     assert!(!feed.pass_owed());
     // Pass A records a key; then its only device is unplugged, and Stop follows.
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     st.fill(&mut out, 2);
     feed.receive(0, &[0x90, 60, 100]);
     st.fill(&mut out, 2);
@@ -1252,7 +1266,7 @@ fn a_pass_stays_owed_through_a_stalled_callback_whatever_the_devices_do() {
     // What reached the take belongs to pass A (the UI clears it when B starts).
     assert!(rec.iter().all(|e| e.at <= 2048), "{rec:?}");
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 96_000, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 96_000, end: None, looped: None, countoff: None }).unwrap();
     st.fill(&mut out, 2);
     feed.receive(0, &[0x90, 74, 100]);
     st.fill(&mut out, 2);
@@ -1273,7 +1287,7 @@ fn a_loop_pass_says_where_it_stopped_with_its_answer_not_where_the_engine_is_lat
     let (mut st, tx, feed, ..) = keyboard_session();
     feed.set_clock(1);
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: Some(Range::new(0, 4096)) }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: Some(Range::new(0, 4096)), countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     // Three callbacks: the playhead is at 3072, one callback before the loop end. A key is held.
     st.fill(&mut out, 2);
@@ -1300,7 +1314,7 @@ fn a_loop_pass_says_where_it_stopped_with_its_answer_not_where_the_engine_is_lat
 fn what_is_played_after_stop_is_not_in_the_take_however_late_the_audio_thread_hears_of_it() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // A controller before Stop and a key after it, both before the audio thread runs again
@@ -1325,7 +1339,7 @@ fn a_note_that_arrives_between_the_queue_being_read_and_the_stop_is_in_the_take(
     let (mut st, tx, feed, ..) = keyboard_session();
     feed.set_clock(1);
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // The callback has read the MIDI queue (empty). Before it reads its commands a key goes
@@ -1354,7 +1368,7 @@ fn a_note_that_arrives_between_the_queue_being_read_and_the_stop_is_in_the_take(
 fn a_port_closed_after_its_overflow_keeps_a_mark_for_each_loss() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     heard(&mut st, 1);
     // Port 1 fills the queue, and a release of port 0 does not fit.
     feed.set_clock(1_000);
@@ -1383,7 +1397,7 @@ fn a_port_closed_after_its_overflow_keeps_a_mark_for_each_loss() {
 fn a_loss_told_by_the_ports_flag_is_not_written_again_when_its_mark_arrives() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     heard(&mut st, 1);
     // Port 1 fills the queue, and a release of port 0 does not fit. Nothing more arrives before
     // the callback: it learns of the loss from the port's flag.
@@ -1449,7 +1463,7 @@ fn a_short_loop_that_goes_round_several_times_in_a_callback_marks_one_round_betw
     let (mut st, tx, feed, ..) = keyboard_session();
     // The loop is 128 frames, a callback 512: four rounds to a callback.
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: Some(Range::new(0, 128)) }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: Some(Range::new(0, 128)), countoff: None }).unwrap();
     let mut out = vec![0.0f32; 1024];
     feed.set_clock(0);
     st.fill(&mut out, 2);
@@ -1476,7 +1490,7 @@ fn a_note_played_before_the_transport_stop_is_in_the_take_when_the_end_of_the_pa
     let (mut st, tx, feed, ..) = keyboard_session();
     feed.set_clock(1);
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // The callback has read the MIDI queue. A key goes down, and the transport is stopped: that
@@ -1504,7 +1518,7 @@ fn a_note_played_before_the_transport_stop_is_in_the_take_when_the_end_of_the_pa
 fn what_is_played_after_record_is_in_the_take_before_the_audio_thread_hears_of_the_pass() {
     let (mut st, tx, feed, ..) = keyboard_session();
     // Playing, not recording.
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // A key before Record and one after it, both before the audio thread runs again.
@@ -1535,7 +1549,7 @@ fn what_is_played_after_record_is_in_the_take_before_the_audio_thread_hears_of_t
 fn an_overflow_before_stop_is_in_the_take_when_the_port_closes_after_it() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     feed.set_clock(500);
     feed.receive(0, &[0x90, 60, 100]);
     heard(&mut st, 2);
@@ -1567,7 +1581,7 @@ fn a_session_at_another_sample_rate_is_rendered_at_that_rate_from_the_callback_t
     // The device runs at 48 kHz. A 96 kHz session takes two session frames to a device frame.
     let s = soundcraft_model::Session::new("t", soundcraft_time::SampleRate::new(96_000).unwrap());
     tx.send(Cmd::Session(Arc::new(s), Vec::new())).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     st.fill(&mut out, 2);
     assert_eq!(st.shared.position.load(Ordering::Relaxed), 2048, "1024 device frames");
 }
@@ -1577,7 +1591,7 @@ fn a_speed_change_during_a_callback_does_not_split_what_it_renders_at_from_what_
     let (mut st, tx, feed, ..) = keyboard_session();
     feed.set_clock(0);
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     assert_eq!(st.shared.position.load(Ordering::Relaxed), 1024);
@@ -1602,7 +1616,7 @@ fn a_speed_change_during_a_callback_does_not_split_what_it_renders_at_from_what_
 #[test]
 fn what_was_played_before_record_stays_out_of_the_take_when_it_is_taken_in_after_the_start_command() {
     let (mut st, tx, feed, ..) = keyboard_session();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // The callback has read the MIDI queue. A key goes down, then Record: the callback reads
@@ -1631,7 +1645,7 @@ fn what_was_played_before_record_stays_out_of_the_take_when_it_is_taken_in_after
 fn the_stop_cutoff_holds_before_the_stop_command_arrives() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // The pass is ended; the command that says so has not reached the audio thread when it
@@ -1661,7 +1675,7 @@ fn the_stop_cutoff_holds_before_the_stop_command_arrives() {
 fn a_close_met_through_the_mark_of_an_earlier_overflow_is_not_a_second_loss_when_its_flag_comes() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     heard(&mut st, 1);
     // Port 0 overflows, plays on (the mark of the overflow goes into the queue), and is closed.
     feed.set_clock(1_000);
@@ -1692,7 +1706,7 @@ fn a_close_met_through_the_mark_of_an_earlier_overflow_is_not_a_second_loss_when
 fn two_overflows_of_one_port_in_one_callback_each_keep_their_mark() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     heard(&mut st, 1);
     let drain = |left: usize| {
         let take = midi::INCOMING - left;
@@ -1738,7 +1752,7 @@ fn what_is_played_as_playback_runs_to_its_end_is_in_the_take_and_what_follows_is
     feed.set_clock(1_000);
     // Playback ends by itself at 1536, in the second callback.
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: Some(1536), looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: Some(1536), looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // A key goes down after the second callback has read the MIDI queue, before playback
@@ -1771,7 +1785,7 @@ fn what_is_played_as_playback_runs_to_its_end_is_in_the_take_and_what_follows_is
 #[test]
 fn a_pass_begun_while_the_queue_is_being_read_records_from_when_it_began() {
     let (mut st, tx, feed, ..) = keyboard_session();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // The callback has seen that no pass is begun. Before it takes the queue in, a key goes
@@ -1799,7 +1813,7 @@ fn a_pass_begun_while_the_queue_is_being_read_records_from_when_it_began() {
 fn an_overflow_before_stop_whose_mark_never_came_is_in_the_take_though_an_older_mark_shows_a_later_close() {
     let (mut st, tx, feed, ..) = keyboard_session();
     tx.send(Cmd::Recording(true, 0)).unwrap();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     heard(&mut st, 1);
     // Port 0 overflows, and plays a key while the audio thread is part of the way through the
     // queue: the mark of that overflow is in the queue, ahead of the key.
@@ -1835,7 +1849,7 @@ fn an_overflow_before_stop_whose_mark_never_came_is_in_the_take_though_an_older_
 #[test]
 fn a_loss_in_a_pass_begun_while_the_queue_is_being_read_is_written_into_the_take() {
     let (mut st, tx, feed, ..) = keyboard_session();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // The callback has seen that no pass is begun. Before it takes the queue in: a port is
@@ -1869,7 +1883,7 @@ fn a_loss_in_a_pass_begun_while_the_queue_is_being_read_is_written_into_the_take
 #[test]
 fn a_pass_started_and_ended_by_the_commands_of_one_callback_keeps_what_was_played_in_it() {
     let (mut st, tx, feed, ..) = keyboard_session();
-    tx.send(Cmd::Play { from: 0, end: None, looped: None }).unwrap();
+    tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: None }).unwrap();
     let mut out = vec![0.0f32; 2048];
     st.fill(&mut out, 2);
     // Record while playing. After the callback has read the MIDI queue, a key goes down and
@@ -1903,4 +1917,169 @@ fn a_pass_started_and_ended_by_the_commands_of_one_callback_keeps_what_was_playe
     rec.clear();
     feed.take_recorded(&mut rec);
     assert!(rec.is_empty(), "{rec:?}");
+}
+
+/// A session with the click on and nothing else, and a player state for it.
+fn click_session(rate: f64) -> (Arc<Shared>, AudioState, std::sync::mpsc::Sender<Cmd>, Session) {
+    let mut s = Session::default();
+    s.edit.click = true;
+    let shared = Arc::new(Shared {
+        position: AtomicI64::new(0),
+        playing: AtomicBool::new(false),
+        countoff_left: AtomicI64::new(0),
+        speed: AtomicU32::new(1000),
+        meters: Mutex::new(MeterSnapshot::default()),
+    });
+    let (tx, rx) = channel();
+    let st = AudioState::new(rx, Arc::clone(&shared), Arc::new(s.clone()), rate, channel().0);
+    (shared, st, tx, s)
+}
+
+/// Where each click starts in `left`, and its peak: a click is a sample above the floor after at
+/// least 2000 quiet ones. Its sine starts at phase 0, so it starts one sample before that.
+fn onsets(left: &[f32]) -> Vec<(usize, f32)> {
+    let mut out: Vec<(usize, f32)> = Vec::new();
+    let mut quiet = usize::MAX - 1;
+    for (i, x) in left.iter().enumerate() {
+        if x.abs() > 1e-4 {
+            if quiet >= 2000 {
+                out.push((i - 1, 0.0));
+            }
+            if let Some(last) = out.last_mut() {
+                last.1 = last.1.max(x.abs());
+            }
+            quiet = 0;
+        } else {
+            quiet = quiet.saturating_add(1);
+        }
+    }
+    out
+}
+
+/// Count Off, 2 bars of 4/4 at 120 bpm (Pro Tools Reference Guide p. 767, p. 788 step 9): the
+/// transport stands at the start for exactly 4 s while 8 clicks sound, the first of each bar
+/// accented, and starts there on the sample the count-off ends, where the metronome's own
+/// downbeat follows on.
+#[test]
+fn a_count_off_clicks_with_the_transport_standing_and_starts_it_on_the_sample_it_ends() {
+    let (shared, mut st, tx, s) = click_session(48_000.0);
+    let c = CountOff::at(&s, 96_000, 2);
+    assert_eq!((c.bars, c.beats_per_bar, c.beats(), c.length()), (2, 4, 8, 192_000));
+    tx.send(Cmd::Play { from: 96_000, end: None, looped: None, countoff: Some(c) }).unwrap();
+    let mut left = Vec::new();
+    let mut out = vec![0.0f32; 2 * 1000];
+    for i in 0..200 {
+        st.fill(&mut out, 2);
+        left.extend(out.chunks(2).map(|f| f[0]));
+        let pos = shared.position.load(Ordering::Relaxed);
+        assert!(shared.playing.load(Ordering::Relaxed), "the transport counts as started");
+        if (i + 1) * 1000 + 512 <= 192_000 {
+            assert_eq!(pos, 96_000, "the playhead stands at the start during the count-off (callback {i})");
+            let left = shared.countoff_left.load(Ordering::Relaxed);
+            assert!((0..512).contains(&(192_000 - (i as i64 + 1) * 1000 - left)), "{left} frames of count-off left (callback {i})");
+        }
+    }
+    // The callback renders up to one block ahead of what it has played.
+    let pos = shared.position.load(Ordering::Relaxed);
+    assert!((96_000 + 8_000..96_000 + 8_000 + 512).contains(&pos), "then it rolls from the start: {pos}");
+    let clicks = onsets(&left);
+    let at: Vec<usize> = clicks.iter().map(|c| c.0).collect();
+    assert_eq!(at, [0, 24_000, 48_000, 72_000, 96_000, 120_000, 144_000, 168_000, 192_000], "8 beats, then the downbeat at the start");
+    let (accent, normal) = (clicks[0].1, clicks[1].1);
+    assert!(accent > normal * 1.15, "beat 1 is accented: {accent} vs {normal}");
+    assert!((clicks[4].1 - accent).abs() < 1e-3 && (clicks[5].1 - normal).abs() < 1e-3, "bar 2 the same");
+}
+
+/// The count-off follows Options › Click: with the click off it is silent but still waits its
+/// bars (Pro Tools Reference Guide p. 767 steps 2-3); "only during record" sounds it only before
+/// a record pass, and "only during countoff" sounds the count-off and nothing after it (p. 768
+/// step 4).
+#[test]
+fn the_count_off_sounds_as_options_click_says() {
+    let run = |click: bool, flag: Option<&str>, recording: bool| -> (Vec<usize>, i64) {
+        let (shared, mut st, tx, mut s) = click_session(48_000.0);
+        s.edit.click = click;
+        if let Some(f) = flag {
+            s.edit.set_flag(f, true);
+        }
+        tx.send(Cmd::Recording(recording, 0)).unwrap();
+        // 7/8 at 120 bpm, 1 bar: 7 eighth notes of 12 000 frames.
+        s.tempo.set_meter(0, 7, 8).unwrap();
+        tx.send(Cmd::Session(Arc::new(s.clone()), Vec::new())).unwrap();
+        let c = CountOff::at(&s, 0, 1);
+        tx.send(Cmd::Play { from: 0, end: None, looped: None, countoff: Some(c) }).unwrap();
+        let mut left = Vec::new();
+        let mut out = vec![0.0f32; 2 * 1000];
+        for _ in 0..120 {
+            st.fill(&mut out, 2);
+            left.extend(out.chunks(2).map(|f| f[0]));
+        }
+        (onsets(&left).iter().map(|c| c.0).collect(), shared.position.load(Ordering::Relaxed))
+    };
+    let eighths: Vec<usize> = (0..7).map(|k| k * 12_000).collect();
+    let (on, pos) = run(true, None, false);
+    assert_eq!(on, [eighths.clone(), vec![84_000, 96_000, 108_000]].concat(), "7/8: 7 clicks, then the metronome");
+    assert!((36_000..36_512).contains(&pos), "{pos}");
+    let (on, pos) = run(false, None, true);
+    assert!(on.is_empty(), "Click off: no click");
+    assert!((36_000..36_512).contains(&pos), "the count-off still waits its bar: {pos}");
+    assert!(run(true, Some("click.only_during_record"), false).0.is_empty(), "a play pass with the click only during record");
+    assert_eq!(run(true, Some("click.only_during_record"), true).0.len(), 10, "a record pass");
+    assert_eq!(run(true, Some("click.only_during_countoff"), false).0, eighths, "only during countoff: the count-off alone");
+}
+
+/// Stop during the count-off: the transport never starts, the playhead stays at the start and
+/// nothing is left of the count-off.
+#[test]
+fn stop_during_the_count_off_leaves_the_transport_at_the_start() {
+    let (shared, mut st, tx, s) = click_session(48_000.0);
+    tx.send(Cmd::Play { from: 48_000, end: None, looped: None, countoff: Some(CountOff::at(&s, 48_000, 2)) }).unwrap();
+    let mut out = vec![0.0f32; 2 * 1000];
+    (0..50).for_each(|_| st.fill(&mut out, 2));
+    tx.send(Cmd::Stop).unwrap();
+    st.fill(&mut out, 2);
+    assert_eq!(shared.position.load(Ordering::Relaxed), 48_000);
+    assert_eq!(shared.countoff_left.load(Ordering::Relaxed), 0);
+    assert!(!shared.playing.load(Ordering::Relaxed));
+    (0..5).for_each(|_| st.fill(&mut out, 2));
+    assert!(out.iter().all(|x| *x == 0.0), "no click after the stop");
+}
+
+/// MIDI played during the count-off is heard, and written down just before the start, in the
+/// order it came (the UI then keeps only a note still held at the start, from the start, as for a
+/// punch-in: Pro Tools Reference Guide p. 822); so is what the callback takes in only after the
+/// transport has started but was played before. What is played from the start on is in place.
+#[test]
+fn midi_played_during_the_count_off_is_heard_and_written_just_before_the_start() {
+    let (mut st, tx, feed, s, _) = keyboard_session();
+    feed.set_clock(1);
+    tx.send(Cmd::Recording(true, 0)).unwrap();
+    feed.begin_pass();
+    // 1 bar of 4/4 at 120 bpm: 96 000 frames, 93.75 callbacks of 1024.
+    tx.send(Cmd::Play { from: 48_000, end: None, looped: None, countoff: Some(CountOff::at(&s, 48_000, 1)) }).unwrap();
+    let mut out = vec![0.0f32; 2048];
+    st.fill(&mut out, 2);
+    feed.receive(0, &[0x90, 60, 100]);
+    assert!(heard(&mut st, 4), "the keyboard plays during the count-off");
+    feed.receive(0, &[0x80, 60, 0]);
+    // The 94th callback ends the count-off 768 frames in.
+    (0..89).for_each(|_| st.fill(&mut out, 2));
+    let pos = st.shared.position.load(Ordering::Relaxed);
+    assert!((48_000 + 256..48_000 + 256 + 512).contains(&pos), "{pos}");
+    // Played 900 frames (18 750 µs) before the next callback, so before the start; that callback
+    // takes it in with the transport running.
+    feed.set_clock(100_000 - 18_750);
+    feed.receive(0, &[0x90, 62, 100]);
+    feed.set_clock(100_000);
+    st.fill(&mut out, 2);
+    // Played after the start.
+    feed.receive(0, &[0x90, 64, 100]);
+    st.fill(&mut out, 2);
+    st.fill(&mut out, 2);
+    let mut rec = Vec::new();
+    feed.take_recorded(&mut rec);
+    let got: Vec<_> = rec.iter().map(|e| (e.status, e.data1, e.at)).collect();
+    assert_eq!(got[..3], [(0x90, 60, 47_999), (0x80, 60, 47_999), (0x90, 62, 47_999)], "{got:?}");
+    assert_eq!((got[3].0, got[3].1), (0x90, 64));
+    assert!(got[3].2 >= 48_000, "{got:?}");
 }

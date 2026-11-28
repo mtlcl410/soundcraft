@@ -3,7 +3,7 @@ use super::{
     PluginEditor, PluginStateReader, PluginStates, PreparedInstance, Range, Receiver, Samples, Sender, Session, Shared, SyncSender, TrackId,
     itu_stereo_fold, main_channels, midi, record, sync_channel,
 };
-use soundcraft_mix::{LiveMidi, midi_port_bit, midi_thru};
+use soundcraft_mix::{CountOff, LiveMidi, midi_port_bit, midi_thru};
 use soundcraft_model::TrackKind;
 
 /// How the audio output is doing, for the UI.
@@ -73,6 +73,15 @@ pub(crate) struct AudioState {
     playing: bool,
     end: Option<Samples>,
     looped: Option<Range>,
+    /// A count-off before the transport starts at `pos`, and how far it has got (frames). The
+    /// transport counts as playing meanwhile (the UI sees it started) but stands still: only the
+    /// count-off's clicks and the monitored inputs sound, and nothing is recorded.
+    countoff: Option<(CountOff, Samples)>,
+    /// Where the transport starts after a count-off (`Samples::MIN`: no count-off). MIDI played
+    /// before it, during the count-off, is written down just before it: the UI keeps a note
+    /// still held there from that point and drops the rest, as for a punch-in (Pro Tools
+    /// Reference Guide p. 822).
+    record_floor: Samples,
     /// Rendered frames waiting to be consumed (planar, main channels) and the fractional read index.
     pending: Vec<Vec<f32>>,
     /// Stereo fold-down gains per main channel (used when the device has fewer channels).
@@ -170,6 +179,8 @@ impl AudioState {
             playing: false,
             end: None,
             looped: None,
+            countoff: None,
+            record_floor: Samples::MIN,
             pending: vec![vec![0.0; BLOCK]; nch],
             pending_len: 0,
             read: 0.0,
@@ -258,8 +269,12 @@ impl AudioState {
                     }
                 }
                 Cmd::OldSessions(tx) => self.old_sessions = Some(tx),
-                Cmd::Play { from, end, looped } => {
+                Cmd::Play { from, end, looped, countoff } => {
+                    self.countoff = countoff.filter(|c| c.length() > 0).map(|c| (c, 0));
+                    self.record_floor = if self.countoff.is_some() { from } else { Samples::MIN };
+                    self.publish_countoff();
                     self.pos = from;
+                    self.shared.position.store(from, Ordering::Relaxed);
                     self.end = end;
                     self.looped = looped.filter(|r| super::loops(*r));
                     self.midi_wraps = 0;
@@ -272,12 +287,18 @@ impl AudioState {
                 Cmd::Stop => {
                     self.midi_stopped = (self.playing && self.recording).then(|| self.midi.as_ref().map_or(i64::MAX, |f| f.clock()));
                     self.playing = false;
+                    self.countoff = None;
+                    self.publish_countoff();
                     self.end = None;
                     self.looped = None;
                     self.mix.reset();
                 }
                 Cmd::Locate(at) => {
                     self.midi_stopped = None;
+                    // During a count-off the transport is to start at the new place.
+                    if self.countoff.is_some() {
+                        self.record_floor = at;
+                    }
                     self.pos = at;
                     self.pending_len = 0;
                     self.read = 0.0;
@@ -292,6 +313,12 @@ impl AudioState {
         }
         self.send_garbage();
         self.shared.playing.store(self.playing, Ordering::Relaxed);
+    }
+
+    /// Tell the UI how much of the count-off is left (0: none is running).
+    fn publish_countoff(&self) {
+        let left = self.countoff.map_or(0, |(c, elapsed)| c.length().saturating_sub(elapsed).max(0));
+        self.shared.countoff_left.store(left, Ordering::Relaxed);
     }
 
     fn send_garbage(&mut self) {
@@ -421,6 +448,8 @@ impl AudioState {
             begun: pass.begun,
             until: pass.until,
             stopped: pass.stopped,
+            floor: self.record_floor,
+            counting: pass.counting,
         };
         // The lost ports whose mark is not in the take yet. Each goes in where its loss was.
         let mut marks = if record { input_lost } else { 0 };
@@ -547,6 +576,17 @@ impl AudioState {
     /// Render the next block at the session rate into `pending`.
     fn render_next(&mut self, quantum: usize) {
         let mut n = quantum.clamp(1, BLOCK);
+        if let Some((c, elapsed)) = self.countoff {
+            // The count-off: the transport stands at `pos`. It ends exactly after its length,
+            // so the block is cut there and the next one starts the transport.
+            let left = c.length().saturating_sub(elapsed).max(1);
+            n = n.min(usize::try_from(left).unwrap_or(BLOCK));
+            self.render_block(n, Some((c, elapsed)));
+            let elapsed = elapsed.saturating_add(n as i64);
+            self.countoff = (elapsed < c.length()).then_some((c, elapsed));
+            self.publish_countoff();
+            return;
+        }
         if let Some(l) = self.looped
             && self.pos >= l.end
         {
@@ -579,6 +619,17 @@ impl AudioState {
             self.pending_len = BLOCK;
             return;
         }
+        self.render_block(n, None);
+        if self.playing {
+            self.pos += n as i64;
+            self.shared.position.store(self.pos, Ordering::Relaxed);
+        }
+    }
+
+    /// Render `n` frames at the playhead into `pending`: the session while the transport runs,
+    /// only the monitored inputs while it is stopped or counting off (`countoff`: the count-off
+    /// and how far into it the block starts).
+    fn render_block(&mut self, n: usize, countoff: Option<(CountOff, Samples)>) {
         if let Some(ring) = &self.input {
             let ch = ring.channels.load(Ordering::Relaxed).max(1);
             if self.mix.input.len() != ch {
@@ -587,16 +638,14 @@ impl AudioState {
             ring.pop_into(&mut self.mix.input, n, self.session.sample_rate.hz());
         }
         self.due_midi(n);
-        self.mix.monitor_only = !self.playing;
+        self.mix.monitor_only = !self.playing || countoff.is_some();
         self.mix.recording = self.recording;
+        self.mix.countoff = countoff;
         self.mix.render(&self.session, self.pos, n, &mut self.pending);
+        self.mix.countoff = None;
         self.send_garbage();
         self.pending_len = n;
         self.publish_meters();
-        if self.playing {
-            self.pos += n as i64;
-            self.shared.position.store(self.pos, Ordering::Relaxed);
-        }
     }
 
     /// Drop deleted tracks' meters from the shared snapshot, unless the UI holds it right now.
@@ -639,6 +688,7 @@ impl AudioState {
             record: running || (self.playing && begun),
             running,
             playing: self.playing,
+            counting: self.countoff.is_some(),
             begun,
             until: self.midi_stopped.unwrap_or(i64::MAX),
             stopped: self.midi_stopped.is_some(),
@@ -769,6 +819,8 @@ struct Pass {
     until: i64,
     /// The transport has stopped: the playhead stands where the pass ends.
     stopped: bool,
+    /// The transport is counting off: it stands at the start and nothing played is inside the pass.
+    counting: bool,
     /// The playhead at the start of the callback.
     pos: Samples,
     looped: Option<Range>,
@@ -793,6 +845,11 @@ struct TakeWriter<'a> {
     until: i64,
     /// The playhead stands where the pass ends.
     stopped: bool,
+    /// Where the transport starts after a count-off: what was played before it (during the
+    /// count-off) is written down just before it.
+    floor: Samples,
+    /// The count-off is still running.
+    counting: bool,
 }
 
 impl TakeWriter<'_> {
@@ -809,7 +866,7 @@ impl TakeWriter<'_> {
     /// Write down the event `e`, stamped `stamp`, that arrived `age` session frames ago.
     fn event(&mut self, stamp: i64, age: i64, e: &LiveMidi) {
         if self.within(stamp) {
-            let at = self.at(age);
+            let at = self.placed(age);
             self.feed.record(at, e);
         }
     }
@@ -818,9 +875,16 @@ impl TakeWriter<'_> {
     /// ago.
     fn lost(&mut self, stamp: i64, age: i64, bits: u64) {
         if self.within(stamp) {
-            let at = self.at(age);
+            let at = self.placed(age);
             self.feed.record_lost(at, bits);
         }
+    }
+
+    /// [`Self::at`], with what was played during a count-off just before where the transport
+    /// starts: in arrival order, outside the pass, so that only a note still held there is kept.
+    fn placed(&mut self, age: i64) -> Samples {
+        let at = self.at(age);
+        if self.counting || at < self.floor { self.floor.saturating_sub(1) } else { at }
     }
 
     /// The timeline position of what happened `age` session frames ago. Ages only get smaller

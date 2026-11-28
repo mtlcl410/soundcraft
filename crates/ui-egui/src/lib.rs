@@ -462,6 +462,11 @@ pub struct SoundApp {
     pub(crate) framework_host: std::sync::Arc<craft_host::Host>,
     /// Transport simulation when there is no player (tests, offscreen renders).
     sim: Option<(Samples, Option<Samples>, Option<Range>)>,
+    /// The count-off the simulated transport still waits (frames) before it moves.
+    sim_countoff: Samples,
+    /// The count-off running before the transport moves (Options › Count Off), and the status
+    /// line message it shows.
+    countoff_run: Option<(soundcraft_playback::CountOff, String)>,
     /// When Record last found nothing to record on, and why: the Record buttons show it for a moment.
     record_hint: Option<(f64, &'static str)>,
     /// When the lost output last cancelled Record Ready (uptime): the input, lost with it a moment

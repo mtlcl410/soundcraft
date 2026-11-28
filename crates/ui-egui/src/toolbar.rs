@@ -685,13 +685,12 @@ fn tempo_meter(app: &mut SoundApp, ui: &mut Ui) {
     if resp.clicked() {
         let _ = app.run("options.countoff", json!({}));
     }
-    ui.painter().text(
-        pos2(r.max.x - 8.0, co.center().y),
-        Align2::RIGHT_CENTER,
-        crate::localized_format!("{bars} bars", bars = bars),
-        mono(11.0),
-        t.counter_text,
-    );
+    // While the count-off runs: the bar being counted.
+    let bars_text = match app.countoff_progress() {
+        Some((bar, of)) => crate::localized_format!("bar {bar}/{bars}", bar = bar, bars = of),
+        None => crate::localized_format!("{bars} bars", bars = bars),
+    };
+    ui.painter().text(pos2(r.max.x - 8.0, co.center().y), Align2::RIGHT_CENTER, bars_text, mono(11.0), t.counter_text);
     ui.painter().text(pos2(r.min.x + 70.0, r.min.y + 32.0), Align2::RIGHT_CENTER, crate::localization::text("Meter"), regular(11.0), t.counter_label);
     ui.painter().text(pos2(r.max.x - 8.0, r.min.y + 32.0), Align2::RIGHT_CENTER, meter, mono(11.0), t.counter_text);
     ui.painter().text(pos2(r.min.x + 70.0, r.min.y + 48.0), Align2::RIGHT_CENTER, crate::localization::text("Tempo"), regular(11.0), t.counter_label);

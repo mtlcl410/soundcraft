@@ -154,6 +154,10 @@ pub struct MixEngine {
     /// Mix the metronome (Options > Click) into the output. Playback turns this on; offline renders
     /// (bounces, stems, exports) leave it off so the click is never printed into a file.
     pub metronome: bool,
+    /// A count-off is running, and how far into it this block starts (frames). Set by the audio
+    /// host for each block while the transport waits for the count-off to end: the block then
+    /// holds the count-off's clicks instead of the metronome on the timeline.
+    pub countoff: Option<(CountOff, Samples)>,
     /// Third-party instances come from [`MixEngine::adopt`] instead of being created in `sync`.
     external: bool,
     /// An offline render: the plugins `sync` creates are told so ([`Plugin::set_offline`]).
@@ -193,6 +197,7 @@ impl MixEngine {
             monitor_only: false,
             recording: false,
             metronome: false,
+            countoff: None,
             external: false,
             offline: false,
             adopt: HashMap::new(),
@@ -593,8 +598,16 @@ impl MixEngine {
         // Metronome: summed after the master fader, so it reaches the speakers without passing
         // through any track, send or insert. Only the playback engine sets `metronome`.
         // Not while monitoring only (transport stopped): the position does not advance there, so the
-        // start of the same beat would repeat every block as a buzz.
-        if self.metronome && !self.monitor_only && s.edit.click && (!s.edit.flag("click.only_during_record") || self.recording) {
+        // start of the same beat would repeat every block as a buzz. A count-off has its own beats.
+        // Both follow Options › Click and its "only during record" choice, for the pass the
+        // count-off leads into (Pro Tools Reference Guide p. 767 steps 2-3, p. 768 step 4);
+        // "only during countoff" leaves the click for the count-off alone.
+        let click_on = self.metronome && s.edit.click && (!s.edit.flag("click.only_during_record") || self.recording);
+        if let Some((c, elapsed)) = self.countoff {
+            if click_on {
+                click::render_countoff(s, &c, elapsed, frames, &mut self.main);
+            }
+        } else if click_on && !self.monitor_only && !s.edit.flag("click.only_during_countoff") {
             click::render(s, pos, frames, &mut self.main);
         }
         // Output: min(out.len(), main channels) channels; any further output channels are silent.
@@ -706,8 +719,10 @@ fn is_aux(t: &Track) -> bool {
 }
 
 /// Metronome: a short synthesized blip on every beat of the tempo map, accented on beat 1 of
-/// each bar. Settings come from `setup.click_countoff` (`click.*` values).
+/// each bar; the count-off plays the same blip on its own beats. Settings come from
+/// `setup.click_countoff` (`click.*` values).
 mod click;
+pub use click::CountOff;
 
 #[cfg(test)]
 mod tests;

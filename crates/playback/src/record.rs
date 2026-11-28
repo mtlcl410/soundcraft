@@ -293,6 +293,13 @@ impl Recorder {
     /// Create each take's file and start recording into them: a track's take records the given
     /// input channels into a new file, and into further files as `files` says.
     pub fn arm(&mut self, takes: Vec<(TrackId, Vec<usize>, PathBuf)>, files: TakeFiles) -> Result<(), String> {
+        self.arm_after(takes, files, 0)
+    }
+
+    /// [`Recorder::arm`], with the takes starting `skip` input frames from now: a count-off is
+    /// heard first, and what the input hears meanwhile is not part of the take. The input keeps
+    /// its own clock, so the take starts where it would have had recording begun that much later.
+    pub fn arm_after(&mut self, takes: Vec<(TrackId, Vec<usize>, PathBuf)>, files: TakeFiles, skip: usize) -> Result<(), String> {
         if self.writer.is_some() {
             return Err("already recording".into());
         }
@@ -306,7 +313,8 @@ impl Recorder {
         *self.shared.failed.lock().unwrap_or_else(PoisonError::into_inner) = None;
         self.shared.armed.store(true, Ordering::Release);
         let (shared, channels) = (Arc::clone(&self.shared), self.channels);
-        match std::thread::Builder::new().name("take writer".into()).spawn(move || write_takes(&shared, takes, channels)) {
+        let skip = skip.saturating_mul(channels.max(1));
+        match std::thread::Builder::new().name("take writer".into()).spawn(move || write_takes(&shared, takes, channels, skip)) {
             Ok(w) => self.writer = Some((w, live)),
             Err(e) => {
                 self.shared.armed.store(false, Ordering::Release);
@@ -363,13 +371,18 @@ impl Drop for Recorder {
     }
 }
 
-fn write_takes(shared: &Shared, mut takes: Vec<TakeWriter>, channels: usize) -> Takes {
+/// The take writer's loop: `skip` samples (whole frames) of input are let go before the takes
+/// start (see [`Recorder::arm_after`]).
+fn write_takes(shared: &Shared, mut takes: Vec<TakeWriter>, channels: usize, mut skip: usize) -> Takes {
     let (mut block, mut header_written, mut reported) = (Vec::new(), Instant::now(), false);
     loop {
         let stopping = !shared.armed.load(Ordering::Acquire);
         // The ring holds interleaved samples and a pop can end mid-frame: write whole frames and
         // keep the remainder for the next pop, so channels never shift.
         shared.ring.pop_all(&mut block);
+        let gone = skip.min(block.len());
+        block.drain(..gone);
+        skip -= gone;
         let whole = block.len() - block.len() % channels.max(1);
         takes.iter_mut().for_each(|t| t.write(&block[..whole], channels));
         block.drain(..whole);
@@ -628,7 +641,7 @@ mod tests {
         shared.armed.store(true, Ordering::Release);
         let mut r = recorder(&shared);
         let sh = Arc::clone(&shared);
-        let writer = std::thread::spawn(move || write_takes(&sh, vec![take], 1));
+        let writer = std::thread::spawn(move || write_takes(&sh, vec![take], 1, 0));
         shared.capture(&[0.5; 480], &mut 0);
         let trouble = (0..300).find_map(|_| {
             std::thread::sleep(Duration::from_millis(10));
@@ -656,7 +669,7 @@ mod tests {
         let shared = Arc::new(Shared::new(CaptureRing::new(1 << 16)));
         shared.armed.store(true, Ordering::Release);
         let sh = Arc::clone(&shared);
-        let writer = std::thread::spawn(move || write_takes(&sh, vec![gtr, vox], 3));
+        let writer = std::thread::spawn(move || write_takes(&sh, vec![gtr, vox], 3, 0));
         let input: Vec<f32> = (0..3 * 4_800).map(|i| i as f32 / 20_000.0).collect();
         let mut owed = 0;
         input.chunks(3 * 480).for_each(|block| shared.capture(block, &mut owed));
@@ -666,6 +679,40 @@ mod tests {
         assert_eq!((done.len(), problem), (2, None));
         assert_eq!(decode(&done[0].1), vec![channel(1), channel(2)]);
         assert_eq!(decode(&done[1].1), vec![[vec![0.5; 100], vec![0.25; 50], channel(0)].concat()]);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A count-off first: the input heard during it is let go, whole frames, and the take starts
+    /// right after it. Stopped before the count-off ends, the take holds nothing and its file goes.
+    #[test]
+    fn a_take_armed_after_a_count_off_starts_when_it_ends() {
+        let dir = std::env::temp_dir().join(format!("soundcraft-countoff-take-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let take = TakeWriter::create(TrackId(1), vec![0, 1], dir.join("Gtr_01.wav"), 48_000, ONE_FILE).unwrap();
+        let shared = Arc::new(Shared::new(CaptureRing::new(1 << 16)));
+        shared.armed.store(true, Ordering::Release);
+        let sh = Arc::clone(&shared);
+        // 1000 stereo frames of count-off, fed in blocks that do not line up with it.
+        let writer = std::thread::spawn(move || write_takes(&sh, vec![take], 2, 2 * 1000));
+        let input: Vec<f32> = (0..2 * 4_800).map(|i| (i / 2) as f32 / 10_000.0).collect();
+        let mut owed = 0;
+        input.chunks(2 * 333).for_each(|block| shared.capture(block, &mut owed));
+        shared.armed.store(false, Ordering::Release);
+        let (done, problem) = writer.join().unwrap();
+        assert_eq!((done.len(), problem), (1, None));
+        let left: Vec<f32> = (1000..4_800).map(|i| i as f32 / 10_000.0).collect();
+        assert_eq!(decode(&done[0].1), vec![left.clone(), left], "the take starts with the frame after the count-off");
+
+        let take = TakeWriter::create(TrackId(1), vec![0], dir.join("Gtr_02.wav"), 48_000, ONE_FILE).unwrap();
+        let shared = Arc::new(Shared::new(CaptureRing::new(1 << 16)));
+        shared.armed.store(true, Ordering::Release);
+        let sh = Arc::clone(&shared);
+        let writer = std::thread::spawn(move || write_takes(&sh, vec![take], 1, 48_000));
+        shared.capture(&[0.5; 4_800], &mut owed);
+        shared.armed.store(false, Ordering::Release);
+        let (done, problem) = writer.join().unwrap();
+        assert_eq!((done.len(), problem), (0, None), "stopped during the count-off: no take");
+        assert!(!dir.join("Gtr_02.wav").exists(), "and no empty file left behind");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -693,7 +740,7 @@ mod tests {
         let shared = Arc::new(Shared::new(CaptureRing::new(1 << 12)));
         shared.armed.store(true, Ordering::Release);
         let sh = Arc::clone(&shared);
-        let writer = std::thread::spawn(move || write_takes(&sh, vec![gtr, vox], 3));
+        let writer = std::thread::spawn(move || write_takes(&sh, vec![gtr, vox], 3, 0));
         let input: Vec<f32> = (0..3 * 250).map(|i| i as f32).collect();
         input.chunks(3 * 45).for_each(|block| shared.capture(block, &mut 0));
         shared.armed.store(false, Ordering::Release);
@@ -731,7 +778,7 @@ mod tests {
         let shared = Arc::new(Shared::new(CaptureRing::new(1 << 12)));
         shared.armed.store(true, Ordering::Release);
         let sh = Arc::clone(&shared);
-        let writer = std::thread::spawn(move || write_takes(&sh, vec![vox], 1));
+        let writer = std::thread::spawn(move || write_takes(&sh, vec![vox], 1, 0));
         [[0.25; 150].as_slice(), &[0.5; 10]].into_iter().for_each(|block| shared.capture(block, &mut 0));
         shared.armed.store(false, Ordering::Release);
         let (done, problem) = writer.join().unwrap();

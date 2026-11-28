@@ -1,6 +1,7 @@
 use super::audio::{age_meters, feed_meter};
 use super::plugins::failed_plugin_status;
 use super::{Gesture, MainWindow, MeterDisplay, Range, Samples, SoundApp, TrackId, TransportRequest, json};
+use soundcraft_playback::CountOff;
 
 /// Whether another automation-write pass is due: the transport moved at least
 /// `step` since `last` in either direction. `last == i64::MIN` marks "never
@@ -33,14 +34,25 @@ impl SoundApp {
     }
 
     fn start_play(&mut self, from: Samples, end: Option<Samples>, looped: Option<Range>) {
+        self.start_play_counted(from, end, looped, None);
+    }
+
+    /// Start the transport at `from`; with `countoff`, the audio engine first clicks the
+    /// count-off bars with the transport standing at `from`, and rolls from there on the sample
+    /// the count-off ends. The transport counts as started from now (Stop works, Play does not
+    /// start it again).
+    fn start_play_counted(&mut self, from: Samples, end: Option<Samples>, looped: Option<Range>, countoff: Option<CountOff>) {
         // Record Ready holds only while stopped: any start ends it (a record pass has left it already).
         self.leave_record_ready();
         if let Some(p) = &self.player {
             p.update_session(self.engine.session_arc());
-            p.play(from, end, looped);
+            p.play_counted(from, end, looped, countoff);
         } else {
             self.sim = Some((from, end, looped));
+            self.sim_countoff = countoff.map_or(0, |c| c.length());
         }
+        self.end_countoff();
+        self.countoff_run = countoff.map(|c| (c, String::new()));
         // The loop as the audio engine takes it: a range too short to loop is played once.
         self.play_loop = looped.filter(|l| soundcraft_playback::loops(*l));
         self.engine.transport.playing = true;
@@ -57,6 +69,9 @@ impl SoundApp {
     pub(crate) fn stop_play(&mut self) {
         // Stop in Record Ready disarms it, recording nothing.
         self.leave_record_ready();
+        // Stop during the count-off: the transport never rolled, so the pass has nothing in it.
+        let counting = self.countoff_left() > 0;
+        let counted_pass = counting && self.engine.transport.recording;
         if let Some(p) = &self.player {
             // Half-speed is a separate command. Stop must not leave that rate for the next Play.
             p.set_speed(1.0);
@@ -65,7 +80,12 @@ impl SoundApp {
         if self.engine.transport.recording {
             self.finish_recording();
         }
+        self.end_countoff();
+        if counted_pass {
+            self.ui.status = crate::localization::text("Stopped during the count-off: nothing was recorded.").into();
+        }
         self.sim = None;
+        self.sim_countoff = 0;
         self.play_loop = None;
         self.engine.transport.playing = false;
         self.engine.transport.recording = false;
@@ -166,10 +186,16 @@ impl SoundApp {
         if audio_tracks {
             self.ensure_input();
         }
+        let already_playing = self.is_playing();
+        // From stop: where the transport starts, and the count-off before it. Punched in during a
+        // count-off, the pass waits for the rest of it.
+        let start = (!already_playing).then(|| self.pass_start(from));
+        let countoff = start.and_then(|p| self.countoff_for(p.from, true));
+        let wait = if already_playing { self.countoff_left() } else { countoff.map_or(0, |c| c.length()) };
         let takes = if audio_tracks {
             // An audio track is record-enabled: its audio has to be recordable. A pass that would
             // quietly record only the MIDI tracks is refused, with the reason.
-            match self.arm_recorder() {
+            match self.arm_recorder(wait) {
                 Ok(takes) => takes,
                 Err(err) => {
                     self.ui.status = crate::localized_format!("Cannot record: {err}", err = err);
@@ -189,15 +215,28 @@ impl SoundApp {
         if let Some(p) = &self.player {
             p.set_recording(true);
         }
-        let already_playing = self.is_playing();
         self.engine.transport.recording = true;
-        if already_playing {
-            // Punch in on the fly at the current playhead.
+        let Some(start) = start else {
+            // Punch in on the fly at the current playhead (during a count-off: where the
+            // transport is going to start).
             self.record_start = self.position();
             self.punch = None;
             self.plan_recording(takes, None);
             return;
-        }
+        };
+        self.record_start = start.from;
+        self.punch = start.punch;
+        // Count-off first, then the pre-roll, then recording from the start point: the count-off
+        // leads into the transport start, wherever that is.
+        self.start_play_counted(start.from, start.end, start.looped, countoff);
+        self.plan_recording(takes, start.pass);
+    }
+
+    /// How a record pass from stop runs the transport: from `from` when given (`transport.play
+    /// {from}`, no punch or pre-roll), otherwise from the selection. Loop Record loops a selection
+    /// long enough to loop; any other selection is a punch, with pre/post-roll if enabled, and
+    /// the take is trimmed back to the punch range afterwards.
+    fn pass_start(&self, from: Option<Samples>) -> PassStart {
         let mut e = self.engine.session().edit.clone();
         if let Some(at) = from {
             e.selection = Range::point(at);
@@ -207,21 +246,86 @@ impl SoundApp {
         // Loop recording needs a selection the transport will loop: one too short for that is
         // recorded as a punch, like any other selection.
         if e.loop_record && !sel.is_empty() && soundcraft_playback::loops(sel) {
-            self.record_start = sel.start;
-            self.punch = None;
-            self.start_play(sel.start, None, Some(sel));
-            self.plan_recording(takes, Some(sel.len()));
-        } else {
-            // Record into the selection when there is one (punch), with pre/post-roll if enabled;
-            // the take is trimmed back to the punch range afterwards.
-            let (pre, post) = if e.pre_post_roll { (e.pre_roll, e.post_roll) } else { (0, 0) };
-            let from = (sel.start - pre).max(0);
-            self.record_start = from;
-            self.punch = (!sel.is_empty()).then_some(sel);
-            let end = (!sel.is_empty()).then_some(sel.end + post);
-            self.start_play(from, end, None);
-            self.plan_recording(takes, None);
+            return PassStart { from: sel.start, end: None, looped: Some(sel), punch: None, pass: Some(sel.len()) };
         }
+        let (pre, post) = if e.pre_post_roll { (e.pre_roll, e.post_roll) } else { (0, 0) };
+        PassStart {
+            from: (sel.start - pre).max(0),
+            end: (!sel.is_empty()).then_some(sel.end + post),
+            looped: None,
+            punch: (!sel.is_empty()).then_some(sel),
+            pass: None,
+        }
+    }
+
+    /// The count-off before the transport starts from stop at `at`, if Options › Count Off is on
+    /// (Pro Tools Reference Guide p. 271, p. 767): the bars Setup › Click/Countoff sets
+    /// (`countoff_bars`), in the meter and at the tempo in force at `at`. A play pass counts off
+    /// too, unless Click/Countoff keeps the count-off for recording (p. 768 step 5).
+    fn countoff_for(&self, at: Samples, record: bool) -> Option<CountOff> {
+        let s = self.engine.session();
+        let e = &s.edit;
+        (e.countoff && (record || !e.flag("click.countoff_only_record"))).then(|| CountOff::at(s, at, e.countoff_bars))
+    }
+
+    /// Session frames of the count-off still to go before the transport rolls (0: none runs).
+    pub fn countoff_left(&self) -> Samples {
+        if self.countoff_run.is_none() {
+            return 0;
+        }
+        match &self.player {
+            Some(p) => p.countoff_left(),
+            None => self.sim_countoff,
+        }
+    }
+
+    /// The bar being counted off and how many there are, while a count-off runs.
+    pub fn countoff_progress(&self) -> Option<(u32, u32)> {
+        let (c, _) = self.countoff_run.as_ref()?;
+        let left = self.countoff_left();
+        (left > 0).then(|| (c.bar_at(c.length().saturating_sub(left)), c.bars))
+    }
+
+    /// Follow the count-off: the transport status and the status line say how far it has got;
+    /// when it is over, its message goes.
+    fn follow_countoff(&mut self) {
+        let progress = self.countoff_progress();
+        self.engine.transport.counting_off = progress.is_some();
+        self.engine.transport.countoff_left = self.countoff_left();
+        let Some((bar, bars)) = progress else {
+            self.end_countoff();
+            return;
+        };
+        let silent = {
+            let e = &self.engine.session().edit;
+            !e.click || (e.flag("click.only_during_record") && !self.engine.transport.recording)
+        };
+        let text = if silent {
+            crate::localized_format!("Counting off: bar {bar} of {bars} (the click is off: Options > Click)", bar = bar, bars = bars)
+        } else {
+            crate::localized_format!("Counting off: bar {bar} of {bars}", bar = bar, bars = bars)
+        };
+        if let Some((_, shown)) = &mut self.countoff_run
+            && *shown != text
+        {
+            // A message given meanwhile (a device trouble, say) is not covered by the count.
+            if shown.is_empty() || self.ui.status == *shown {
+                self.ui.status = text.clone();
+            }
+            *shown = text;
+        }
+    }
+
+    /// The count-off is over (the transport rolls) or was stopped: its message goes with it.
+    fn end_countoff(&mut self) {
+        if let Some((_, shown)) = self.countoff_run.take()
+            && !shown.is_empty()
+            && self.ui.status == shown
+        {
+            self.ui.status.clear();
+        }
+        self.engine.transport.counting_off = false;
+        self.engine.transport.countoff_left = 0;
     }
 
     /// Remember where the armed `takes` go (split into passes of `pass` when loop recording) and
@@ -234,9 +338,10 @@ impl SoundApp {
         }
     }
 
-    /// Arm the input for the record-enabled tracks; a session never saved records into its
-    /// autosave folder. Returns the takes it records.
-    fn arm_recorder(&mut self) -> Result<Vec<soundcraft_engine::io::Take>, String> {
+    /// Arm the input for the record-enabled tracks, the takes starting `wait` session frames from
+    /// now (a count-off); a session never saved records into its autosave folder. Returns the
+    /// takes it records.
+    fn arm_recorder(&mut self, wait: Samples) -> Result<Vec<soundcraft_engine::io::Take>, String> {
         let name = soundcraft_engine::io::sanitize_name(&self.engine.session().name);
         // Without a settings folder the takes go under the temporary folder, in a folder of this
         // run's own that nobody else could have made first.
@@ -268,7 +373,10 @@ impl SoundApp {
             samples: soundcraft_engine::io::take_file_samples(r.sample_rate, self.engine.session().sample_rate.hz()),
             part: soundcraft_engine::io::take_part,
         };
-        r.arm(plan, files)?;
+        // The input runs at its own rate.
+        let session_rate = self.engine.session().sample_rate.as_f64().max(1.0);
+        let skip = (wait.max(0) as f64 * f64::from(r.sample_rate) / session_rate).round() as usize;
+        r.arm_after(plan, files, skip)?;
         Ok(takes)
     }
 
@@ -471,19 +579,27 @@ impl SoundApp {
         }
     }
 
-    /// Play from the selection, honouring loop playback and selection end.
+    /// Play from the selection, honouring loop playback and selection end, after the count-off
+    /// when Count Off applies to playback.
     pub fn play_from_selection(&mut self) {
+        self.play_selection(true);
+    }
+
+    /// [`SoundApp::play_from_selection`]; `count` lets the count-off run first when it is on.
+    fn play_selection(&mut self, count: bool) {
         let s = self.engine.session();
         let sel = s.edit.selection;
         let preroll = if s.edit.pre_post_roll { s.edit.pre_roll } else { 0 };
         let postroll = if s.edit.pre_post_roll { s.edit.post_roll } else { 0 };
-        if s.edit.loop_playback && !sel.is_empty() {
-            self.start_play(sel.start, None, Some(sel));
+        let (from, end, looped) = if s.edit.loop_playback && !sel.is_empty() {
+            (sel.start, None, Some(sel))
         } else if !sel.is_empty() {
-            self.start_play((sel.start - preroll).max(0), Some(sel.end + postroll), None);
+            ((sel.start - preroll).max(0), Some(sel.end + postroll), None)
         } else {
-            self.start_play((sel.start - preroll).max(0), None, None);
-        }
+            ((sel.start - preroll).max(0), None, None)
+        };
+        let countoff = if count { self.countoff_for(from, false) } else { None };
+        self.start_play_counted(from, end, looped, countoff);
     }
 
     /// Apply engine transport requests to the player and recorder, read back the position and refresh meters. A reset
@@ -500,6 +616,8 @@ impl SoundApp {
                         p.locate(self.engine.transport.position);
                     }
                     self.sim = None;
+                    self.sim_countoff = 0;
+                    self.end_countoff();
                     // The old capture belongs to the replaced document, never to the new one.
                     self.recorder = None;
                     self.recorder_failed = false;
@@ -530,11 +648,15 @@ impl SoundApp {
                         if let Some(sim) = &mut self.sim {
                             *sim = (at, None, None);
                         }
+                        // Playing on from elsewhere starts the transport there at once.
+                        self.sim_countoff = 0;
+                        self.end_countoff();
                         self.play_loop = None;
                         self.last_write_at = i64::MIN;
                         self.engine.transport.position = at;
                     } else {
-                        self.start_play(at, None, None);
+                        let countoff = self.countoff_for(at, false);
+                        self.start_play_counted(at, None, None, countoff);
                     }
                 }
                 TransportRequest::Stop | TransportRequest::Pause => self.stop_play(),
@@ -569,7 +691,8 @@ impl SoundApp {
                     if let Some(p) = &self.player {
                         p.set_speed(0.5);
                     }
-                    self.play_from_selection();
+                    // Not counted off: the clicks would be played at half speed too.
+                    self.play_selection(false);
                 }
                 TransportRequest::Scrub(at) => self.engine.transport.position = at,
                 TransportRequest::AllNotesOff => {}
@@ -610,7 +733,12 @@ impl SoundApp {
             }
         } else if let Some((pos, end, looped)) = &mut self.sim {
             let sr = self.engine.session().sample_rate.as_f64();
-            *pos += (f64::from(dt) * sr) as i64;
+            // The count-off first: the transport stands still until it is over.
+            let mut step = (f64::from(dt) * sr) as i64;
+            let waited = self.sim_countoff.min(step).max(0);
+            self.sim_countoff -= waited;
+            step -= waited;
+            *pos += step;
             if let Some(l) = looped
                 && *pos >= l.end
             {
@@ -622,6 +750,7 @@ impl SoundApp {
                 self.stop_play();
             }
         }
+        self.follow_countoff();
         if !self.meters_live() {
             for d in self.meters.values_mut() {
                 feed_meter(d, [0.0, 0.0], 0.0, dt);
@@ -629,6 +758,21 @@ impl SoundApp {
             feed_meter(&mut self.main_meter, [0.0, 0.0], 0.0, dt);
         }
     }
+}
+
+/// How a record pass from stop runs the transport ([`SoundApp::pass_start`]).
+#[derive(Clone, Copy)]
+struct PassStart {
+    /// Where the transport starts: the start point, less the pre-roll.
+    from: Samples,
+    /// Where it stops by itself: the end of the punch, plus the post-roll.
+    end: Option<Samples>,
+    /// Loop Record: the loop.
+    looped: Option<Range>,
+    /// The range the takes are trimmed to.
+    punch: Option<Range>,
+    /// Loop Record: the length of a pass.
+    pass: Option<Samples>,
 }
 
 #[cfg(test)]

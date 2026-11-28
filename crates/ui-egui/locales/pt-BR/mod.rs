@@ -999,6 +999,12 @@ fn menu_translate(source: &str) -> Option<&'static str> {
         "Value in {suffix}" => "Valor em {suffix}",
         "Version {}" => "Versão {}",
         "{bars} bars" => "{bars} compassos",
+        "bar {bar}/{bars}" => "compasso {bar}/{bars}",
+        "Count Off {bar}/{bars}" => "Contagem inicial {bar}/{bars}",
+        "Counting off: bar {bar} of {bars}" => "Contagem inicial: compasso {bar} de {bars}",
+        "Counting off: bar {bar} of {bars} (the click is off: Options > Click)" => {
+            "Contagem inicial: compasso {bar} de {bars} (o clique está desligado: Opções > Clique)"
+        }
         "{} contributors · {} commits" => "{} colaboradores · {} commits",
         "@{}: {} PRs, {} commits, +{} / −{} lines (Δ {}), +{} / −{} binary assets, {} – {}" => {
             "@{}: {} PRs, {} commits, +{} / −{} linhas (Δ {}), +{} / −{} recursos binários, {} – {}"
@@ -1146,6 +1152,7 @@ fn menu_translate(source: &str) -> Option<&'static str> {
             "Pronto para gravar: pressione Reproduzir ou Espaço para gravar. Gravar de novo ou Parar cancela."
         }
         "Record Enable" => "Ativar gravação",
+        "Stopped during the count-off: nothing was recorded." => "Parado durante a contagem inicial: nada foi gravado.",
         "Redo" => "Refazer",
         "Remove Insert" => "Remover insert",
         "Remove Send" => "Remover envio",

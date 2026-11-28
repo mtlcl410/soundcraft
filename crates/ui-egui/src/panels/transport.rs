@@ -76,6 +76,7 @@ pub(super) fn transport_window(app: &mut SoundApp, ctx: &egui::Context) {
                     let e = &app.engine.session().edit;
                     (e.click, e.countoff, e.midi_merge, e.loop_record, e.pre_post_roll)
                 };
+                let counting = app.countoff_progress();
                 ui.horizontal(|ui| {
                     for (label, on, cmd) in [
                         ("Click", click, "options.click"),
@@ -84,7 +85,14 @@ pub(super) fn transport_window(app: &mut SoundApp, ctx: &egui::Context) {
                         ("Loop Rec", loop_rec, "options.loop_record"),
                         ("Pre/Post", prepost, "options.pre_post_roll"),
                     ] {
-                        if ui.selectable_label(on, crate::localization::text(label)).clicked() {
+                        // While the count-off runs its button counts the bars.
+                        let text = match counting {
+                            Some((bar, bars)) if cmd == "options.countoff" => {
+                                crate::localized_format!("Count Off {bar}/{bars}", bar = bar, bars = bars)
+                            }
+                            _ => crate::localization::text(label).to_string(),
+                        };
+                        if ui.selectable_label(on, text).clicked() {
                             let _ = app.run(cmd, json!({}));
                         }
                     }

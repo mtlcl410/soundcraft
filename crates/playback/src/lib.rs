@@ -35,6 +35,7 @@ pub mod record;
 pub use devices::AudioConfig;
 
 use soundcraft_dsp::{Plugin, PluginEditor, PluginStateReader};
+pub use soundcraft_mix::CountOff;
 use soundcraft_mix::{MAX_CHANNELS, MixEngine, PreparedInstance, StripMeter, itu_stereo_fold, main_channels};
 use soundcraft_model::{Session, TrackId};
 use soundcraft_time::{Range, Samples};
@@ -139,6 +140,8 @@ enum Cmd {
         from: Samples,
         end: Option<Samples>,
         looped: Option<Range>,
+        /// Count off first: the transport starts at `from` when the count-off ends.
+        countoff: Option<CountOff>,
     },
     Stop,
     Locate(Samples),
@@ -149,6 +152,8 @@ enum Cmd {
 struct Shared {
     position: AtomicI64,
     playing: AtomicBool,
+    /// Session frames of the count-off still to go before the transport starts (0: none).
+    countoff_left: AtomicI64,
     /// Speed × 1000.
     speed: AtomicU32,
     meters: Mutex<MeterSnapshot>,
@@ -232,6 +237,7 @@ impl Player {
         let shared = Arc::new(Shared {
             position: AtomicI64::new(0),
             playing: AtomicBool::new(false),
+            countoff_left: AtomicI64::new(0),
             speed: AtomicU32::new(1000),
             meters: Mutex::new(MeterSnapshot::default()),
         });
@@ -494,9 +500,22 @@ impl Player {
 
     /// Start playback at `from`, stopping at `end`, or looping `looped`.
     pub fn play(&self, from: Samples, end: Option<Samples>, looped: Option<Range>) {
+        self.play_counted(from, end, looped, None);
+    }
+
+    /// [`Player::play`] after a count-off: the audio thread clicks `countoff` with the transport
+    /// standing at `from`, and starts it there on the sample the count-off ends. The transport
+    /// counts as playing from now; [`Player::countoff_left`] says how long it still waits.
+    pub fn play_counted(&self, from: Samples, end: Option<Samples>, looped: Option<Range>, countoff: Option<CountOff>) {
         self.shared.position.store(from, Ordering::Relaxed);
         self.shared.playing.store(true, Ordering::Relaxed);
-        let _ = self.tx.send(Cmd::Play { from, end, looped });
+        self.shared.countoff_left.store(countoff.map_or(0, |c| c.length().max(0)), Ordering::Relaxed);
+        let _ = self.tx.send(Cmd::Play { from, end, looped, countoff });
+    }
+
+    /// Session frames of the count-off still to go before the transport starts (0: none runs).
+    pub fn countoff_left(&self) -> Samples {
+        self.shared.countoff_left.load(Ordering::Relaxed)
     }
 
     /// Feed live input (from a `record::Recorder`) into the mix for input monitoring.
@@ -522,6 +541,7 @@ impl Player {
 
     pub fn stop(&self) {
         self.shared.playing.store(false, Ordering::Relaxed);
+        self.shared.countoff_left.store(0, Ordering::Relaxed);
         let _ = self.tx.send(Cmd::Stop);
     }
 
