@@ -163,6 +163,8 @@ struct Counts {
     missing: usize,
     extra: usize,
     damaged: usize,
+    /// Attacks that do not sound after the attack of the previous slot.
+    out_of_order: usize,
 }
 
 fn measure(case: Case, hats: bool, pcm: &[f32], references: &[Vec<f32>], counts: &mut Counts, report: &mut impl Write) -> io::Result<()> {
@@ -186,6 +188,14 @@ fn measure(case: Case, hats: bool, pcm: &[f32], references: &[Vec<f32>], counts:
     let stem = if hats { "hat" } else { "click" };
     let first_offbeat = case.cut / 24 * 24 + if case.cut % 24 < 12 { 12 } else { 36 };
     let first_beat = (case.cut / 24 + 1) * 24;
+    // Waveform identity places each hat in its slot, so check the onsets keep slot order.
+    let mut previous_onset = None;
+    for slot in &slots {
+        for &(onset, ..) in slot {
+            counts.out_of_order += usize::from(previous_onset.is_some_and(|previous| onset <= previous));
+            previous_onset = Some(onset);
+        }
+    }
     for (pulse, slot) in pulses.into_iter().zip(slots) {
         let expected = case.at(pulse);
         let mut row = |event: Option<(i64, usize, bool)>| -> io::Result<()> {
@@ -261,6 +271,6 @@ fn slowdown_device_phase_sweep_preserves_pcm() -> io::Result<()> {
     for (policy, c) in ["hard", "predict"].into_iter().zip(&counts) {
         eprintln!("{policy}: {c:?}");
     }
-    assert!(counts.iter().all(|c| c.missing == 0 && c.extra == 0 && c.damaged == 0), "{counts:?}");
+    assert!(counts.iter().all(|c| c.missing == 0 && c.extra == 0 && c.damaged == 0 && c.out_of_order == 0), "{counts:?}");
     Ok(())
 }
