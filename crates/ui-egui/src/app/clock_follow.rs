@@ -107,11 +107,6 @@ impl SoundApp {
         if self.ui.clock_follow_input != source {
             self.ui.midi_sync.retain_calibrated_ports([source.as_deref(), self.ui.mtc_input_port.as_deref(), self.ui.mtc_output_port.as_deref()]);
         }
-        if offset.is_some_and(|value| value != previous)
-            && let Some(p) = &self.player
-        {
-            p.cancel_clock_resume();
-        }
         if let (Some(offset), Some(name)) = (offset, &source) {
             if let Some(port) = self.ui.midi_sync.ports.get_mut(name) {
                 port.in_offset_samples = offset;
@@ -121,6 +116,12 @@ impl SoundApp {
                 }
                 self.ui.midi_sync.ports.entry(name.clone()).or_default().in_offset_samples = offset;
             }
+        }
+        // Only an accepted calibration change revokes a prepared start cue.
+        if offset.is_some_and(|value| value != previous)
+            && let Some(p) = &self.player
+        {
+            p.cancel_clock_resume();
         }
         self.transition_clock_source(enabled, source.as_deref());
         self.ui.clock_follow_input = source;
@@ -745,6 +746,27 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn a_rejected_calibration_edit_keeps_the_prepared_resume() {
+        let engine = soundcraft_engine::Engine::default();
+        let player = simulated_player(&engine);
+        let mut app = SoundApp::new(engine, Some(player), crate::Services::default());
+        app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
+        let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
+        let port = feed.ports().assign("DIN");
+        app.run("setup.midi_clock_follow", json!({"input":"DIN","enabled":true})).unwrap();
+        feed.set_clock(1_000_000);
+        feed.receive(port, &[0xf2, 64, 0]);
+        let ctx = egui::Context::default();
+        ctx.run_ui(Default::default(), |_| app.logic(&ctx)).textures_delta.clear();
+        for n in 0..256 {
+            app.ui.midi_sync.ports.entry(format!("calibrated {n}")).or_default().in_offset_samples = 1;
+        }
+        assert_eq!(app.run("setup.midi_clock_follow", json!({"input_offset_samples":480})).unwrap_err(), "Too many calibrated MIDI inputs");
+        feed.receive(port, &[0xfb, 0xf8]);
+        assert!(app.player.as_ref().unwrap().is_playing(), "the rejected edit cancelled the prepared start");
     }
 
     #[test]
