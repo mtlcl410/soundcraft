@@ -120,6 +120,7 @@ impl SoundApp {
             countoff_run: None,
             record_hint: None,
             record_ready_lost: None,
+            countoff_lost: None,
             lost_output: None,
             lost_input: None,
             quit_requested: false,

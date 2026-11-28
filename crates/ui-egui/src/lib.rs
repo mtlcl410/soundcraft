@@ -472,6 +472,9 @@ pub struct SoundApp {
     /// When a lost device last cancelled Record Ready (uptime), and what was lost: the other side of
     /// the same device, lost a moment later, adds itself to that message instead of replacing it.
     record_ready_lost: Option<(f64, String)>,
+    /// When a lost device stopped a count-off (uptime) and what was lost: the other side of the
+    /// same device, lost a moment later, adds to that message instead of replacing it.
+    countoff_lost: Option<(f64, String)>,
     /// The output and input lost since the devices were last opened (what the status line said of
     /// each): a pass that needs one is refused until Reconnect or a device change.
     lost_output: Option<String>,

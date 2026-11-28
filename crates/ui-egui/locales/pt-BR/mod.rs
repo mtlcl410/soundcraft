@@ -1153,6 +1153,7 @@ fn menu_translate(source: &str) -> Option<&'static str> {
         }
         "Record Enable" => "Ativar gravação",
         "Stopped during the count-off: nothing was recorded." => "Parado durante a contagem inicial: nada foi gravado.",
+        "Count-off stopped: {cause} Nothing was recorded. {then}" => "Contagem inicial interrompida: {cause} Nada foi gravado. {then}",
         "Redo" => "Refazer",
         "Remove Insert" => "Remover insert",
         "Remove Send" => "Remover envio",

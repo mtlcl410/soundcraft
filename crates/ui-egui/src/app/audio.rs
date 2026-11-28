@@ -75,10 +75,13 @@ impl SoundApp {
             ),
         };
         let (recording, playing) = (self.engine.transport.recording, self.engine.transport.playing);
+        let counting = self.countoff_left() > 0;
         if recording || playing {
             self.stop_play();
         }
-        let status = if recording {
+        let status = if let Some(stopped) = self.countoff_loss(counting, &cause, then) {
+            stopped
+        } else if recording {
             crate::localized_format!("Recording stopped: {cause} The take is kept up to there. {then}", cause = cause, then = then)
         } else if playing {
             crate::localized_format!("Playback stopped: {cause} {then}", cause = cause, then = then)
@@ -111,6 +114,25 @@ impl SoundApp {
         true
     }
 
+    /// The message for a device lost during a count-off (`counting`), or a moment after a loss
+    /// stopped one (the input and output of one device go a few milliseconds apart, in either
+    /// order): the transport never rolled, so nothing was recorded, and every device lost is
+    /// named. `None` when no count-off is concerned.
+    pub(super) fn countoff_loss(&mut self, counting: bool, cause: &str, then: &str) -> Option<String> {
+        let earlier = self.countoff_lost.take().filter(|(at, _)| self.uptime - at < 2.0).map(|(_, lost)| lost);
+        if !counting && earlier.is_none() {
+            return None;
+        }
+        let lost = match earlier {
+            Some(earlier) if earlier != cause => format!("{earlier}; {cause}"),
+            Some(earlier) => earlier,
+            None => cause.to_owned(),
+        };
+        let text = crate::localized_format!("Count-off stopped: {cause} Nothing was recorded. {then}", cause = lost, then = then);
+        self.countoff_lost = Some((self.uptime, lost));
+        Some(text)
+    }
+
     /// When a device the pass needs is gone (the output; the input too for audio tracks), say so
     /// and return true: Record Ready and the record-now keys are refused until Reconnect.
     pub(super) fn refuse_on_lost_device(&mut self, audio_tracks: bool) -> bool {
@@ -130,6 +152,7 @@ impl SoundApp {
     /// as a slow disk loses input.
     pub(super) fn watch_input(&mut self) {
         let recording = self.engine.transport.recording;
+        let counting = self.countoff_left() > 0;
         let Some(r) = &mut self.recorder else { return };
         let Some(trouble) = r.trouble() else {
             let lost = r.lost_ms();
@@ -150,7 +173,10 @@ impl SoundApp {
             }
             Trouble::Disk(what) => (what, crate::localization::text("Check the disk, then record again."), false),
         };
-        let status = if recording {
+        let counted = if device { self.countoff_loss(counting, &what, then) } else { None };
+        let status = if let Some(stopped) = counted {
+            stopped
+        } else if recording {
             crate::localized_format!("Recording stopped: {what} The take is kept up to there. {then}", what = what, then = then)
         } else {
             crate::localized_format!("Audio input: {what} {then}", what = what, then = then)

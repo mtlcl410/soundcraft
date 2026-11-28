@@ -883,6 +883,39 @@ mod tests {
         }
     }
 
+    /// A device lost during a count-off: the transport never rolled, so the status line says the
+    /// count-off stopped and nothing was recorded (not that a take is kept), names both sides of
+    /// the device whichever goes first, and the next pass is refused until Reconnect.
+    #[test]
+    fn a_device_lost_during_the_count_off_says_nothing_was_recorded_and_refuses_the_next_pass() {
+        for output_first in [true, false] {
+            // An instrument track and a (simulated) keyboard: the pass needs no audio input here.
+            let mut app = armed("instrument");
+            app.midi_inputs = Some(soundcraft_playback::midi::MidiInputs::with_port_names(Vec::new(), vec!["Keys".to_string()]));
+            app.run("options.countoff", json!({"value": true})).unwrap();
+            app.run("transport.record", json!({})).unwrap();
+            app.handle_transport(1.0 / 60.0);
+            assert!(app.countoff_left() > 0, "counting off");
+            let counting = app.countoff_left() > 0;
+            app.stop_play();
+            for (i, output) in [output_first, !output_first].into_iter().enumerate() {
+                let cause = if output { "“Speakers” is unavailable" } else { "“Mic” is unavailable" };
+                let msg = app.countoff_loss(counting && i == 0, cause, THEN).expect("a count-off loss");
+                if !app.device_gone(output, cause, THEN) {
+                    app.ui.status = msg;
+                }
+            }
+            let status = app.ui.status.clone();
+            assert!(status.starts_with("Count-off stopped: ") && status.contains("Nothing was recorded."), "output first {output_first}: {status}");
+            assert!(status.contains("Speakers") && status.contains("Mic"), "output first {output_first}: {status}");
+            assert!(!app.engine.transport.recording && !app.is_playing() && app.countoff_left() == 0);
+            assert_eq!(app.engine.session().tracks[0].clips().len(), 0);
+            app.run("transport.record", json!({})).unwrap();
+            app.handle_transport(1.0 / 60.0);
+            assert!(!app.is_playing() && app.ui.status.starts_with("Cannot record: "), "{}", app.ui.status);
+        }
+    }
+
     /// While a device the pass needs is gone, neither the Record button nor the record-now keys
     /// start anything; they say what is missing. An input that is gone does not stop a MIDI pass.
     #[test]
