@@ -36,6 +36,10 @@ struct Completion {
     failure: Option<(usize, String)>,
 }
 
+/// Attempts, after the scheduler has gone, to deliver a rejected cleanup suffix.
+const SHUTDOWN_RETRIES: usize = 3;
+const SHUTDOWN_RETRY_DELAY: std::time::Duration = std::time::Duration::from_millis(5);
+
 /// One outstanding batch per destination. The second channel slot is reserved
 /// for the final cleanup on shutdown, even if the OS has not consumed the first
 /// batch. Dropping the scheduler never joins a thread blocked inside the driver.
@@ -94,7 +98,19 @@ impl PortIo {
                     });
                     // Normal errors disconnect the scheduler's handle. During shutdown
                     // keep consuming its queued Stop and any unacknowledged cleanup.
-                    let _ = done.send(Completion { packets, failure });
+                    if let Err(mpsc::SendError(Completion { packets, failure: Some((index, _)) })) = done.send(Completion { packets, failure }) {
+                        // No one can retry a rejected suffix any more: give it a few bounded
+                        // attempts here, so a final Stop still reaches the device. The
+                        // accepted prefix is not sent again.
+                        let mut from = index;
+                        for _ in 0..SHUTDOWN_RETRIES {
+                            std::thread::sleep(SHUTDOWN_RETRY_DELAY);
+                            match packets[from..].iter().position(|p| connection.send_at(Instant::now(), p.bytes.as_slice()).is_err()) {
+                                Some(rejected) => from += rejected,
+                                None => break,
+                            }
+                        }
+                    }
                 }
             })
             .map_err(|e| e.to_string())?;

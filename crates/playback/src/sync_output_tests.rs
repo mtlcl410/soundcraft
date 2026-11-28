@@ -1570,6 +1570,46 @@ fn final_stop_survives_failed_clock_and_retries_a_rejected_stop() {
 }
 
 #[test]
+fn a_final_stop_rejected_after_shutdown_returned_is_retried_once_more() {
+    struct Late {
+        gate: Option<Receiver<()>>,
+        reject_stop: bool,
+        wire: Sender<Vec<u8>>,
+    }
+    impl SyncPort for Late {
+        fn send_at(&mut self, at: Instant, msg: &[u8]) -> Result<Instant, String> {
+            if let Some(gate) = self.gate.take() {
+                gate.recv().unwrap();
+            }
+            if msg == [STOP] && std::mem::take(&mut self.reject_stop) {
+                return Err("transient send failure".into());
+            }
+            self.wire.send(msg.to_vec()).unwrap();
+            Ok(at)
+        }
+    }
+    for reject_stop in [true, false] {
+        let stats = Arc::<Stats>::default();
+        let (unblock, gate) = channel();
+        let (wire, received) = channel();
+        let mut link = PortIo::new(Late { gate: Some(gate), reject_stop, wire }, stats.clone()).unwrap();
+        let now = Instant::now();
+        link.submit(now, &[START], false, &stats).unwrap();
+        link.flush();
+        link.submit(now, &[STOP], false, &stats).unwrap();
+        link.flush();
+        // Shutdown returns while the destination is still blocked: no one hears acknowledgments.
+        drop(link);
+        unblock.send(()).unwrap();
+        let mut messages = Vec::new();
+        while let Ok(msg) = received.recv_timeout(Duration::from_secs(2)) {
+            messages.push(msg);
+        }
+        assert_eq!(messages, [vec![START], vec![STOP]], "rejected first Stop: {reject_stop}");
+    }
+}
+
+#[test]
 fn stop_rejected_during_normal_playback_precedes_the_next_start() {
     struct Sink {
         fail_stop: bool,
