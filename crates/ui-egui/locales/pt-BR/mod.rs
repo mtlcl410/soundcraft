@@ -1626,15 +1626,15 @@ fn menu_translate(source: &str) -> Option<&'static str> {
         "the session has no tracks" => "a sessão não tem faixas",
         "the session has not been saved" => "a sessão não foi salva",
         "Loop-recorded {} take(s)" => "Gravadas em loop: {} tomada(s)",
-        "Record take cancelled: nothing was kept" => "Tomada de gravação cancelada: nada foi mantido",
-        "Loop record cancelled: every take of the pass was discarded" => "Gravação em loop cancelada: todas as tomadas da passagem foram descartadas",
-        "Cannot cancel the take while Destructive Record is on" => "Não é possível cancelar a tomada com a Gravação destrutiva ativada",
-        "could not delete {files}" => "não foi possível excluir {files}",
         "Recorded {} clip(s)" => "{} clipe(s) gravado(s)",
         "Recovered “{name}”. Save it to keep the changes." => "Recuperada “{name}”. Salve para manter as alterações.",
         "Recovered “{name}”, but {n} audio file(s) are missing. Save it to keep the changes." => {
             "Recuperada “{name}”, mas {n} arquivo(s) de áudio estão ausentes. Salve para manter as alterações."
         }
+        "Record take cancelled: nothing was kept" => "Tomada de gravação cancelada: nada foi mantido",
+        "Loop record cancelled: every take of the pass was discarded" => "Gravação em loop cancelada: todas as tomadas da passagem foram descartadas",
+        "Cannot cancel the take while Destructive Record is on" => "Não é possível cancelar a tomada com a Gravação destrutiva ativada",
+        "could not delete {files}" => "não foi possível excluir {files}",
         "SoundCraft hit an internal error (see the log). Your changes were autosaved: save them, then restart SoundCraft." => {
             "O SoundCraft encontrou um erro interno (consulte o registro). Suas alterações foram salvas automaticamente: salve-as e reinicie o SoundCraft."
         }
