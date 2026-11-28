@@ -21,7 +21,8 @@ pub(crate) struct Host {
     /// While stopped, new tempo estimates begin here so earlier score time stays fixed.
     waiting_tick: i64,
     pending_cue: Option<i64>,
-    /// External start waiting for the first real output timestamp, superseded by a new transport command.
+    /// External start waiting for the first real output timestamp, superseded by a new transport
+    /// command. It survives an output reconnect, which does not wait for it.
     waiting_start: Option<(i64, i64)>,
     // Fixed pulse and device timestamp at Start/Continue; later edits preserve this origin.
     anchor: Option<(i64, i64)>,
@@ -202,9 +203,13 @@ impl SoundApp {
         player.arm_clock_resume(feed, feed.ports().assign(name), location);
     }
 
+    /// A Start/Continue the host has yet to act on: output recovery waits for it. A start that
+    /// waits for output timing (`waiting_start`) is not one. It waits with no time limit, as Pro
+    /// Tools shows "Waiting for Sync" until it locks (Reference Guide p.1875), and reconnecting or
+    /// replacing the output is what lets it go on; the next service plays it from the arrival
+    /// time once the output reports timing.
     pub(super) fn clock_start_pending(&self) -> bool {
-        self.clock_follow.enabled
-            && (self.clock_follow.waiting_start.is_some() || self.midi_inputs.as_ref().is_some_and(|m| m.feed().clock_start_pending()))
+        self.clock_follow.enabled && self.midi_inputs.as_ref().is_some_and(|m| m.feed().clock_start_pending())
     }
 
     pub(crate) fn service_clock_follow(&mut self) {
@@ -615,7 +620,7 @@ mod tests {
     }
 
     #[test]
-    fn clock_start_blocks_output_recovery_from_continue_until_acknowledged_or_stopped() {
+    fn clock_start_blocks_output_recovery_until_acknowledged_but_not_while_it_waits_for_output_timing() {
         let mut app = SoundApp::new(Default::default(), None, crate::Services::default());
         app.midi_inputs = Some(MidiInputs::with_port_names(vec![], vec!["DIN".into()]));
         let feed = app.midi_inputs.as_ref().unwrap().feed().clone();
@@ -633,8 +638,15 @@ mod tests {
         feed.receive(port, &[0xf8]);
         assert!(app.clock_start_pending(), "first pulse before the host frame");
         app.service_clock_follow_with_timing(|_| None);
-        assert!(app.clock_start_pending(), "waiting for timing after the first pulse");
-        assert!(!app.timing_reconnect_allowed());
+        // The output reports no timing: the start waits for it with no time limit, as Pro Tools
+        // shows "Waiting for Sync" until it locks (Reference Guide p.1875), and the output can be
+        // reconnected or replaced meanwhile without losing the start.
+        for _ in 0..3 {
+            assert!(app.clock_follow.waiting_start.is_some(), "the start still waits for output timing");
+            assert!(!app.clock_start_pending(), "a start waiting for output timing leaves recovery free");
+            assert!(app.timing_reconnect_allowed());
+            app.service_clock_follow_with_timing(|_| None);
+        }
         feed.receive(port, &[0xfc]);
         app.service_clock_follow_with_timing(|_| None);
         app.handle_transport(0.);
