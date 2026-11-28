@@ -133,20 +133,29 @@ impl SoundApp {
     }
 }
 
-/// How long the meters keep the last readings while no audio block arrives. Longer than the
-/// longest device buffer (8192 frames at 44.1 kHz, 186 ms) plus the slowest meter poll (50 ms), so
-/// a large buffer never reads as silence between its callbacks; once it has passed, the device has
-/// stopped calling back (switched off, unplugged, stalled) and the meters fall to silence.
+/// The meters begin to fall within this long after the last audio block (#1824). Longer than the
+/// longest device buffer (8192 frames at 44.1 kHz, 186 ms) plus the slowest meter poll, so a large
+/// buffer never reads as silence between its callbacks; once it has passed, the device has stopped
+/// calling back (switched off, unplugged, stalled) and the meters fall to silence.
 pub(super) const METER_STALE_SECS: f64 = 0.5;
 
+/// The longest time between two meter takes: every 50 ms (Edit window), on the first 60 fps frame
+/// after that.
+const SLOWEST_METER_POLL_SECS: f64 = 1.0 / 20.0 + 1.0 / 60.0;
+
+/// How long after a take first saw a block the readings are cleared. A block is seen up to one poll
+/// after it came, and the clearing take comes up to one poll after this has passed, so both are
+/// taken out of [`METER_STALE_SECS`].
+const METER_CLEAR_AFTER_SECS: f64 = METER_STALE_SECS - 2.0 * SLOWEST_METER_POLL_SECS;
+
 /// After a meter take that `fresh`ly brought new blocks or not, at `now` (uptime, seconds): note
-/// when the last block came in `last_block`, and clear `snap`'s readings once none has come for
-/// [`METER_STALE_SECS`]. Otherwise the last block's levels would be fed to the meters every frame
-/// and never fall.
+/// when a block was last seen in `last_block`, and clear `snap`'s readings once none has come for
+/// long enough that the meters begin to fall within [`METER_STALE_SECS`] of the last block.
+/// Otherwise the last block's levels would be fed to the meters every frame and never fall.
 pub(super) fn age_meters(snap: &mut soundcraft_playback::MeterSnapshot, fresh: bool, now: f64, last_block: &mut f64) {
     if fresh {
         *last_block = now;
-    } else if now - *last_block > METER_STALE_SECS {
+    } else if now - *last_block >= METER_CLEAR_AFTER_SECS {
         snap.clear_levels();
     }
 }
@@ -212,7 +221,7 @@ mod audio_input_tests {
 
 #[cfg(test)]
 mod meter_tests {
-    use super::{METER_STALE_SECS, MeterDisplay, age_meters, feed_meter};
+    use super::{METER_CLEAR_AFTER_SECS, METER_STALE_SECS, MeterDisplay, SLOWEST_METER_POLL_SECS, age_meters, feed_meter};
     use soundcraft_mix::StripMeter;
     use soundcraft_model::TrackId;
     use soundcraft_playback::MeterSnapshot;
@@ -267,8 +276,38 @@ mod meter_tests {
     fn a_large_device_buffer_keeps_the_meters_up_between_callbacks() {
         // 8192 frames at 44.1 kHz: one block every 186 ms, several polls without one.
         let period = 8192.0 / 44_100.0;
-        assert!(period + 1.0 / 20.0 < METER_STALE_SECS);
+        // A block is seen up to one poll late, so takes see blocks at most this far apart.
+        assert!(period + SLOWEST_METER_POLL_SECS < METER_CLEAR_AFTER_SECS);
         let (d, lowest) = run(3.0, [0.4; 2], |prev, now| (now / period).floor() > (prev / period).floor());
         assert!(lowest >= 0.4 && d.level[0] >= 0.4, "the meter dropped to {lowest} between callbacks");
+    }
+
+    /// The release begins within [`METER_STALE_SECS`] of the last block, counting the poll that
+    /// first sees it and the poll that clears the readings: the last block comes just after a poll.
+    #[test]
+    fn the_release_begins_within_half_a_second_of_the_last_block() {
+        let mut snap = MeterSnapshot::default();
+        let (mut last_block, mut last_poll, mut cleared) = (f64::NEG_INFINITY, f64::NEG_INFINITY, None);
+        // At 60 fps the 20 Hz takes land every fourth frame, 67 ms apart.
+        let (dt, stop) = (1.0 / 60.0, 1.0);
+        let (mut now, mut final_block) = (0.0, 0.0);
+        while now < 3.0 && cleared.is_none() {
+            if now - last_poll >= 1.0 / 20.0 {
+                // A block came since the previous take; the final one just after the last take before `stop`.
+                let fresh = last_poll < stop;
+                if fresh {
+                    final_block = last_poll.max(0.0);
+                    snap.tracks.entry(TrackId(1)).or_insert_with(StripMeter::default).peak = [0.4; 2];
+                }
+                age_meters(&mut snap, fresh, now, &mut last_block);
+                if snap.tracks.get(&TrackId(1)).is_some_and(|m| m.peak == [0.0; 2]) {
+                    cleared = Some(now);
+                }
+                last_poll = now;
+            }
+            now += dt;
+        }
+        let cleared = cleared.expect("the readings were never cleared");
+        assert!(cleared - final_block <= METER_STALE_SECS, "the release began {:.3} s after the last block", cleared - final_block);
     }
 }
