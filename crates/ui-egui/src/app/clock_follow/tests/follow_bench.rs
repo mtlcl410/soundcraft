@@ -84,8 +84,9 @@ fn onsets(pcm: &[f32]) -> Vec<usize> {
     starts
 }
 
-/// Signed error in samples of every eighth (pulse index, error); None if it never sounded.
-pub(super) fn eighth_errors(case: Case) -> Vec<(usize, Option<i64>)> {
+/// Signed error in samples of every eighth (pulse index, error, attacks heard near it); the
+/// error is None unless exactly one attack sounded for that eighth.
+pub(super) fn eighth_errors(case: Case) -> Vec<(usize, Option<i64>, usize)> {
     let (ideal, arrivals) = wire(case);
     let sample = |us: f64| (us * RATE as f64 / 1e6).round() as i64;
     let inputs = MidiInputs::with_port_names(vec![], vec!["wire".into()]);
@@ -136,7 +137,8 @@ pub(super) fn eighth_errors(case: Case) -> Vec<(usize, Option<i64>)> {
     (1..PULSES / 12 - 1)
         .map(|note| {
             let target = sample(ideal[note * 12]);
-            (note * 12, heard.iter().map(|&h| h - target).filter(|e| e.abs() < 4_800).min_by_key(|e| e.abs()))
+            let near: Vec<i64> = heard.iter().map(|&h| h - target).filter(|e| e.abs() < 4_800).collect();
+            (note * 12, (near.len() == 1).then(|| near[0]), near.len())
         })
         .collect()
 }
@@ -147,6 +149,8 @@ pub(super) struct Score {
     pub worst_ms: f64,
     pub early: usize,
     pub missing: usize,
+    /// Eighths that sounded more than once.
+    pub repeated: usize,
     pub late_after_change: usize,
 }
 
@@ -154,16 +158,17 @@ pub(super) struct Score {
 /// Late after change: eighths in the two beats after the change more than 4 ms off.
 pub(super) fn score(case: Case) -> Score {
     let errors = eighth_errors(case);
-    let ms: Vec<f64> = errors.iter().filter(|(p, _)| *p >= 96).filter_map(|(_, e)| e.map(|e| e as f64 / 48.)).collect();
-    let missing = errors.iter().filter(|(p, e)| *p >= 96 && e.is_none()).count();
+    let ms: Vec<f64> = errors.iter().filter(|(p, ..)| *p >= 96).filter_map(|(_, e, _)| e.map(|e| e as f64 / 48.)).collect();
+    let missing = errors.iter().filter(|(p, _, heard)| *p >= 96 && *heard == 0).count();
+    let repeated = errors.iter().filter(|(p, _, heard)| *p >= 96 && *heard > 1).count();
     let n = ms.len().max(1) as f64;
     let mean = ms.iter().sum::<f64>() / n;
     let sd = (ms.iter().map(|e| (e - mean) * (e - mean)).sum::<f64>() / n).sqrt();
     let changed = !matches!(case.profile, Profile::Steady);
     let late_after_change = errors
         .iter()
-        .filter(|(p, _)| changed && (CHANGE + 1..=CHANGE + 48).contains(p))
-        .filter(|(_, e)| e.is_none_or(|e| (e as f64 / 48.).abs() > 4.))
+        .filter(|(p, ..)| changed && (CHANGE + 1..=CHANGE + 48).contains(p))
+        .filter(|(_, e, _)| e.is_none_or(|e| (e as f64 / 48.).abs() > 4.))
         .count();
     Score {
         mean_ms: mean,
@@ -171,6 +176,7 @@ pub(super) fn score(case: Case) -> Score {
         worst_ms: ms.iter().fold(0., |w: f64, e| w.max(e.abs())),
         early: ms.iter().filter(|e| **e < -2.).count(),
         missing,
+        repeated,
         late_after_change,
     }
 }
@@ -220,8 +226,8 @@ fn follow_trace() {
     for (name, case) in cases().into_iter().filter(|(n, c)| *n == want && c.buffer == frames) {
         let row: Vec<String> = eighth_errors(case)
             .iter()
-            .filter(|(p, _)| (CHANGE - 48..=CHANGE + 144).contains(p))
-            .map(|(p, e)| format!("{}:{}", *p as i64 - CHANGE as i64, e.map_or("miss".into(), |e| format!("{:.1}", e as f64 / 48.))))
+            .filter(|(p, ..)| (CHANGE - 48..=CHANGE + 144).contains(p))
+            .map(|(p, e, _)| format!("{}:{}", *p as i64 - CHANGE as i64, e.map_or("miss".into(), |e| format!("{:.1}", e as f64 / 48.))))
             .collect();
         eprintln!("{name} {}: {}", case.buffer, row.join(" "));
     }
@@ -239,6 +245,7 @@ fn steady_and_nudged_clocks_stay_on_the_beat_with_a_large_device_buffer() {
     ] {
         let s = score(case);
         assert_eq!(s.missing, 0, "{name}");
+        assert_eq!(s.repeated, 0, "{name}: an eighth sounded more than once");
         assert_eq!(s.early, 0, "{name}: an eighth came more than 2 ms early");
         assert!(s.mean_ms.abs() <= 3. && s.worst_ms <= 10., "{name}: mean {:+.2} ms, worst {:.2} ms", s.mean_ms, s.worst_ms);
     }
