@@ -13,6 +13,12 @@ pub(crate) fn start_stream(stream: &impl cpal::traits::StreamTrait) -> bool {
     }
 }
 
+/// The buffer a started stream reports it runs at: Core Audio's device buffer, WASAPI's period.
+/// `None` when the backend cannot say (or says 0).
+pub(crate) fn running_buffer(stream: &impl cpal::traits::StreamTrait) -> Option<u32> {
+    stream.buffer_size().ok().filter(|n| *n > 0)
+}
+
 /// A built output stream and the channels and fault flag its callback shares with the player.
 pub(crate) struct Opened {
     pub(crate) stream: cpal::Stream,
@@ -144,30 +150,32 @@ where
     )
 }
 
-/// One way to open the output: a stream configuration, the sample format it carries, and whether
-/// it is the device's default configuration rather than one picked for the chosen rate.
+/// One way to open the output: a stream configuration, the sample format it carries, whether it
+/// is the device's default configuration rather than one picked for the chosen rate, and the
+/// buffer range the driver reports for that configuration, when it reports one.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct OutputAttempt {
     pub(crate) config: cpal::StreamConfig,
     pub(crate) format: cpal::SampleFormat,
     pub(crate) default: bool,
+    pub(crate) buffer_range: Option<(u32, u32)>,
 }
+
+/// A stream configuration, its sample format and the driver's buffer range for it.
+pub(crate) type OutputConfig = (cpal::StreamConfig, cpal::SampleFormat, Option<(u32, u32)>);
 
 /// The configurations to try, in order: the one picked for the chosen rate, with the chosen
 /// buffer size and then the device's buffer size; then the device's default configuration the
 /// same two ways. The default comes last so a device that refuses the picked rate (or does not
 /// settle at it in time) still plays, resampled, instead of leaving the player on its silent
 /// clock. A configuration already in the list is not tried twice.
-pub(crate) fn output_attempts(
-    picked: Option<(cpal::StreamConfig, cpal::SampleFormat)>,
-    default: Option<(cpal::StreamConfig, cpal::SampleFormat)>,
-) -> Vec<OutputAttempt> {
+pub(crate) fn output_attempts(picked: Option<OutputConfig>, default: Option<OutputConfig>) -> Vec<OutputAttempt> {
     let mut attempts: Vec<OutputAttempt> = Vec::new();
     let candidates = picked.map(|p| (p, false)).into_iter().chain(default.map(|d| (d, true)));
-    for ((config, format), default) in candidates {
+    for ((config, format, buffer_range), default) in candidates {
         for config in [config, cpal::StreamConfig { buffer_size: cpal::BufferSize::Default, ..config }] {
             if !attempts.iter().any(|a| a.config == config && a.format == format) {
-                attempts.push(OutputAttempt { config, format, default });
+                attempts.push(OutputAttempt { config, format, default, buffer_range });
             }
         }
     }
@@ -180,7 +188,8 @@ pub(crate) fn output_attempts(
 /// many channels as it offers up to `want_ch` (at least stereo), or else the fewest channels
 /// above it (the extra channels stay silent), and the chosen buffer size when the device allows
 /// it. The device's default configuration (the mix resamples to it) follows, and is the only
-/// one when the device offers none of the requested rates.
+/// one when the device offers none of the requested rates. Each carries the buffer range the
+/// driver reports for it.
 pub(crate) fn open_device(want_rate: u32, want_ch: u16, cfg: &AudioConfig) -> Result<(cpal::Device, Vec<OutputAttempt>, String), String> {
     use cpal::traits::DeviceTrait;
     let host = devices::host(cfg);
@@ -194,7 +203,7 @@ pub(crate) fn open_device(want_rate: u32, want_ch: u16, cfg: &AudioConfig) -> Re
     let picked =
         pick_output_config(&configs, &rates, want_ch).or_else(|| pick_wider_output_config(&configs, &rates)).map(|(mut c, buffers, format)| {
             c.buffer_size = devices::buffer_size(cfg.buffer_size, &buffers);
-            (c, format)
+            (c, format, devices::buffer_range(&buffers))
         });
     let default = match default_output_config(&device, &configs, want_rate, want_ch, cfg) {
         Ok(d) => Some(d),
@@ -209,14 +218,14 @@ pub(crate) fn open_device(want_rate: u32, want_ch: u16, cfg: &AudioConfig) -> Re
 }
 
 /// The device's default output configuration with the chosen buffer size, in a sample format the
-/// callbacks decode.
+/// callbacks decode, and the driver's buffer range for it.
 fn default_output_config(
     device: &cpal::Device,
     configs: &[cpal::SupportedStreamConfigRange],
     want_rate: u32,
     want_ch: u16,
     cfg: &AudioConfig,
-) -> Result<(cpal::StreamConfig, cpal::SampleFormat), String> {
+) -> Result<OutputConfig, String> {
     use cpal::traits::DeviceTrait;
     let d = device.default_output_config().map_err(|e| e.to_string())?;
     let format = d.sample_format();
@@ -235,7 +244,7 @@ fn default_output_config(
     };
     let mut stream_config = c.config();
     stream_config.buffer_size = devices::buffer_size(cfg.buffer_size, c.buffer_size());
-    Ok((stream_config, c.sample_format()))
+    Ok((stream_config, c.sample_format(), devices::buffer_range(c.buffer_size())))
 }
 
 /// Pick the output configuration for the first requested rate the device offers (the configured

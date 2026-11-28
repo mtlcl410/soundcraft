@@ -15,7 +15,8 @@ impl cpal::traits::StreamTrait for Fake {
     fn pause(&self) -> Result<(), cpal::Error> {
         Ok(())
     }
-    /// The fake stream has no clock and no fixed buffer; neither is used by these tests.
+    /// The fake stream reports 0 frames, which says nothing about a buffer (see
+    /// `a_stream_that_reports_no_buffer_size_has_no_running_buffer`).
     fn buffer_size(&self) -> Result<cpal::FrameCount, cpal::Error> {
         Ok(0)
     }
@@ -23,6 +24,12 @@ impl cpal::traits::StreamTrait for Fake {
     fn now(&self) -> cpal::StreamInstant {
         cpal::StreamInstant::from_nanos(0)
     }
+}
+
+#[test]
+fn a_stream_that_reports_no_buffer_size_has_no_running_buffer() {
+    // The fake reports 0 frames, which says nothing about the device.
+    assert_eq!(stream::running_buffer(&Fake { starts: true }), None);
 }
 
 #[test]
@@ -108,8 +115,8 @@ fn a_wider_only_device_still_opens_at_the_chosen_rate() {
 #[test]
 fn a_device_that_refuses_the_picked_rate_falls_back_to_its_default_config() {
     let config = |rate, channels, buffer| cpal::StreamConfig { channels, sample_rate: rate, buffer_size: buffer };
-    let picked = (config(48_000, 30, cpal::BufferSize::Fixed(256)), cpal::SampleFormat::F32);
-    let default = (config(44_100, 30, cpal::BufferSize::Fixed(256)), cpal::SampleFormat::I32);
+    let picked = (config(48_000, 30, cpal::BufferSize::Fixed(256)), cpal::SampleFormat::F32, Some((15, 3072)));
+    let default = (config(44_100, 30, cpal::BufferSize::Fixed(256)), cpal::SampleFormat::I32, None);
     let attempts = output_attempts(Some(picked), Some(default));
     let summary: Vec<_> = attempts.iter().map(|a| (a.config.sample_rate, a.config.buffer_size, a.default)).collect();
     assert_eq!(
@@ -133,6 +140,7 @@ fn a_device_that_refuses_the_picked_rate_falls_back_to_its_default_config() {
     let (won, _) = won.expect("the default config opens");
     assert_eq!((won.config.sample_rate, won.format, won.default), (44_100, cpal::SampleFormat::I32, true));
     assert_eq!(won.config.buffer_size, cpal::BufferSize::Fixed(256), "the chosen buffer size still comes first");
+    assert_eq!(won.buffer_range, None, "the range reported is the one of the config that opened");
     assert_eq!(tried, vec![48_000, 48_000, 44_100]);
     // A default that is the picked config adds nothing; without a pick the default is all there is.
     assert_eq!(output_attempts(Some(picked), Some(picked)).len(), 2);
@@ -219,7 +227,7 @@ fn a_spike_in_one_block_among_quiet_ones_reaches_the_ui() {
     // The last block alone (what the UI used to see) is quiet.
     assert!(st.mix.meters[&t].peak[0] < 0.05);
     let mut ui = MeterSnapshot::default();
-    take_meter_snapshot(&mut shared.meters.lock().unwrap(), &mut ui);
+    assert!(take_meter_snapshot(&mut shared.meters.lock().unwrap(), &mut ui), "new blocks arrived");
     assert!(ui.tracks[&t].peak[0] > 0.85, "{:?}", ui.tracks[&t]);
     assert!(ui.tracks[&t].peaks[0] > 0.85);
     assert!(ui.main.peak[0] > 0.5 && ui.main.peaks.iter().all(|p| *p > 0.5), "{:?}", ui.main);
@@ -227,9 +235,12 @@ fn a_spike_in_one_block_among_quiet_ones_reaches_the_ui() {
     st.fill(&mut out, 2);
     take_meter_snapshot(&mut shared.meters.lock().unwrap(), &mut ui);
     assert!(ui.tracks[&t].peak[0] < 0.05 && ui.main.peak[0] < 0.05);
-    // No block since the last take: the reading stays rather than dropping to silence.
-    take_meter_snapshot(&mut shared.meters.lock().unwrap(), &mut ui);
+    // No block since the last take: the reading stays rather than dropping to silence, and the
+    // reader is told, so it can clear readings that stay stale (the device stopped calling back).
+    assert!(!take_meter_snapshot(&mut shared.meters.lock().unwrap(), &mut ui));
     assert!(ui.tracks[&t].peak[0] > 0.005);
+    ui.clear_levels();
+    assert!(ui.tracks[&t].peak[0] == 0.0 && ui.main.peak[0] == 0.0 && ui.tracks[&t].peaks.len() == 1, "{:?}", ui.tracks[&t]);
 }
 
 #[test]
@@ -760,6 +771,7 @@ fn armed_tracks_are_heard_and_metered_after_playback_stops() {
     let mut s = soundcraft_model::Session::default();
     let t = s.add_track(TrackKind::Audio, ChannelFormat::Mono, None);
     s.track_mut(t).unwrap().mixer.record_arm = true;
+    s.track_mut(t).unwrap().mixer.input = soundcraft_model::Route::Hardware("In 1".into());
     let shared = Arc::new(Shared {
         position: AtomicI64::new(0),
         playing: AtomicBool::new(false),

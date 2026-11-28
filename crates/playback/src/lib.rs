@@ -69,7 +69,9 @@ use callback::{AudioState, Fault, Side, take_meter_snapshot};
 use callback::{STALL, copy_meter_snapshot};
 #[cfg(not(target_arch = "wasm32"))]
 use callback::{guarded_block, stalled};
-use stream::{Opened, OutputAttempt, RATE_SETTLE, build_output, first_started, open_device, settle_rate_switch, start_stream, throwaway_output};
+use stream::{
+    Opened, OutputAttempt, RATE_SETTLE, build_output, first_started, open_device, running_buffer, settle_rate_switch, start_stream, throwaway_output,
+};
 #[cfg(test)]
 use stream::{output_attempts, pick_output_config, pick_wider_output_config};
 
@@ -112,6 +114,12 @@ impl MeterSnapshot {
     fn silence(&mut self) {
         self.reset_levels();
         self.fresh = true;
+    }
+
+    /// Zero every level, keeping the entries and their storage: for a reader whose readings went
+    /// stale because no block has arrived for a while (the device stopped calling back).
+    pub fn clear_levels(&mut self) {
+        self.reset_levels();
     }
 
     /// Drop the entries of deleted tracks.
@@ -187,6 +195,10 @@ pub struct Player {
     pub device_channels: u16,
     /// The device buffer in frames when one was chosen (`None`: the device default).
     pub device_buffer: Option<u32>,
+    /// The buffer range the output device's driver reports, when it reports one.
+    pub device_buffer_range: Option<(u32, u32)>,
+    /// The buffer the open output stream reports it runs at (`None` when it reports none).
+    pub device_buffer_running: Option<u32>,
     /// True when no audio device could be opened (silent clock).
     pub silent: bool,
 }
@@ -282,16 +294,18 @@ impl Player {
                     |opened| start_stream(&opened.stream),
                 );
                 match opened {
-                    Some((OutputAttempt { config, format, default }, Opened { stream, tx, grx, fault })) => {
+                    Some((OutputAttempt { config, format, default, buffer_range }, Opened { stream, tx, grx, fault })) => {
                         let rate = config.sample_rate;
                         let channels = usize::from(config.channels);
                         let buffer = match config.buffer_size {
                             cpal::BufferSize::Fixed(n) => Some(n),
                             cpal::BufferSize::Default => None,
                         };
+                        let running = running_buffer(&stream);
                         log::info!(
-                            "audio device: {name} @ {rate} Hz, {channels} ch, {format}, buffer {} ({} config)",
+                            "audio device: {name} @ {rate} Hz, {channels} ch, {format}, buffer {}{} ({} config)",
                             buffer.map_or("default".to_string(), |n| n.to_string()),
+                            running.map_or(String::new(), |n| format!(" (runs at {n})")),
                             if default { "device default" } else { "chosen-rate" }
                         );
                         Player {
@@ -306,6 +320,8 @@ impl Player {
                             device_rate: rate,
                             device_channels: config.channels,
                             device_buffer: buffer,
+                            device_buffer_range: buffer_range,
+                            device_buffer_running: running,
                             silent: false,
                         }
                     }
@@ -383,6 +399,8 @@ impl Player {
             device_rate: rate,
             device_channels: 0,
             device_buffer: None,
+            device_buffer_range: None,
+            device_buffer_running: None,
             silent: true,
         }
     }
@@ -406,6 +424,8 @@ impl Player {
             device_rate: session.sample_rate.hz(),
             device_channels: 0,
             device_buffer: None,
+            device_buffer_range: None,
+            device_buffer_running: None,
             silent: true,
         }
     }
@@ -563,13 +583,15 @@ impl Player {
     /// Take the meters accumulated since the last call into reusable UI storage and start a new
     /// period: `out` gets the highest peak of every block rendered in between. If no block was
     /// rendered since (a large device buffer renders several blocks per callback), `out` keeps
-    /// the previous values rather than dropping to silence. Call it from one place only (two
-    /// readers would split the peaks between them). Once track/channel counts are stable this
-    /// performs no allocation. The audio thread only ever `try_lock`s, so holding the lock here
-    /// never blocks it; blocks rendered meanwhile reach the next call.
-    pub fn take_meters(&self, out: &mut MeterSnapshot) {
+    /// the previous values rather than dropping to silence, and the call returns `false`: when
+    /// that goes on for longer than any device buffer lasts, the device has stopped calling back
+    /// and the reader should clear the readings ([`MeterSnapshot::clear_levels`]). Call it from
+    /// one place only (two readers would split the peaks between them). Once track/channel
+    /// counts are stable this performs no allocation. The audio thread only ever `try_lock`s, so
+    /// holding the lock here never blocks it; blocks rendered meanwhile reach the next call.
+    pub fn take_meters(&self, out: &mut MeterSnapshot) -> bool {
         let mut source = self.shared.meters.lock().unwrap_or_else(PoisonError::into_inner);
-        take_meter_snapshot(&mut source, out);
+        take_meter_snapshot(&mut source, out)
     }
 }
 
